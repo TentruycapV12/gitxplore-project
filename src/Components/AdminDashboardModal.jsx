@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 
 export default function AdminDashboardModal({ context, onClose }) {
   const { user } = context;
-  const [activeTab, setActiveTab] = useState('users'); // 'users' hoặc 'logs'
+  const [activeTab, setActiveTab] = useState('users');
   const [userList, setUserList] = useState([]);
   const [logs, setLogs] = useState([]);
   const [newEmail, setNewEmail] = useState('');
@@ -35,19 +35,19 @@ export default function AdminDashboardModal({ context, onClose }) {
     if (!error && data) {
       setUserList([data[0], ...userList]);
       await supabase.from('activity_logs').insert([
-        { actor_email: user.identifier, action: 'Thêm tài khoản', target: `${newEmail} (${newRole})` }
+        { actor_email: user.identifier, action: 'Grant Permissions', target: `${newEmail} (${newRole})` }
       ]);
       setNewEmail('');
       fetchLogs();
     } else {
-      alert('Tài khoản đã tồn tại hoặc lỗi: ' + error?.message);
+      alert('User already exists or database error: ' + error?.message);
     }
   };
 
   const handleUpdateRole = async (email, role) => {
     await supabase.from('user_roles').update({ role }).eq('email', email);
     await supabase.from('activity_logs').insert([
-      { actor_email: user.identifier, action: 'Đổi cấp bậc', target: `${email} -> ${role}` }
+      { actor_email: user.identifier, action: 'Update Role', target: `${email} -> ${role}` }
     ]);
     fetchUsers();
     fetchLogs();
@@ -57,7 +57,7 @@ export default function AdminDashboardModal({ context, onClose }) {
     const nextStatus = currentStatus === 'banned' ? 'active' : 'banned';
     await supabase.from('user_roles').update({ status: nextStatus }).eq('email', email);
     await supabase.from('activity_logs').insert([
-      { actor_email: user.identifier, action: nextStatus === 'banned' ? 'Khóa tài khoản' : 'Mở khóa', target: email }
+      { actor_email: user.identifier, action: nextStatus === 'banned' ? 'Ban User' : 'Unban User', target: email }
     ]);
     fetchUsers();
     fetchLogs();
@@ -65,14 +65,14 @@ export default function AdminDashboardModal({ context, onClose }) {
 
   const handleDeleteUser = async (email) => {
     if (email === user.identifier) {
-      alert('Không thể tự xóa tài khoản của chính mình!');
+      alert('You cannot revoke your own super admin account!');
       return;
     }
-    if (!window.confirm(`Bạn có chắc muốn xóa quyền tài khoản ${email}?`)) return;
+    if (!window.confirm(`Are you sure you want to revoke permissions for ${email}?`)) return;
 
     await supabase.from('user_roles').delete().eq('email', email);
     await supabase.from('activity_logs').insert([
-      { actor_email: user.identifier, action: 'Xóa tài khoản', target: email }
+      { actor_email: user.identifier, action: 'Revoke User Role', target: email }
     ]);
     fetchUsers();
     fetchLogs();
@@ -87,13 +87,12 @@ export default function AdminDashboardModal({ context, onClose }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #2b1414', paddingBottom: '12px' }}>
           <div>
-            <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Hệ thống quản trị</span>
-            <h2 style={{ margin: '4px 0 0', color: '#fef08a', fontSize: '20px' }}>Bảng Phân Quyền & Quản Lý Thành Viên</h2>
+            <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Administration</span>
+            <h2 style={{ margin: '4px 0 0', color: '#fef08a', fontSize: '20px' }}>User Role Management & Audit Logs</h2>
           </div>
           <button className="modal-close" onClick={onClose} style={{ position: 'static' }}>✕</button>
         </div>
 
-        {/* TAB CHUYỂN ĐỔI */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
           <button
             onClick={() => setActiveTab('users')}
@@ -107,7 +106,7 @@ export default function AdminDashboardModal({ context, onClose }) {
               cursor: 'pointer'
             }}
           >
-            👥 Quản lý thành viên ({userList.length})
+            👥 Manage Members ({userList.length})
           </button>
           <button
             onClick={() => setActiveTab('logs')}
@@ -121,17 +120,16 @@ export default function AdminDashboardModal({ context, onClose }) {
               cursor: 'pointer'
             }}
           >
-            🕒 Nhật ký hoạt động
+            🕒 Audit Logs
           </button>
         </div>
 
-        {/* TAB 1: DANH SÁCH THÀNH VIÊN */}
         {activeTab === 'users' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px', overflow: 'hidden' }}>
             <form onSubmit={handleAddUser} style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="email"
-                placeholder="Nhập email người dùng muốn cấp quyền..."
+                placeholder="Enter member email to assign role..."
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 className="lusion-search"
@@ -143,12 +141,12 @@ export default function AdminDashboardModal({ context, onClose }) {
                 onChange={(e) => setNewRole(e.target.value)}
                 style={{ background: '#1c0f0f', color: '#fef08a', border: '1px solid #381a1a', borderRadius: '6px', padding: '0 10px', fontSize: '12.5px' }}
               >
-                <option value="member">Thành viên</option>
-                <option value="support">CSKH / Hỗ trợ</option>
-                <option value="editor">Biên tập viên</option>
-                <option value="admin">Quản trị viên (Admin)</option>
+                <option value="member">Member</option>
+                <option value="support">Support</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Administrator</option>
               </select>
-              <button type="submit" className="link-btn btn-primary" style={{ padding: '0 16px' }}>+ Cấp quyền</button>
+              <button type="submit" className="link-btn btn-primary" style={{ padding: '0 16px' }}>+ Assign Role</button>
             </form>
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
@@ -157,7 +155,7 @@ export default function AdminDashboardModal({ context, onClose }) {
                   <div>
                     <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '13.5px' }}>{u.email}</div>
                     <span style={{ fontSize: '11px', color: u.status === 'banned' ? '#ef4444' : '#10b981' }}>
-                      ● {u.status === 'banned' ? 'Bị khóa (Banned)' : 'Đang hoạt động'}
+                      ● {u.status === 'banned' ? 'Suspended' : 'Active'}
                     </span>
                   </div>
 
@@ -168,9 +166,9 @@ export default function AdminDashboardModal({ context, onClose }) {
                       disabled={u.email === user.identifier}
                       style={{ background: '#261212', color: '#fcd34d', border: '1px solid #451a1a', borderRadius: '6px', padding: '4px 8px', fontSize: '12px' }}
                     >
-                      <option value="member">Thành viên</option>
-                      <option value="support">Hỗ trợ</option>
-                      <option value="editor">Biên tập</option>
+                      <option value="member">Member</option>
+                      <option value="support">Support</option>
+                      <option value="editor">Editor</option>
                       <option value="admin">Admin</option>
                     </select>
 
@@ -179,7 +177,7 @@ export default function AdminDashboardModal({ context, onClose }) {
                       disabled={u.email === user.identifier}
                       style={{ background: u.status === 'banned' ? '#065f46' : '#7f1d1d', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}
                     >
-                      {u.status === 'banned' ? 'Mở khóa' : 'Khóa'}
+                      {u.status === 'banned' ? 'Unban' : 'Ban'}
                     </button>
 
                     <button
@@ -187,7 +185,7 @@ export default function AdminDashboardModal({ context, onClose }) {
                       disabled={u.email === user.identifier}
                       style={{ background: 'transparent', color: '#f87171', border: '1px solid #451a1a', padding: '5px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}
                     >
-                      Xóa
+                      Revoke
                     </button>
                   </div>
                 </div>
@@ -196,15 +194,14 @@ export default function AdminDashboardModal({ context, onClose }) {
           </div>
         )}
 
-        {/* TAB 2: LỊCH SỬ HOẠT ĐỘNG */}
         {activeTab === 'logs' && (
           <div style={{ flex: 1, overflowY: 'auto', marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {logs.map((log) => (
               <div key={log.id} style={{ background: '#160b0b', padding: '10px 14px', borderRadius: '8px', border: '1px solid #2b1313', fontSize: '12.5px' }}>
-                <span style={{ color: '#fbbf24', fontWeight: 600 }}>{log.actor_email}</span> đã thao tác: <span style={{ color: '#f87171' }}>{log.action}</span>
+                <span style={{ color: '#fbbf24', fontWeight: 600 }}>{log.actor_email}</span> performed: <span style={{ color: '#f87171' }}>{log.action}</span>
                 {log.target && <span style={{ color: '#9ca3af' }}> → ({log.target})</span>}
                 <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '4px' }}>
-                  {new Date(log.created_at).toLocaleString('vi-VN')}
+                  {new Date(log.created_at).toLocaleString('en-US')}
                 </div>
               </div>
             ))}
