@@ -201,12 +201,21 @@ export default function HeroParallax({ context }) {
         </span>
 
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <button onClick={() => setModal && setModal('community')} className="nav-link-btn">
+          {/* Chuyển hướng trực tiếp sang diễn đàn */}
+          <a
+            href="https://xamvn.rest"
+            target="_blank"
+            rel="noreferrer"
+            className="nav-link-btn"
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+          >
             Community
-          </button>
+          </a>
+
           <button onClick={scrollToExplore} className="nav-link-btn">
             About
           </button>
+          
           <button onClick={() => setModal && setModal('support')} className="nav-link-btn">
             Support
           </button>
