@@ -32,31 +32,30 @@ function App() {
     }
   });
 
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Hàm chuyển trang an toàn: giải phóng ScrollTrigger triệt để và khôi phục thanh cuộn
-  const navigate = (path) => {
-    // 1. Dọn dẹp triệt để tất cả ScrollTrigger và pin-spacer đang neo
-    ScrollTrigger.getAll().forEach((trigger) => {
-      trigger.kill(true);
-    });
-
-    // 2. Gỡ bỏ mọi thuộc tính inline style overflow/height trên html và body
+  // Hàm dọn dẹp triệt để trạng thái cuộn và pin của GSAP
+  const cleanupScroll = () => {
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
     document.documentElement.style.removeProperty('overflow');
     document.documentElement.style.removeProperty('height');
     document.body.style.removeProperty('overflow');
     document.body.style.removeProperty('height');
-
-    // 3. Đưa scroll về 0
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
 
-    // 4. Đổi route URL và cập nhật React state
+  // Bắt sự kiện nút phụ chuột (Back / Forward) và mũi tên trình duyệt
+  useEffect(() => {
+    const handlePopState = () => {
+      cleanupScroll();
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Hàm chuyển trang an toàn
+  const navigate = (path) => {
+    cleanupScroll();
     window.history.pushState({}, '', path);
     setCurrentPath(path);
   };
@@ -157,8 +156,7 @@ function App() {
     navigate,
   };
 
-  // NẾU TRÊN THANH ĐỊA CHỈ LÀ /community: HIỂN THỊ NGUYÊN TRANG RIÊNG[cite: 16]
-  if (currentPath === '/community') {
+  if (currentPath.startsWith('/community')) {
     return (
       <CommunityForum
         context={appContext}
@@ -167,7 +165,6 @@ function App() {
     );
   }
 
-  // TRANG CHỦ CHÍNH (URL '/')[cite: 16]
   return (
     <>
       <HeroParallax context={appContext} />
