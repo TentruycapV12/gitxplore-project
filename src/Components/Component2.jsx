@@ -1,5 +1,8 @@
 import React, { useRef } from 'react';
 
+// Ảnh nền công nghệ dự phòng khi link gốc bị lỗi
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
+
 function Component2({ context }) {
   const { project, setSelectedProject } = context;
   const cardRef = useRef(null);
@@ -50,6 +53,10 @@ function Component2({ context }) {
             alt={project.name}
             className="media-asset"
             loading="lazy"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = FALLBACK_IMAGE;
+            }}
           />
         )}
         <span className="media-badge">{project.language}</span>

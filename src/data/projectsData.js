@@ -10,7 +10,7 @@ export const openSourceProjects = [
     forks: '9.2k',
     language: 'Go',
     mediaType: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=1200&auto=format&fit=crop&q=80',
+    mediaUrl: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80',
     githubUrl: 'https://github.com/ollama/ollama',
     demoUrl: 'https://ollama.com'
   },
