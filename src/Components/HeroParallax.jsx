@@ -201,9 +201,8 @@ export default function HeroParallax({ context }) {
         </span>
 
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          {/* Chuyển hướng trực tiếp sang diễn đàn */}
           <a
-            href="https://xamvn.rest"
+            href="https://discord.com"
             target="_blank"
             rel="noreferrer"
             className="nav-link-btn"

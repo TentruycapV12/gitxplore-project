@@ -31,15 +31,14 @@ export default function SubNavBar({ context }) {
             KHO MÃ NGUỒN
           </button>
 
-          {/* Chuyển hướng sang diễn đàn cộng đồng */}
           <a
-            href="https://xamvn.rest"
+            href="https://discord.com"
             target="_blank"
             rel="noreferrer"
             className="av-item"
             style={{ textDecoration: 'none' }}
           >
-            CỘNG ĐỒNG XÂM
+            CỘNG ĐỒNG DISCORD
           </a>
 
           <button
