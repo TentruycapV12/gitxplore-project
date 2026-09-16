@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { supabase } from './supabaseClient';
 import { openSourceProjects } from './data/projectsData';
 import HeroParallax from './Components/HeroParallax.jsx';
@@ -12,8 +14,9 @@ import NavModals from './Components/NavModals.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
 import './App.css';
 
+gsap.registerPlugin(ScrollTrigger);
+
 function App() {
-  // Lấy đường dẫn trực tiếp trên thanh URL của trình duyệt
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +32,6 @@ function App() {
     }
   });
 
-  // Đồng bộ nút Back/Forward của trình duyệt
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
@@ -38,11 +40,17 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Hàm chuyển URL giống hệt router
+  // Hàm chuyển URL dọn dẹp sạch sẽ hiệu ứng cuộn GSAP
   const navigate = (path) => {
+    // 1. Giải phóng ghim cuộn và hiệu ứng GSAP trang chủ
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('height');
+
+    // 2. Chuyển URL và kích hoạt render trang mới
     window.history.pushState({}, '', path);
     setCurrentPath(path);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   useEffect(() => {
@@ -100,9 +108,12 @@ function App() {
       lenis.raf(time);
       requestAnimationFrame(raf);
     }
-    requestAnimationFrame(raf);
+    const reqId = requestAnimationFrame(raf);
 
-    return () => lenis.destroy();
+    return () => {
+      cancelAnimationFrame(reqId);
+      lenis.destroy();
+    };
   }, [currentPath]);
 
   const filteredProjects = (() => {
@@ -138,7 +149,7 @@ function App() {
     navigate,
   };
 
-  // NẾU TRÊN THANH ĐỊA CHỈ LÀ /community: HIỂN THỊ TRANG RIÊNG BIỆT
+  // NẾU TRÊN THANH ĐỊA CHỈ LÀ /community: HIỂN THỊ NGUYÊN TRANG RIÊNG
   if (currentPath === '/community') {
     return (
       <CommunityForum
