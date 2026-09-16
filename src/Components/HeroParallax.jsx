@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroParallax({ context }) {
-  const { user, logout, setModal } = context || {};
+  const { user, logout, setModal, navigate } = context || {};
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
@@ -203,7 +203,7 @@ export default function HeroParallax({ context }) {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => setModal && setModal('community_forum')}
+            onClick={() => navigate && navigate('community')}
             className="nav-link-btn"
           >
             Community

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export default function SubNavBar({ context }) {
-  const { user, logout, setModal, setCategory } = context;
+  const { user, logout, setModal, setCategory, navigate } = context;
   const [activeTab, setActiveTab] = useState('explore');
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -35,7 +35,7 @@ export default function SubNavBar({ context }) {
             className={`av-item ${activeTab === 'community' ? 'active' : ''}`}
             onClick={() => {
               setActiveTab('community');
-              if (setModal) setModal('community_forum');
+              if (navigate) navigate('community');
             }}
           >
             CHỦ ĐỀ & THẢO LUẬN
@@ -86,7 +86,7 @@ export default function SubNavBar({ context }) {
           𝕏
         </a>
 
-        <button className="av-social-btn" onClick={() => setModal('community_forum')} title="Thông báo">
+        <button className="av-social-btn" onClick={() => navigate && navigate('community')} title="Thông báo">
           🔔
         </button>
 

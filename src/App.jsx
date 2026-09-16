@@ -13,6 +13,7 @@ import CommunityForum from './Components/CommunityForum.jsx';
 import './App.css';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home'); // 'home' hoặc 'community'
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
@@ -71,15 +72,7 @@ function App() {
   };
 
   useEffect(() => {
-    const handlePointer = (e) => {
-      document.body.style.setProperty('--mouse-x', `${e.clientX}px`);
-      document.body.style.setProperty('--mouse-y', `${e.clientY}px`);
-    };
-    window.addEventListener('pointermove', handlePointer);
-    return () => window.removeEventListener('pointermove', handlePointer);
-  }, []);
-
-  useEffect(() => {
+    if (currentPage !== 'home') return;
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -93,7 +86,7 @@ function App() {
     requestAnimationFrame(raf);
 
     return () => lenis.destroy();
-  }, []);
+  }, [currentPage]);
 
   const filteredProjects = (() => {
     if (searchTerm.trim() !== '') {
@@ -125,8 +118,20 @@ function App() {
     selectedProject,
     setSelectedProject,
     closeProjectModal: () => setSelectedProject(null),
+    navigate: setCurrentPage,
   };
 
+  // NẾU ĐANG Ở TRANG COMMUNITY: HIỂN THỊ NGUYÊN TRANG RIÊNG BIỆT
+  if (currentPage === 'community') {
+    return (
+      <CommunityForum
+        context={appContext}
+        onBack={() => setCurrentPage('home')}
+      />
+    );
+  }
+
+  // TRANG CHỦ CHÍNH
   return (
     <>
       <HeroParallax context={appContext} />
@@ -149,8 +154,7 @@ function App() {
       <Footer />
 
       {appContext.selectedProject && <ProjectModal context={appContext} />}
-      {appContext.modalType === 'community_forum' && <CommunityForum context={appContext} />}
-      {appContext.modalType && appContext.modalType !== 'community_forum' && <NavModals context={appContext} />}
+      {appContext.modalType && <NavModals context={appContext} />}
     </>
   );
 }
