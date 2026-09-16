@@ -78,49 +78,53 @@ export default function HeroParallax({ context }) {
     if (images1[0]) images1[0].onload = render1;
     if (images2[0]) images2[0].onload = render2;
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: 'top top',
-        end: '+=350%',
-        pin: true,
-        scrub: 0.5,
-      },
-    });
+    // Bọc toàn bộ timeline và trigger vào gsap.context để tự dọn dẹp và gỡ sạch pin-spacer
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=350%',
+          pin: true,
+          scrub: 0.5,
+          invalidateOnRefresh: true,
+        },
+      });
 
-    tl.to(sequence1, {
-      frame: frameCount1 - 1,
-      snap: 'frame',
-      ease: 'none',
-      onUpdate: render1,
-      duration: 2,
-    }, 0)
-    .to(slide1Ref.current, {
-      opacity: 0,
-      y: -60,
-      scale: 0.92,
-      duration: 0.8,
-    }, 0.8)
-    .to(c1, { opacity: 0, duration: 1 }, 1.4)
-    .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
-    .fromTo(slide2Ref.current, {
-      opacity: 0,
-      x: 60,
-    }, {
-      opacity: 1,
-      x: 0,
-      duration: 0.8,
-    }, 1.8)
-    .to(sequence2, {
-      frame: frameCount2 - 1,
-      snap: 'frame',
-      ease: 'none',
-      onUpdate: render2,
-      duration: 2,
-    }, 1.8);
+      tl.to(sequence1, {
+        frame: frameCount1 - 1,
+        snap: 'frame',
+        ease: 'none',
+        onUpdate: render1,
+        duration: 2,
+      }, 0)
+      .to(slide1Ref.current, {
+        opacity: 0,
+        y: -60,
+        scale: 0.92,
+        duration: 0.8,
+      }, 0.8)
+      .to(c1, { opacity: 0, duration: 1 }, 1.4)
+      .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
+      .fromTo(slide2Ref.current, {
+        opacity: 0,
+        x: 60,
+      }, {
+        opacity: 1,
+        x: 0,
+        duration: 0.8,
+      }, 1.8)
+      .to(sequence2, {
+        frame: frameCount2 - 1,
+        snap: 'frame',
+        ease: 'none',
+        onUpdate: render2,
+        duration: 2,
+      }, 1.8);
+    }, containerRef);
 
     return () => {
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      ctx.revert(); // Hủy toàn bộ animations, gỡ pin-spacer và khôi phục DOM sạch sẽ
     };
   }, []);
 

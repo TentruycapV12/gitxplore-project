@@ -40,17 +40,25 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Hàm chuyển URL dọn dẹp sạch sẽ hiệu ứng cuộn GSAP
+  // Hàm chuyển trang an toàn: giải phóng ScrollTrigger triệt để và khôi phục thanh cuộn
   const navigate = (path) => {
-    // 1. Giải phóng ghim cuộn và hiệu ứng GSAP trang chủ
-    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    // 1. Dọn dẹp triệt để tất cả ScrollTrigger và pin-spacer đang neo
+    ScrollTrigger.getAll().forEach((trigger) => {
+      trigger.kill(true);
+    });
+
+    // 2. Gỡ bỏ mọi thuộc tính inline style overflow/height trên html và body
+    document.documentElement.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('height');
     document.body.style.removeProperty('overflow');
     document.body.style.removeProperty('height');
 
-    // 2. Chuyển URL và kích hoạt render trang mới
+    // 3. Đưa scroll về 0
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+    // 4. Đổi route URL và cập nhật React state
     window.history.pushState({}, '', path);
     setCurrentPath(path);
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   useEffect(() => {
@@ -149,7 +157,7 @@ function App() {
     navigate,
   };
 
-  // NẾU TRÊN THANH ĐỊA CHỈ LÀ /community: HIỂN THỊ NGUYÊN TRANG RIÊNG
+  // NẾU TRÊN THANH ĐỊA CHỈ LÀ /community: HIỂN THỊ NGUYÊN TRANG RIÊNG[cite: 16]
   if (currentPath === '/community') {
     return (
       <CommunityForum
@@ -159,7 +167,7 @@ function App() {
     );
   }
 
-  // TRANG CHỦ CHÍNH (URL '/')
+  // TRANG CHỦ CHÍNH (URL '/')[cite: 16]
   return (
     <>
       <HeroParallax context={appContext} />
