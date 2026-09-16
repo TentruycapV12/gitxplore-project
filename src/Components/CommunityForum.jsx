@@ -4,6 +4,15 @@ import AdminDashboardModal from './AdminDashboardModal';
 
 const POSTS_PER_PAGE = 10;
 
+// Danh sách Prefix và màu sắc nhận diện
+const PREFIX_STYLES = {
+  'Chia sẻ': { bg: '#1e3a8a', color: '#93c5fd', border: '#3b82f6' },
+  'Hỏi đáp': { bg: '#064e3b', color: '#6ee7b7', border: '#10b981' },
+  'Cảnh báo': { bg: '#78350f', color: '#fde047', border: '#eab308' },
+  'Mã nguồn': { bg: '#4c1d95', color: '#c4b5fd', border: '#8b5cf6' },
+  'Thảo luận': { bg: '#291818', color: '#fef08a', border: '#f59e0b' },
+};
+
 export default function CommunityForum({ context, onBack }) {
   const { user } = context;
   const [topics, setTopics] = useState([]);
@@ -12,12 +21,16 @@ export default function CommunityForum({ context, onBack }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicDesc, setNewTopicDesc] = useState('');
+  const [newPrefix, setNewPrefix] = useState('Thảo luận');
   const [msgInput, setMsgInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [filterMode, setFilterMode] = useState('newest'); // 'newest', 'replies', 'pinned'
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
   const chatEndRef = useRef(null);
   const threadContainerRef = useRef(null);
 
@@ -38,13 +51,14 @@ export default function CommunityForum({ context, onBack }) {
     checkRole();
   }, [user]);
 
-  // Lấy danh sách chủ đề
+  // Lấy danh sách topics kèm số bài trả lời
   const fetchTopics = async () => {
     try {
       const { data, error } = await supabase
         .from('topics')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*, topic_messages(count)')
+        .order('is_pinned', { ascending: false })
+        .order('last_reply_time', { ascending: false });
 
       if (!error && data) {
         setTopics(data);
@@ -57,45 +71,51 @@ export default function CommunityForum({ context, onBack }) {
   useEffect(() => {
     fetchTopics();
 
-    const topicsChannel = supabase
-      .channel('realtime-topics-list')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'topics' },
-        () => fetchTopics()
-      )
+    const channel = supabase
+      .channel('realtime-topics-xenforo')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'topics' }, () => fetchTopics())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'topic_messages' }, () => fetchTopics())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(topicsChannel);
-    };
+    return () => supabase.removeChannel(channel);
   }, []);
 
-  // Lấy bình luận khi vào xem chi tiết một Topic
+  // Mở chủ đề & tăng lượt xem
+  const handleOpenTopic = async (topic) => {
+    setActiveTopic(topic);
+    window.history.pushState({}, '', `/community?thread=${topic.id}`);
+    try {
+      await supabase.rpc('increment_topic_views', { topic_row_id: topic.id });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleBackToList = () => {
+    setActiveTopic(null);
+    window.history.pushState({}, '', '/community');
+    fetchTopics();
+  };
+
+  // Tải danh sách bình luận trong topic
   useEffect(() => {
     if (!activeTopic) return;
     setCurrentPage(1);
 
     const fetchMessages = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('topic_messages')
-          .select('*')
-          .eq('topic_id', activeTopic.id)
-          .order('created_at', { ascending: true });
+      const { data } = await supabase
+        .from('topic_messages')
+        .select('*')
+        .eq('topic_id', activeTopic.id)
+        .order('created_at', { ascending: true });
 
-        if (!error && data) {
-          setMessages(data);
-        }
-      } catch (err) {
-        console.error(err);
-      }
+      if (data) setMessages(data);
     };
 
     fetchMessages();
 
     const channel = supabase
-      .channel(`topic-thread-${activeTopic.id}`)
+      .channel(`thread-live-${activeTopic.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'topic_messages', filter: `topic_id=eq.${activeTopic.id}` },
@@ -103,124 +123,136 @@ export default function CommunityForum({ context, onBack }) {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, [activeTopic]);
-
-  // Điều hướng vào chủ đề
-  const handleOpenTopic = (topic) => {
-    setActiveTopic(topic);
-    window.history.pushState({}, '', `/community?thread=${topic.id}`);
-  };
-
-  // Quay lại danh sách chủ đề
-  const handleBackToList = () => {
-    setActiveTopic(null);
-    window.history.pushState({}, '', '/community');
-  };
 
   // Tạo chủ đề mới
   const handleCreateTopic = async (e) => {
     e.preventDefault();
-    const cleanTitle = newTopicTitle.trim();
-    if (!cleanTitle || isSubmitting) return;
+    if (!newTopicTitle.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     const author = user?.name || user?.identifier || 'Khách vãng lai';
 
-    try {
-      const { data, error } = await supabase
-        .from('topics')
-        .insert([{ title: cleanTitle, description: newTopicDesc.trim() || null, author_name: author }])
-        .select();
+    const { data, error } = await supabase
+      .from('topics')
+      .insert([{
+        title: newTopicTitle.trim(),
+        description: newTopicDesc.trim() || null,
+        author_name: author,
+        prefix: newPrefix,
+        views_count: 1,
+        last_reply_user: author,
+        last_reply_time: new Date().toISOString()
+      }])
+      .select();
 
-      if (!error && data && data.length > 0) {
-        const created = data[0];
-        setTopics((prev) => [created, ...prev]);
-        setNewTopicTitle('');
-        setNewTopicDesc('');
-        setShowCreateModal(false);
-        handleOpenTopic(created);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
+    if (!error && data && data.length > 0) {
+      setNewTopicTitle('');
+      setNewTopicDesc('');
+      setShowCreateModal(false);
+      handleOpenTopic(data[0]);
     }
-  };
-
-  // Admin xóa chủ đề
-  const handleDeleteTopic = async (topicId, topicTitle) => {
-    if (!window.confirm(`ADMIN: Bạn có chắc chắn muốn xóa chủ đề "${topicTitle}"?`)) return;
-
-    const { error } = await supabase.from('topics').delete().eq('id', topicId);
-    if (!error) {
-      setTopics((prev) => prev.filter((t) => t.id !== topicId));
-      if (activeTopic?.id === topicId) {
-        handleBackToList();
-      }
-    }
+    setIsSubmitting(false);
   };
 
   // Gửi bình luận
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    const cleanMsg = msgInput.trim();
-    if (!cleanMsg || !activeTopic) return;
+    if (!msgInput.trim() || !activeTopic) return;
 
     const sender = user?.name || user?.identifier || 'Thành viên';
+    const nowIso = new Date().toISOString();
 
-    try {
-      const { error } = await supabase.from('topic_messages').insert([
-        { topic_id: activeTopic.id, user_name: sender, content: cleanMsg }
-      ]);
-      if (!error) setMsgInput('');
-    } catch (err) {
-      console.error(err);
+    const { error } = await supabase.from('topic_messages').insert([
+      { topic_id: activeTopic.id, user_name: sender, content: msgInput.trim() }
+    ]);
+
+    if (!error) {
+      setMsgInput('');
+      await supabase.from('topics').update({
+        last_reply_user: sender,
+        last_reply_time: nowIso
+      }).eq('id', activeTopic.id);
     }
   };
 
-  // Tải tệp lên
+  // Upload ảnh/video
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeTopic) return;
 
     setUploading(true);
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `forum/${fileName}`;
+    const filePath = `forum/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-    try {
-      const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file);
+    const { error } = await supabase.storage.from('media').upload(filePath, file);
+    if (!error) {
+      const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+      const isVideo = file.type.startsWith('video');
+      const sender = user?.name || user?.identifier || 'Thành viên';
 
-      if (!uploadError) {
-        const { data } = supabase.storage.from('media').getPublicUrl(filePath);
-        const isVideo = file.type.startsWith('video');
+      await supabase.from('topic_messages').insert([
+        {
+          topic_id: activeTopic.id,
+          user_name: sender,
+          content: '',
+          media_url: data.publicUrl,
+          media_type: isVideo ? 'video' : 'image'
+        }
+      ]);
 
-        await supabase.from('topic_messages').insert([
-          {
-            topic_id: activeTopic.id,
-            user_name: user?.name || user?.identifier || 'Thành viên',
-            content: '',
-            media_url: data.publicUrl,
-            media_type: isVideo ? 'video' : 'image',
-          },
-        ]);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
-      e.target.value = '';
+      await supabase.from('topics').update({
+        last_reply_user: sender,
+        last_reply_time: new Date().toISOString()
+      }).eq('id', activeTopic.id);
     }
+    setUploading(false);
+    e.target.value = '';
   };
 
-  const formatPostTime = (isoString) => {
+  // Toggle Ghim bài (Dành cho Admin)
+  const handleTogglePin = async (e, topic) => {
+    e.stopPropagation();
+    await supabase.from('topics').update({ is_pinned: !topic.is_pinned }).eq('id', topic.id);
+    fetchTopics();
+  };
+
+  // Admin xóa chủ đề
+  const handleDeleteTopic = async (topicId, topicTitle) => {
+    if (!window.confirm(`ADMIN: Bạn có chắc muốn xóa chủ đề "${topicTitle}"?`)) return;
+    await supabase.from('topics').delete().eq('id', topicId);
+    setTopics((prev) => prev.filter((t) => t.id !== topicId));
+    if (activeTopic?.id === topicId) handleBackToList();
+  };
+
+  // Định dạng thời gian phong cách diễn đàn
+  const formatForumTime = (isoString) => {
     if (!isoString) return 'Vừa xong';
     const date = new Date(isoString);
-    return `${date.toLocaleDateString('vi-VN')} lúc ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    if (isToday) return `Hôm nay lúc ${timeStr}`;
+    return `${date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${timeStr}`;
   };
+
+  const formatViewCount = (count) => {
+    if (!count || count < 1000) return count || 1;
+    return `${(count / 1000).toFixed(1)}K`;
+  };
+
+  // Lọc chủ đề
+  const sortedTopics = [...topics].sort((a, b) => {
+    if (filterMode === 'pinned') return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+    if (filterMode === 'replies') {
+      const countA = a.topic_messages?.[0]?.count || 0;
+      const countB = b.topic_messages?.[0]?.count || 0;
+      return countB - countA;
+    }
+    return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
+  });
 
   const totalPages = Math.ceil(messages.length / POSTS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
@@ -228,7 +260,7 @@ export default function CommunityForum({ context, onBack }) {
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#090505', color: '#fff', display: 'flex', flexDirection: 'column' }}>
-      {/* THANH HEADER CHÍNH */}
+      {/* HEADER */}
       <header
         style={{
           display: 'flex',
@@ -281,109 +313,277 @@ export default function CommunityForum({ context, onBack }) {
         </div>
       </header>
 
-      {/* VÙNG CHÍNH */}
+      {/* BODY */}
       <div style={{ flex: 1, padding: '24px 5vw', maxWidth: '1400px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         
-        {/* TẦNG 1: GIAO DIỆN BẢNG DANH SÁCH CHỦ ĐỀ */}
+        {/* TẦNG 1: DANH SÁCH CHỦ ĐỀ */}
         {!activeTopic ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* THANH ĐIỀU HƯỚNG BẬC TRÊN */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h1 style={{ margin: 0, fontSize: '24px', color: '#fef08a' }}>Chủ Đề Thảo Luận</h1>
-                <p style={{ margin: '6px 0 0', color: '#a8a29e', fontSize: '14px' }}>
-                  Nơi trao đổi, chia sẻ mã nguồn và thảo luận công nghệ
+                <h1 style={{ margin: 0, fontSize: '24px', color: '#fef08a' }}>Cộng Đồng Thảo Luận</h1>
+                <p style={{ margin: '4px 0 0', color: '#a8a29e', fontSize: '13.5px' }}>
+                  Tổng hợp {topics.length} chủ đề và các dự án mở
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(true)}
-                className="link-btn btn-primary"
-                style={{ padding: '10px 22px', fontSize: '14px' }}
-              >
-                + Đăng chủ đề mới
-              </button>
+
+              <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+                {/* NÚT LỌC BÀI */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                    style={{
+                      background: '#1c0f0f',
+                      color: '#fef08a',
+                      border: '1px solid #381a1a',
+                      padding: '9px 14px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    Lọc ▾
+                  </button>
+
+                  {showFilterDropdown && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: '42px',
+                        background: '#160b0b',
+                        border: '1px solid #3d1b1b',
+                        borderRadius: '8px',
+                        padding: '6px 0',
+                        width: '170px',
+                        zIndex: 10,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      }}
+                    >
+                      <button
+                        onClick={() => { setFilterMode('newest'); setShowFilterDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'newest' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
+                      >
+                        ● Mới trả lời
+                      </button>
+                      <button
+                        onClick={() => { setFilterMode('replies'); setShowFilterDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'replies' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
+                      >
+                        ● Nhiều phản hồi nhất
+                      </button>
+                      <button
+                        onClick={() => { setFilterMode('pinned'); setShowFilterDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'pinned' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
+                      >
+                        ● Bài ghim đầu trang
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="link-btn btn-primary"
+                  style={{ padding: '9px 18px', fontSize: '13.5px' }}
+                >
+                  + Đăng chủ đề mới
+                </button>
+              </div>
             </div>
 
-            {/* BẢNG CHỦ ĐỀ PHONG CÁCH XENFORO */}
-            <div style={{ background: '#130a0a', border: '1px solid #291515', borderRadius: '10px', overflow: 'hidden' }}>
+            {/* BẢNG CHỦ ĐỀ CHUẨN XENFORO */}
+            <div style={{ background: '#120909', border: '1px solid #2a1515', borderRadius: '10px', overflow: 'hidden' }}>
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 140px 180px 50px',
+                  gridTemplateColumns: '1fr 140px 220px 40px',
                   padding: '12px 20px',
-                  background: '#1c0f0f',
-                  borderBottom: '1px solid #291515',
+                  background: '#190d0d',
+                  borderBottom: '1px solid #2a1515',
                   color: '#fbbf24',
                   fontSize: '12px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
                 }}
               >
-                <span>Tiêu đề</span>
-                <span style={{ textAlign: 'center' }}>Người tạo</span>
-                <span style={{ textAlign: 'center' }}>Thời gian</span>
+                <span>Chủ đề / Tác giả</span>
+                <span style={{ textAlign: 'center' }}>Thống kê</span>
+                <span style={{ textAlign: 'left', paddingLeft: '12px' }}>Bài mới nhất</span>
                 <span></span>
               </div>
 
-              {topics.map((t) => (
-                <div
-                  key={t.id}
-                  onClick={() => handleOpenTopic(t)}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 140px 180px 50px',
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #221212',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#1a0d0d')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <div>
-                    <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600 }}>{t.title}</div>
-                    {t.description && (
-                      <div style={{ color: '#78716c', fontSize: '12px', marginTop: '4px' }}>
-                        {t.description}
-                      </div>
-                    )}
-                  </div>
+              {sortedTopics.map((t) => {
+                const prefixInfo = PREFIX_STYLES[t.prefix] || PREFIX_STYLES['Thảo luận'];
+                const replyCount = t.topic_messages?.[0]?.count || 0;
+                const lastUser = t.last_reply_user || t.author_name;
 
-                  <div style={{ textAlign: 'center', color: '#fef08a', fontSize: '13px' }}>
-                    {t.author_name}
-                  </div>
-
-                  <div style={{ textAlign: 'center', color: '#8c827a', fontSize: '12px' }}>
-                    {formatPostTime(t.created_at)}
-                  </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTopic(t.id, t.title);
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => handleOpenTopic(t)}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 140px 220px 40px',
+                      padding: '14px 20px',
+                      borderBottom: '1px solid #1f1010',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      background: t.is_pinned ? '#1c0c0c' : 'transparent',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#1a0e0e')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = t.is_pinned ? '#1c0c0c' : 'transparent')}
+                  >
+                    {/* CỘT 1: AVATAR, PREFIX, TIÊU ĐỀ, TÁC GIẢ, NGÀY ĐĂNG */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #7f1d1d, #c2410c)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '15px',
+                          flexShrink: 0,
                         }}
-                        title="Xóa chủ đề"
-                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '14px' }}
                       >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                        {t.author_name.charAt(0).toUpperCase()}
+                      </div>
 
-              {topics.length === 0 && (
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {/* GHIM */}
+                          {t.is_pinned && (
+                            <span title="Chủ đề được ghim" style={{ color: '#ef4444', fontSize: '13px' }}>
+                              📌
+                            </span>
+                          )}
+
+                          {/* THẺ PREFIX */}
+                          <span
+                            style={{
+                              background: prefixInfo.bg,
+                              color: prefixInfo.color,
+                              border: `1px solid ${prefixInfo.border}`,
+                              padding: '1px 7px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              lineHeight: 1.4,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {t.prefix || 'Thảo luận'}
+                          </span>
+
+                          {/* TIÊU ĐỀ BÀI VIẾT */}
+                          <span
+                            style={{
+                              color: '#f3f4f6',
+                              fontSize: '14.5px',
+                              fontWeight: 600,
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {t.title}
+                          </span>
+                        </div>
+
+                        {/* TÁC GIẢ & NGÀY ĐĂNG */}
+                        <div style={{ fontSize: '12px', color: '#8c827a', marginTop: '4px' }}>
+                          <span style={{ color: '#fef08a' }}>{t.author_name}</span> • {new Date(t.created_at).toLocaleDateString('vi-VN')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CỘT 2: TRẢ LỜI & LƯỢT XEM */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#9ca3af' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span>Trả lời:</span>
+                        <strong style={{ color: '#fff' }}>{replyCount}</strong>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
+                        <span>Xem:</span>
+                        <strong style={{ color: '#fff' }}>{formatViewCount(t.views_count)}</strong>
+                      </div>
+                    </div>
+
+                    {/* CỘT 3: THỜI GIAN VÀ NGƯỜI TRẢ LỜI CUỐI KÈM AVATAR TRÒN */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '12px' }}>
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: '#2b1414',
+                          border: '1px solid #4a1d1d',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fbbf24',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {lastUser.charAt(0).toUpperCase()}
+                      </div>
+
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {formatForumTime(t.last_reply_time || t.created_at)}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#a8a29e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {lastUser}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CỘT 4: NÚT THAO TÁC CỦA ADMIN */}
+                    <div style={{ textAlign: 'right' }}>
+                      {isAdmin && (
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={(e) => handleTogglePin(e, t)}
+                            title={t.is_pinned ? 'Gỡ ghim' : 'Ghim bài này'}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                          >
+                            📌
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id, t.title); }}
+                            title="Xóa chủ đề"
+                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {sortedTopics.length === 0 && (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#78716c', fontSize: '14px' }}>
-                  Chưa có chủ đề nào được đăng. Hãy là người đầu tiên mở thảo luận!
+                  Chưa có chủ đề nào được tạo.
                 </div>
               )}
             </div>
           </div>
         ) : (
-          /* TẦNG 2: GIAO DIỆN CHI TIẾT BÀI VIẾT TOÀN TRANG */
+          /* TẦNG 2: XEM BÀI VIẾT CHI TIẾT */
           <div
             style={{
               display: 'flex',
@@ -395,20 +595,33 @@ export default function CommunityForum({ context, onBack }) {
               minHeight: '75vh',
             }}
           >
-            {/* TIÊU ĐỀ BÀI VIẾT */}
+            {/* TIÊU ĐỀ THREAD */}
             <div style={{ borderBottom: '1px solid #2e1717', paddingBottom: '16px', marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <span style={{ fontSize: '11px', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Chủ đề thảo luận
-                  </span>
-                  <h1 style={{ margin: '6px 0', fontSize: '26px', color: '#fff' }}>{activeTopic.title}</h1>
-                  <div style={{ fontSize: '12.5px', color: '#8c827a' }}>
-                    Đăng bởi: <span style={{ color: '#fef08a' }}>{activeTopic.author_name}</span> • 🕒 {formatPostTime(activeTopic.created_at)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {activeTopic.is_pinned && <span style={{ color: '#ef4444' }}>📌</span>}
+                    <span
+                      style={{
+                        background: (PREFIX_STYLES[activeTopic.prefix] || PREFIX_STYLES['Thảo luận']).bg,
+                        color: (PREFIX_STYLES[activeTopic.prefix] || PREFIX_STYLES['Thảo luận']).color,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {activeTopic.prefix || 'Thảo luận'}
+                    </span>
+                    <h1 style={{ margin: 0, fontSize: '24px', color: '#fff' }}>{activeTopic.title}</h1>
+                  </div>
+
+                  <div style={{ fontSize: '12.5px', color: '#8c827a', marginTop: '6px' }}>
+                    Người khởi tạo: <span style={{ color: '#fef08a' }}>{activeTopic.author_name}</span> • 🕒 {formatForumTime(activeTopic.created_at)}
                   </div>
                 </div>
 
-                {/* THANH PHÂN TRANG */}
+                {/* PHÂN TRANG */}
                 {totalPages > 1 && (
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -437,11 +650,8 @@ export default function CommunityForum({ context, onBack }) {
               </div>
             </div>
 
-            {/* DANH SÁCH BÀI VIẾT */}
-            <div
-              ref={threadContainerRef}
-              style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}
-            >
+            {/* DANH SÁCH POSTS */}
+            <div ref={threadContainerRef} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
               {currentMessages.map((m, idx) => {
                 const globalIndex = startIndex + idx + 1;
                 return (
@@ -449,29 +659,18 @@ export default function CommunityForum({ context, onBack }) {
                     key={m.id}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '170px 1fr',
+                      gridTemplateColumns: '160px 1fr',
                       background: '#180e0e',
                       border: '1px solid #291515',
                       borderRadius: '8px',
                       overflow: 'hidden',
                     }}
                   >
-                    {/* CỘT PROFILE BÊN TRÁI */}
-                    <div
-                      style={{
-                        background: '#130b0b',
-                        padding: '16px',
-                        borderRight: '1px solid #291515',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                      }}
-                    >
+                    <div style={{ background: '#130b0b', padding: '16px', borderRight: '1px solid #291515', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                       <div
                         style={{
-                          width: '56px',
-                          height: '56px',
+                          width: '52px',
+                          height: '52px',
                           borderRadius: '50%',
                           background: 'linear-gradient(135deg, #7f1d1d, #c2410c)',
                           color: '#fff',
@@ -479,7 +678,7 @@ export default function CommunityForum({ context, onBack }) {
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 700,
-                          fontSize: '20px',
+                          fontSize: '18px',
                           marginBottom: '8px',
                           border: '2px solid rgba(254, 240, 138, 0.2)',
                         }}
@@ -494,10 +693,9 @@ export default function CommunityForum({ context, onBack }) {
                       </span>
                     </div>
 
-                    {/* CỘT NỘI DUNG BÊN PHẢI */}
                     <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #241313', paddingBottom: '8px', marginBottom: '12px', fontSize: '11.5px', color: '#78716c' }}>
-                        <span>🕒 {formatPostTime(m.created_at)}</span>
+                        <span>🕒 {formatForumTime(m.created_at)}</span>
                         <span style={{ color: '#f59e0b', fontWeight: 600 }}>#{globalIndex}</span>
                       </div>
 
@@ -524,16 +722,7 @@ export default function CommunityForum({ context, onBack }) {
             </div>
 
             {/* FORM TRẢ LỜI */}
-            <form
-              onSubmit={handleSendMessage}
-              style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'center',
-                paddingTop: '16px',
-                borderTop: '1px solid #2e1717',
-              }}
-            >
+            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '12px', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid #2e1717' }}>
               <label
                 style={{
                   cursor: uploading ? 'not-allowed' : 'pointer',
@@ -547,13 +736,7 @@ export default function CommunityForum({ context, onBack }) {
                 }}
               >
                 📎 {uploading ? 'Đang tải...' : 'Tệp đính kèm'}
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                  disabled={uploading}
-                />
+                <input type="file" accept="image/*,video/*" onChange={handleFileUpload} style={{ display: 'none' }} disabled={uploading} />
               </label>
 
               <input
@@ -573,27 +756,50 @@ export default function CommunityForum({ context, onBack }) {
         )}
       </div>
 
-      {/* MODAL TẠO CHỦ ĐỀ MỚI */}
+      {/* MODAL ĐĂNG CHỦ ĐỀ CÓ CHỌN PREFIX */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div
             className="modal-card"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '520px', width: '92%', padding: '24px', background: '#120909', border: '1px solid #381a1a', borderRadius: '12px' }}
+            style={{ maxWidth: '540px', width: '92%', padding: '24px', background: '#120909', border: '1px solid #381a1a', borderRadius: '12px' }}
           >
             <h2 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>Tạo chủ đề thảo luận mới</h2>
             <form onSubmit={handleCreateTopic} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input
-                type="text"
-                placeholder="Tiêu đề chủ đề..."
-                value={newTopicTitle}
-                onChange={(e) => setNewTopicTitle(e.target.value)}
-                className="lusion-search"
-                style={{ width: '100%', borderRadius: '6px' }}
-                required
-              />
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <select
+                  value={newPrefix}
+                  onChange={(e) => setNewPrefix(e.target.value)}
+                  style={{
+                    background: '#1a0d0d',
+                    color: '#fef08a',
+                    border: '1px solid #381a1a',
+                    borderRadius: '6px',
+                    padding: '8px 10px',
+                    fontSize: '13px',
+                  }}
+                >
+                  <option value="Thảo luận">[Thảo luận]</option>
+                  <option value="Chia sẻ">[Chia sẻ]</option>
+                  <option value="Hỏi đáp">[Hỏi đáp]</option>
+                  <option value="Mã nguồn">[Mã nguồn]</option>
+                  <option value="Cảnh báo">[Cảnh báo]</option>
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Tiêu đề chủ đề..."
+                  value={newTopicTitle}
+                  onChange={(e) => setNewTopicTitle(e.target.value)}
+                  className="lusion-search"
+                  style={{ flex: 1, borderRadius: '6px' }}
+                  required
+                />
+              </div>
+
               <textarea
-                placeholder="Mô tả ngắn hoặc nội dung mở đầu (không bắt buộc)..."
+                placeholder="Mô tả tóm tắt hoặc nội dung chính..."
                 value={newTopicDesc}
                 onChange={(e) => setNewTopicDesc(e.target.value)}
                 rows={3}
@@ -609,6 +815,7 @@ export default function CommunityForum({ context, onBack }) {
                   resize: 'none',
                 }}
               />
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
                 <button
                   type="button"
@@ -624,7 +831,7 @@ export default function CommunityForum({ context, onBack }) {
                   style={{ padding: '8px 20px' }}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Đang tạo...' : 'Tạo chủ đề'}
+                  {isSubmitting ? 'Đang đăng...' : 'Đăng chủ đề'}
                 </button>
               </div>
             </form>
@@ -632,7 +839,7 @@ export default function CommunityForum({ context, onBack }) {
         </div>
       )}
 
-      {/* MODAL QUẢN TRỊ ADMIN */}
+      {/* MODAL ADMIN */}
       {showAdminModal && (
         <AdminDashboardModal context={context} onClose={() => setShowAdminModal(false)} />
       )}
