@@ -13,7 +13,8 @@ import CommunityForum from './Components/CommunityForum.jsx';
 import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home'); // 'home' hoặc 'community'
+  // Lấy đường dẫn trực tiếp trên thanh URL của trình duyệt
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
@@ -27,6 +28,22 @@ function App() {
       return null;
     }
   });
+
+  // Đồng bộ nút Back/Forward của trình duyệt
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Hàm chuyển URL giống hệt router
+  const navigate = (path) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -72,7 +89,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (currentPage !== 'home') return;
+    if (currentPath !== '/') return;
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -86,7 +103,7 @@ function App() {
     requestAnimationFrame(raf);
 
     return () => lenis.destroy();
-  }, [currentPage]);
+  }, [currentPath]);
 
   const filteredProjects = (() => {
     if (searchTerm.trim() !== '') {
@@ -118,20 +135,20 @@ function App() {
     selectedProject,
     setSelectedProject,
     closeProjectModal: () => setSelectedProject(null),
-    navigate: setCurrentPage,
+    navigate,
   };
 
-  // NẾU ĐANG Ở TRANG COMMUNITY: HIỂN THỊ NGUYÊN TRANG RIÊNG BIỆT
-  if (currentPage === 'community') {
+  // NẾU TRÊN THANH ĐỊA CHỈ LÀ /community: HIỂN THỊ TRANG RIÊNG BIỆT
+  if (currentPath === '/community') {
     return (
       <CommunityForum
         context={appContext}
-        onBack={() => setCurrentPage('home')}
+        onBack={() => navigate('/')}
       />
     );
   }
 
-  // TRANG CHỦ CHÍNH
+  // TRANG CHỦ CHÍNH (URL '/')
   return (
     <>
       <HeroParallax context={appContext} />
@@ -150,7 +167,6 @@ function App() {
       </main>
 
       <SubNavBar context={appContext} />
-
       <Footer />
 
       {appContext.selectedProject && <ProjectModal context={appContext} />}

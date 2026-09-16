@@ -203,7 +203,7 @@ export default function HeroParallax({ context }) {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => navigate && navigate('community')}
+            onClick={() => navigate && navigate('/community')}
             className="nav-link-btn"
           >
             Community

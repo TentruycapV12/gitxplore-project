@@ -19,7 +19,14 @@ export default function SubNavBar({ context }) {
   return (
     <nav className="av-subnav">
       <div className="av-left">
-        <a href="/" className="av-logo">
+        <a
+          href="/"
+          className="av-logo"
+          onClick={(e) => {
+            e.preventDefault();
+            if (navigate) navigate('/');
+          }}
+        >
           GIT<span>XPLORE</span>
         </a>
 
@@ -35,7 +42,7 @@ export default function SubNavBar({ context }) {
             className={`av-item ${activeTab === 'community' ? 'active' : ''}`}
             onClick={() => {
               setActiveTab('community');
-              if (navigate) navigate('community');
+              if (navigate) navigate('/community');
             }}
           >
             CHỦ ĐỀ & THẢO LUẬN
@@ -86,7 +93,11 @@ export default function SubNavBar({ context }) {
           𝕏
         </a>
 
-        <button className="av-social-btn" onClick={() => navigate && navigate('community')} title="Thông báo">
+        <button
+          className="av-social-btn"
+          onClick={() => navigate && navigate('/community')}
+          title="Thông báo"
+        >
           🔔
         </button>
 
