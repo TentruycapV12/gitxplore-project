@@ -4,15 +4,24 @@ import AdminDashboardModal from './AdminDashboardModal';
 
 const POSTS_PER_PAGE = 10;
 
-// Forum Prefix tags & Styling
-const PREFIX_STYLES = {
-  'General': { bg: '#291818', color: '#fef08a', border: '#f59e0b' },
-  'Discussion': { bg: '#291818', color: '#fef08a', border: '#f59e0b' },
-  'Showcase': { bg: '#1e3a8a', color: '#93c5fd', border: '#3b82f6' },
-  'Question': { bg: '#064e3b', color: '#6ee7b7', border: '#10b981' },
-  'Warning': { bg: '#78350f', color: '#fde047', border: '#eab308' },
-  'Source Code': { bg: '#4c1d95', color: '#c4b5fd', border: '#8b5cf6' },
+// Forum Prefix tags, Labels & Styling
+const PREFIX_MAP = {
+  'General': { label: 'General', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
+  'Discussion': { label: 'Discussion', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
+  'Showcase': { label: 'Showcase', bg: '#1e3a8a', color: '#93c5fd', border: '#3b82f6' },
+  'Question': { label: 'Question', bg: '#064e3b', color: '#6ee7b7', border: '#10b981' },
+  'Warning': { label: 'Warning', bg: '#78350f', color: '#fde047', border: '#eab308' },
+  'Source Code': { label: 'Source Code', bg: '#4c1d95', color: '#c4b5fd', border: '#8b5cf6' },
+  // Mapping Vietnamese legacy records
+  'Thảo luận': { label: 'Discussion', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
+  'Chia sẻ': { label: 'Showcase', bg: '#1e3a8a', color: '#93c5fd', border: '#3b82f6' },
+  'Hỏi đáp': { label: 'Question', bg: '#064e3b', color: '#6ee7b7', border: '#10b981' },
+  'Cảnh báo': { label: 'Warning', bg: '#78350f', color: '#fde047', border: '#eab308' },
+  'Mã nguồn': { label: 'Source Code', bg: '#4c1d95', color: '#c4b5fd', border: '#8b5cf6' },
+  'Chung': { label: 'General', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
 };
+
+const resolvePrefix = (prefix) => PREFIX_MAP[prefix] || PREFIX_MAP['Discussion'];
 
 export default function CommunityForum({ context, onBack }) {
   const { user } = context;
@@ -29,7 +38,7 @@ export default function CommunityForum({ context, onBack }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filterMode, setFilterMode] = useState('newest'); // 'newest', 'replies', 'pinned'
+  const [filterMode, setFilterMode] = useState('newest');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const chatEndRef = useRef(null);
@@ -410,7 +419,7 @@ export default function CommunityForum({ context, onBack }) {
               </div>
 
               {sortedTopics.map((t) => {
-                const prefixInfo = PREFIX_STYLES[t.prefix] || PREFIX_STYLES['Discussion'];
+                const prefixConfig = resolvePrefix(t.prefix);
                 const replyCount = t.topic_messages?.[0]?.count || 0;
                 const lastUser = t.last_reply_user || t.author_name;
 
@@ -456,9 +465,9 @@ export default function CommunityForum({ context, onBack }) {
 
                           <span
                             style={{
-                              background: prefixInfo.bg,
-                              color: prefixInfo.color,
-                              border: `1px solid ${prefixInfo.border}`,
+                              background: prefixConfig.bg,
+                              color: prefixConfig.color,
+                              border: `1px solid ${prefixConfig.border}`,
                               padding: '1px 7px',
                               borderRadius: '4px',
                               fontSize: '11px',
@@ -467,7 +476,7 @@ export default function CommunityForum({ context, onBack }) {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {t.prefix || 'Discussion'}
+                            {prefixConfig.label}
                           </span>
 
                           <span style={{ color: '#f3f4f6', fontSize: '14.5px', fontWeight: 600, wordBreak: 'break-word' }}>
@@ -573,15 +582,16 @@ export default function CommunityForum({ context, onBack }) {
                     {activeTopic.is_pinned && <span style={{ color: '#ef4444' }}>📌</span>}
                     <span
                       style={{
-                        background: (PREFIX_STYLES[activeTopic.prefix] || PREFIX_STYLES['Discussion']).bg,
-                        color: (PREFIX_STYLES[activeTopic.prefix] || PREFIX_STYLES['Discussion']).color,
+                        background: resolvePrefix(activeTopic.prefix).bg,
+                        color: resolvePrefix(activeTopic.prefix).color,
+                        border: `1px solid ${resolvePrefix(activeTopic.prefix).border}`,
                         padding: '2px 8px',
                         borderRadius: '4px',
                         fontSize: '11.5px',
                         fontWeight: 600,
                       }}
                     >
-                      {activeTopic.prefix || 'Discussion'}
+                      {resolvePrefix(activeTopic.prefix).label}
                     </span>
                     <h1 style={{ margin: 0, fontSize: '24px', color: '#fff' }}>{activeTopic.title}</h1>
                   </div>
