@@ -201,15 +201,13 @@ export default function HeroParallax({ context }) {
         </span>
 
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <a
-            href="https://discord.com"
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => setModal && setModal('community_forum')}
             className="nav-link-btn"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
           >
             Community
-          </a>
+          </button>
 
           <button onClick={scrollToExplore} className="nav-link-btn">
             About

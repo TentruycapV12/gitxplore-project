@@ -31,15 +31,15 @@ export default function SubNavBar({ context }) {
             KHO MÃ NGUỒN
           </button>
 
-          <a
-            href="https://discord.com"
-            target="_blank"
-            rel="noreferrer"
-            className="av-item"
-            style={{ textDecoration: 'none' }}
+          <button
+            className={`av-item ${activeTab === 'community' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('community');
+              if (setModal) setModal('community_forum');
+            }}
           >
-            CỘNG ĐỒNG DISCORD
-          </a>
+            CHỦ ĐỀ & THẢO LUẬN
+          </button>
 
           <button
             className={`av-item ${activeTab === 'support' ? 'active' : ''}`}
@@ -86,7 +86,7 @@ export default function SubNavBar({ context }) {
           𝕏
         </a>
 
-        <button className="av-social-btn" onClick={() => setModal('community')} title="Thông báo">
+        <button className="av-social-btn" onClick={() => setModal('community_forum')} title="Thông báo">
           🔔
         </button>
 

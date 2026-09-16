@@ -9,6 +9,7 @@ import SubNavBar from './Components/SubNavBar.jsx';
 import Footer from './Components/Footer.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
+import CommunityForum from './Components/CommunityForum.jsx';
 import './App.css';
 
 function App() {
@@ -94,7 +95,6 @@ function App() {
     return () => lenis.destroy();
   }, []);
 
-  // Lọc kho mã nguồn
   const filteredProjects = (() => {
     if (searchTerm.trim() !== '') {
       return openSourceProjects.filter((item) =>
@@ -111,25 +111,17 @@ function App() {
     return openSourceProjects.filter((item) => item.category === activeCategory);
   })();
 
-  // GOM TẤT CẢ VÀO 1 OBJECT PROPS DUY NHẤT
   const appContext = {
-    // Auth & User
     user: currentUser,
     setUser: setCurrentUser,
     logout: handleLogout,
-
-    // Modal
     modalType: navModal,
     setModal: setNavModal,
     closeModal: () => setNavModal(null),
-
-    // Category & Search
     activeCategory,
     setCategory: setActiveCategory,
     searchTerm,
     setSearchTerm,
-
-    // Project Selection
     selectedProject,
     setSelectedProject,
     closeProjectModal: () => setSelectedProject(null),
@@ -157,7 +149,8 @@ function App() {
       <Footer />
 
       {appContext.selectedProject && <ProjectModal context={appContext} />}
-      {appContext.modalType && <NavModals context={appContext} />}
+      {appContext.modalType === 'community_forum' && <CommunityForum context={appContext} />}
+      {appContext.modalType && appContext.modalType !== 'community_forum' && <NavModals context={appContext} />}
     </>
   );
 }
