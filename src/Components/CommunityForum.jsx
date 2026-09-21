@@ -25,7 +25,6 @@ export default function CommunityForum({ context, onBack }) {
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState('');
   
-  // Tạo bài viết mới
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicDesc, setNewTopicDesc] = useState('');
@@ -35,17 +34,14 @@ export default function CommunityForum({ context, onBack }) {
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Bộ lọc danh sách chủ đề
   const [filterMode, setFilterMode] = useState('newest');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
-  // Quyền Admin
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
 
   const commentsEndRef = useRef(null);
 
-  // 1. Kiểm tra quyền Admin
   useEffect(() => {
     const checkRole = async () => {
       if (!user?.identifier) return;
@@ -62,7 +58,6 @@ export default function CommunityForum({ context, onBack }) {
     checkRole();
   }, [user]);
 
-  // 2. Lấy danh sách bài viết ngoài bảng XenForo
   const fetchTopics = async () => {
     try {
       const { data, error } = await supabase
@@ -91,7 +86,6 @@ export default function CommunityForum({ context, onBack }) {
     return () => supabase.removeChannel(channel);
   }, []);
 
-  // 3. Mở chi tiết chủ đề
   const handleOpenTopic = async (topic) => {
     setActiveTopic(topic);
     window.history.pushState({}, '', `/community?thread=${topic.id}`);
@@ -102,14 +96,12 @@ export default function CommunityForum({ context, onBack }) {
     }
   };
 
-  // Trở về danh sách bảng ngoài
   const handleBackToList = () => {
     setActiveTopic(null);
     window.history.pushState({}, '', '/community');
     fetchTopics();
   };
 
-  // 4. Lấy danh sách bình luận khi đang ở trong một chủ đề
   useEffect(() => {
     if (!activeTopic) return;
 
@@ -133,7 +125,6 @@ export default function CommunityForum({ context, onBack }) {
     return () => supabase.removeChannel(channel);
   }, [activeTopic]);
 
-  // 5. Gửi bình luận trong phong cách Facebook Post
   const handleSendComment = async (e) => {
     e.preventDefault();
     const cleanComment = commentInput.trim();
@@ -156,7 +147,6 @@ export default function CommunityForum({ context, onBack }) {
     }
   };
 
-  // Chọn ảnh khi tạo bài
   const handleSelectFile = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -165,7 +155,6 @@ export default function CommunityForum({ context, onBack }) {
     }
   };
 
-  // Tạo chủ đề mới
   const handleCreateTopic = async (e) => {
     e.preventDefault();
     if (!newTopicTitle.trim() || isSubmitting) return;
@@ -215,7 +204,6 @@ export default function CommunityForum({ context, onBack }) {
     }
   };
 
-  // Admin thao tác
   const handleTogglePin = async (e, topic) => {
     e.stopPropagation();
     await supabase.from('topics').update({ is_pinned: !topic.is_pinned }).eq('id', topic.id);
@@ -313,7 +301,7 @@ export default function CommunityForum({ context, onBack }) {
       </header>
 
       {/* ======================================================== */}
-      {/* GIAO DIỆN 1: BẢNG DANH SÁCH CHỦ ĐỀ BAN ĐẦU (ẢNH 1)      */}
+      {/* TẦNG 1: BẢNG CHỦ ĐỀ BAN ĐẦU (XENFORO STYLE)              */}
       {/* ======================================================== */}
       {!activeTopic ? (
         <div style={{ flex: 1, padding: '24px 5vw', maxWidth: '1400px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
@@ -395,7 +383,7 @@ export default function CommunityForum({ context, onBack }) {
               </div>
             </div>
 
-            {/* BẢNG CHỦ ĐỀ CHUẨN XENFORO */}
+            {/* BẢNG CHỦ ĐỀ */}
             <div style={{ background: '#120909', border: '1px solid #2a1515', borderRadius: '10px', overflow: 'hidden' }}>
               <div
                 style={{
@@ -563,11 +551,11 @@ export default function CommunityForum({ context, onBack }) {
         </div>
       ) : (
         /* ======================================================== */
-        /* GIAO DIỆN 2: CHI TIẾT BÀI VIẾT FACEBOOK GROUP (ẢNH 2 & 3) */
+        /* TẦNG 2: GIAO DIỆN BÀI VIẾT THẬT (TIÊU ĐỀ LẤY THEO CHỦ ĐỀ) */
         /* ======================================================== */
         <div style={{ flex: 1, background: '#0b0606' }}>
           
-          {/* COVER BANNER & GROUP BAR */}
+          {/* BANNER COVER HIỂN THỊ ĐÚNG TIÊU ĐỀ BÀI VIẾT */}
           <div style={{ background: '#130a0a', borderBottom: '1px solid #261414' }}>
             <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
               <div
@@ -586,29 +574,32 @@ export default function CommunityForum({ context, onBack }) {
               >
                 <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(#f59e0b 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
                 <div style={{ position: 'relative', zIndex: 2 }}>
-                  <span style={{ background: '#16a34a', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                    Group by EA Sports FC Online Vietnam
+                  <span style={{ background: '#dc2626', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                    {resolvePrefix(activeTopic.prefix).label} Thread
                   </span>
+                  
+                  {/* TIÊU ĐỀ ĐƯỢC ĐẶT TỰ ĐỘNG THEO TÊN CHỦ ĐỀ HIỆN TẠI */}
                   <h1 style={{ margin: '8px 0 4px', fontSize: '28px', fontWeight: 800, color: '#fff' }}>
-                    Garena FC Online Việt Nam
+                    {activeTopic.title}
                   </h1>
+
                   <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
-                    🌐 Public group · <strong>524.5K members</strong>
+                    🌐 Thread created by <strong>{activeTopic.author_name}</strong> · {formatForumTime(activeTopic.created_at)}
                   </div>
                 </div>
               </div>
 
-              {/* TABS & BUTTONS */}
+              {/* TABS ĐIỀU HƯỚNG */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {['About', 'Discussion', 'Featured', 'People', 'Events', 'Media', 'Files'].map((tab, idx) => (
+                  {['Discussion', 'About', 'Files'].map((tab, idx) => (
                     <button
                       key={tab}
                       style={{
-                        background: idx === 1 ? '#2b1414' : 'transparent',
-                        color: idx === 1 ? '#f59e0b' : '#9ca3af',
+                        background: idx === 0 ? '#2b1414' : 'transparent',
+                        color: idx === 0 ? '#f59e0b' : '#9ca3af',
                         border: 'none',
-                        borderBottom: idx === 1 ? '3px solid #f59e0b' : '3px solid transparent',
+                        borderBottom: idx === 0 ? '3px solid #f59e0b' : '3px solid transparent',
                         padding: '10px 14px',
                         fontWeight: 600,
                         fontSize: '13.5px',
@@ -621,28 +612,28 @@ export default function CommunityForum({ context, onBack }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                    + Invite
+                  <button
+                    onClick={handleBackToList}
+                    style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    ← Back to Topics
                   </button>
                   <button style={{ background: '#261414', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
                     ↗ Share
-                  </button>
-                  <button style={{ background: '#261414', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                    ✓ Joined ▾
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* NỘI DUNG 2 CỘT CHUẨN FACEBOOK FEED */}
+          {/* BỐ CỤC 2 CỘT: BÀI POST & CỘT PHẢI (ĐÃ BỎ HẲN RECENT MEDIA) */}
           <div style={{ maxWidth: '1100px', margin: '20px auto', padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
             
-            {/* CỘT TRÁI: BÀI POST CHÍNH & KHUNG BÌNH LUẬN */}
+            {/* CỘT TRÁI: BÀI POST VÀ BÌNH LUẬN */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
               <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
-                {/* HEADER BÀI VIẾT */}
+                {/* TÁC GIẢ BÀI VIẾT */}
                 <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
@@ -663,14 +654,14 @@ export default function CommunityForum({ context, onBack }) {
                   </span>
                 </div>
 
-                {/* TIÊU ĐỀ & NỘI DUNG BÀI ĐĂNG */}
+                {/* TIÊU ĐỀ & NỘI DUNG BÀI VIẾT */}
                 <div style={{ padding: '0 16px 14px' }}>
-                  <h2 style={{ fontSize: '18px', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
+                  <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
                     {activeTopic.title}
                   </h2>
 
-                  {/* ẢNH/MEDIA ĐÍNH KÈM */}
-                  {activeTopic.description && (activeTopic.description.startsWith('http') || activeTopic.description.startsWith('https')) ? (
+                  {/* ẢNH ĐÍNH KÈM HOẶC TEXT NỘI DUNG */}
+                  {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
                     <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
                       <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
                     </div>
@@ -681,13 +672,13 @@ export default function CommunityForum({ context, onBack }) {
                   ) : null}
                 </div>
 
-                {/* LIKE / COMMENT COUNTER */}
+                {/* THỐNG KÊ BÌNH LUẬN */}
                 <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
                   <span>👍 ❤️ 24</span>
                   <span>{comments.length} comments</span>
                 </div>
 
-                {/* NÚT THAO TÁC */}
+                {/* NÚT LIKE / COMMENT / SHARE */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
                   <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
                     👍 Like
@@ -700,10 +691,8 @@ export default function CommunityForum({ context, onBack }) {
                   </button>
                 </div>
 
-                {/* KHUNG BÌNH LUẬN FACEBOOK STYLE */}
+                {/* DANH SÁCH BÌNH LUẬN & KHUNG GỬI */}
                 <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  
-                  {/* DANH SÁCH BÌNH LUẬN */}
                   {comments.map((c) => (
                     <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                       <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
@@ -718,7 +707,6 @@ export default function CommunityForum({ context, onBack }) {
                   ))}
                   <div ref={commentsEndRef} />
 
-                  {/* KHUNG NHẬP BÌNH LUẬN */}
                   <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
                     <input
                       type="text"
@@ -739,67 +727,47 @@ export default function CommunityForum({ context, onBack }) {
 
             </div>
 
-            {/* CỘT PHẢI: WIDGET ABOUT & RECENT MEDIA */}
+            {/* CỘT PHẢI: CHỈ GIỮ LẠI WIDGET THÔNG TIN CHỦ ĐỀ (ĐÃ BỎ HẲN BOX RECENT MEDIA) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: '80px' }}>
-              
-              {/* BOX ABOUT */}
-              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '16px' }}>
-                <h3 style={{ margin: '0 0 10px', fontSize: '16px', fontWeight: 700, color: '#fef08a' }}>About</h3>
+              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '18px' }}>
+                <h3 style={{ margin: '0 0 10px', fontSize: '16px', fontWeight: 700, color: '#fef08a' }}>Thread Details</h3>
                 <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af', lineHeight: 1.5 }}>
-                  Đây là Group giao lưu và kết bạn chính thức của FC Online tại Việt Nam có liên kết trực tiếp tới fanpage EA Sports FC Online Vietnam...
+                  Active discussion inside GitXplore Forum. Follow the community rules and respect other members.
                 </p>
 
-                <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '15px' }}>🌐</span>
+                    <span style={{ fontSize: '16px' }}>👤</span>
                     <div>
-                      <strong style={{ color: '#fff' }}>Public</strong>
-                      <div style={{ fontSize: '11px', color: '#78716c' }}>Anyone can see who's in the group and what they post.</div>
+                      <strong style={{ color: '#fff' }}>Author</strong>
+                      <div style={{ fontSize: '11.5px', color: '#fef08a' }}>{activeTopic.author_name}</div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '15px' }}>👁️</span>
+                    <span style={{ fontSize: '16px' }}>🌐</span>
                     <div>
-                      <strong style={{ color: '#fff' }}>Visible</strong>
-                      <div style={{ fontSize: '11px', color: '#78716c' }}>Anyone can find this group.</div>
+                      <strong style={{ color: '#fff' }}>Visibility</strong>
+                      <div style={{ fontSize: '11.5px', color: '#78716c' }}>Public for all community members</div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '15px' }}>⚽</span>
+                    <span style={{ fontSize: '16px' }}>💬</span>
                     <div>
-                      <strong style={{ color: '#fff' }}>Linked games</strong>
-                      <div style={{ fontSize: '11px', color: '#78716c' }}>FIFA Online 4 / FC Online</div>
+                      <strong style={{ color: '#fff' }}>Total Comments</strong>
+                      <div style={{ fontSize: '11.5px', color: '#78716c' }}>{comments.length} responses</div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* BOX RECENT MEDIA (ẢNH 2) */}
-              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#fef08a' }}>Recent media</h3>
-                  <span style={{ fontSize: '12px', color: '#3b82f6', cursor: 'pointer' }}>See all</span>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                  <div style={{ height: '90px', background: '#221111', borderRadius: '6px', overflow: 'hidden' }}>
-                    <img src="/frames/frame_0001.jpg" alt="Media 1" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                  <div style={{ height: '90px', background: '#221111', borderRadius: '6px', overflow: 'hidden' }}>
-                    <img src="/frames/frame_0060.jpg" alt="Media 2" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                </div>
-              </div>
-
             </div>
 
           </div>
         </div>
       )}
 
-      {/* MODAL TẠO CHỦ ĐỀ MỚI */}
+      {/* MODAL TẠO CHỦ ĐỀ */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div
