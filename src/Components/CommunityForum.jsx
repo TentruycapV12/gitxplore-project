@@ -22,11 +22,16 @@ export default function CommunityForum({ context, onBack }) {
   const { user } = context;
   const [topics, setTopics] = useState([]);
   const [activeTopic, setActiveTopic] = useState(null);
-  const [threadTab, setThreadTab] = useState('Discussion'); // 'Discussion' hoặc 'Files'
+  const [threadTab, setThreadTab] = useState('Discussion');
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState('');
   
-  // Like state cục bộ
+  // State đính kèm file trong bình luận
+  const [commentFile, setCommentFile] = useState(null);
+  const [commentFilePreview, setCommentFilePreview] = useState(null);
+  const [isCommentUploading, setIsCommentUploading] = useState(false);
+  
+  // Like state
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
@@ -50,6 +55,7 @@ export default function CommunityForum({ context, onBack }) {
 
   const commentsEndRef = useRef(null);
   const commentInputRef = useRef(null);
+  const commentFileInputRef = useRef(null);
 
   useEffect(() => {
     const checkRole = async () => {
@@ -100,6 +106,8 @@ export default function CommunityForum({ context, onBack }) {
     setThreadTab('Discussion');
     setLikesCount(topic.likes_count || 0);
     setHasLiked(false);
+    setCommentFile(null);
+    setCommentFilePreview(null);
     window.history.pushState({}, '', `/community?thread=${topic.id}`);
     try {
       await supabase.rpc('increment_topic_views', { topic_row_id: topic.id });
@@ -137,7 +145,6 @@ export default function CommunityForum({ context, onBack }) {
     return () => supabase.removeChannel(channel);
   }, [activeTopic]);
 
-  // NÚT LIKE (TĂNG/GIẢM LƯỢT THÍCH VÀ ĐỒNG BỘ SUPABASE)
   const handleToggleLike = async () => {
     if (!activeTopic) return;
     const nextLiked = !hasLiked;
@@ -148,7 +155,6 @@ export default function CommunityForum({ context, onBack }) {
     await supabase.from('topics').update({ likes_count: nextCount }).eq('id', activeTopic.id);
   };
 
-  // NÚT SHARE (SAO CHÉP LINK VÀO CLIPBOARD)
   const handleShare = () => {
     const shareUrl = window.location.href;
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -158,26 +164,64 @@ export default function CommunityForum({ context, onBack }) {
     });
   };
 
-  // Gửi bình luận
+  // Chọn file đính kèm trong bình luận
+  const handleSelectCommentFile = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCommentFile(file);
+      if (file.type.startsWith('image/')) {
+        setCommentFilePreview(URL.createObjectURL(file));
+      } else {
+        setCommentFilePreview('file');
+      }
+    }
+  };
+
+  // Gửi bình luận (hỗ trợ kèm ảnh/tệp)
   const handleSendComment = async (e) => {
     e.preventDefault();
     const cleanComment = commentInput.trim();
-    if (!cleanComment || !activeTopic) return;
+    if ((!cleanComment && !commentFile) || !activeTopic || isCommentUploading) return;
 
+    setIsCommentUploading(true);
     const sender = user?.name || user?.identifier || 'Member';
     const nowIso = new Date().toISOString();
+    let uploadedMediaUrl = null;
 
-    const { error } = await supabase.from('topic_messages').insert([
-      { topic_id: activeTopic.id, user_name: sender, content: cleanComment }
-    ]);
+    try {
+      if (commentFile) {
+        const fileExt = commentFile.name.split('.').pop();
+        const filePath = `comments/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('media').upload(filePath, commentFile);
+        if (!uploadError) {
+          const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+          uploadedMediaUrl = data.publicUrl;
+        }
+      }
 
-    if (!error) {
-      setCommentInput('');
-      await supabase.from('topics').update({
-        last_reply_user: sender,
-        last_reply_time: nowIso
-      }).eq('id', activeTopic.id);
-      setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      const { error } = await supabase.from('topic_messages').insert([
+        { 
+          topic_id: activeTopic.id, 
+          user_name: sender, 
+          content: cleanComment || (commentFile?.type.startsWith('image/') ? '📷 Photo' : '📎 Attachment'),
+          media_url: uploadedMediaUrl
+        }
+      ]);
+
+      if (!error) {
+        setCommentInput('');
+        setCommentFile(null);
+        setCommentFilePreview(null);
+        await supabase.from('topics').update({
+          last_reply_user: sender,
+          last_reply_time: nowIso
+        }).eq('id', activeTopic.id);
+        setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCommentUploading(false);
     }
   };
 
@@ -278,6 +322,7 @@ export default function CommunityForum({ context, onBack }) {
     return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
   });
 
+  // Gom toàn bộ ảnh/file của bài viết và bình luận hiển thị trong tab Files[cite: 39]
   const mediaFiles = [];
   if (activeTopic?.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://'))) {
     mediaFiles.push({ url: activeTopic.description, author: activeTopic.author_name, date: activeTopic.created_at });
@@ -676,7 +721,6 @@ export default function CommunityForum({ context, onBack }) {
                     ← Back to Topics
                   </button>
 
-                  {/* NÚT SHARE TRÊN THANH HEADER */}
                   <button
                     onClick={handleShare}
                     style={{ background: '#261414', color: '#fff', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -716,7 +760,7 @@ export default function CommunityForum({ context, onBack }) {
                   </span>
                 </div>
 
-                {/* NỘI DUNG & HÌNH ẢNH */}
+                {/* NỘI DUNG & HÌNH ẢNH CỦA BÀI VIẾT */}
                 <div style={{ padding: '0 16px 14px' }}>
                   <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
                     {activeTopic.title}
@@ -741,7 +785,7 @@ export default function CommunityForum({ context, onBack }) {
                   <span>{comments.length} comments</span>
                 </div>
 
-                {/* 2 NÚT TƯƠNG TÁC (ĐÃ BỎ NÚT COMMENT) */}
+                {/* THANH 2 NÚT HÀNH ĐỘNG (LIKE & SHARE) */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
                   <button
                     onClick={handleToggleLike}
@@ -784,7 +828,7 @@ export default function CommunityForum({ context, onBack }) {
                   </button>
                 </div>
 
-                {/* DANH SÁCH BÌNH LUẬN & FORM NHẬP */}
+                {/* DANH SÁCH BÌNH LUẬN & FORM NHẬP KÈM NÚT GỬI FILE/ẢNH */}
                 <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {comments.map((c) => (
                     <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
@@ -793,14 +837,56 @@ export default function CommunityForum({ context, onBack }) {
                       </div>
                       <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
                         <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
-                        <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
+                        
+                        {/* Nội dung chữ */}
+                        {c.content && (
+                          <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
+                        )}
+
+                        {/* Ảnh đính kèm trong bình luận */}
+                        {c.media_url && (
+                          <div style={{ marginTop: '8px', borderRadius: '8px', overflow: 'hidden', maxWidth: '300px' }}>
+                            {c.media_url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                              <a href={c.media_url} target="_blank" rel="noopener noreferrer">
+                                <img src={c.media_url} alt="Attached" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '6px' }} />
+                              </a>
+                            ) : (
+                              <a href={c.media_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '12px', textDecoration: 'underline' }}>
+                                📎 View Attachment
+                              </a>
+                            )}
+                          </div>
+                        )}
+
                         <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
                       </div>
                     </div>
                   ))}
                   <div ref={commentsEndRef} />
 
-                  <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                  {/* KHUNG PREVIEW FILE ĐANG CHỌN TRƯỚC KHI BÌNH LUẬN */}
+                  {commentFilePreview && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1a0d0d', border: '1px solid #381a1a', padding: '8px 12px', borderRadius: '10px', width: 'fit-content' }}>
+                      {commentFilePreview !== 'file' ? (
+                        <img src={commentFilePreview} alt="Preview" style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} />
+                      ) : (
+                        <span style={{ fontSize: '20px' }}>📎</span>
+                      )}
+                      <span style={{ fontSize: '12px', color: '#fef08a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {commentFile?.name}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => { setCommentFile(null); setCommentFilePreview(null); }}
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: '14px' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {/* KHUNG NHẬP BÌNH LUẬN KÈM NÚT ĐÍNH KÈM */}
+                  <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                     <input
                       ref={commentInputRef}
                       type="text"
@@ -809,11 +895,57 @@ export default function CommunityForum({ context, onBack }) {
                       onChange={(e) => setCommentInput(e.target.value)}
                       style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
                     />
+
+                    {/* NÚT CHỌN ẢNH / TỆP ĐÍNH KÈM */}
+                    <input
+                      ref={commentFileInputRef}
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx,.zip,.rar"
+                      onChange={handleSelectCommentFile}
+                      style={{ display: 'none' }}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => commentFileInputRef.current?.click()}
+                      title="Attach photo or file"
+                      style={{
+                        background: '#1e0e0e',
+                        border: '1px solid #3a1c1c',
+                        color: '#fef08a',
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                        flexShrink: 0
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#2e1414')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#1e0e0e')}
+                    >
+                      📎
+                    </button>
+
                     <button
                       type="submit"
-                      style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+                      disabled={isCommentUploading}
+                      style={{ 
+                        background: isCommentUploading ? '#78716c' : '#dc2626', 
+                        color: '#fff', 
+                        border: 'none', 
+                        padding: '9px 20px', 
+                        borderRadius: '20px', 
+                        fontSize: '12.5px', 
+                        fontWeight: 600, 
+                        cursor: isCommentUploading ? 'not-allowed' : 'pointer',
+                        flexShrink: 0
+                      }}
                     >
-                      Send
+                      {isCommentUploading ? 'Uploading...' : 'Send'}
                     </button>
                   </form>
                 </div>
@@ -830,7 +962,11 @@ export default function CommunityForum({ context, onBack }) {
                     {mediaFiles.map((file, idx) => (
                       <div key={idx} style={{ background: '#1c0f0f', border: '1px solid #331919', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ height: '140px', background: '#0a0505', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                          <img src={file.url} alt={`File ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {file.url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                            <img src={file.url} alt={`File ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ fontSize: '32px' }}>📄</span>
+                          )}
                         </div>
                         <div style={{ padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ fontSize: '11px', color: '#a8a29e' }}>By {file.author}</div>
@@ -840,7 +976,7 @@ export default function CommunityForum({ context, onBack }) {
                             rel="noopener noreferrer"
                             style={{ background: '#2b1414', color: '#fef08a', padding: '4px 10px', borderRadius: '4px', textDecoration: 'none', fontSize: '11.5px', fontWeight: 600 }}
                           >
-                            View
+                            View ↗
                           </a>
                         </div>
                       </div>
