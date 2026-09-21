@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroParallax({ context }) {
-  const { user, logout, setModal, navigate } = context || {};
+  const { user, logout, setModal, navigate, openProfileModal } = context || {};
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
@@ -22,19 +22,14 @@ export default function HeroParallax({ context }) {
   const currentFrame2 = (index) =>
     `/frames/frames2/frame_${(index + 1).toString().padStart(4, '0')}.jpg`;
 
-  const scrollToExplore = () => {
-    const target = document.getElementById('explore');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const scrollToTarget = (targetId) => {
+    const target = document.getElementById(targetId);
+    if (!target) return;
 
-  const scrollToAbout = () => {
-    const target = document.getElementById('about');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
+    if (window.lenisInstance) {
+      window.lenisInstance.scrollTo(target);
     } else {
-      scrollToExplore();
+      target.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -87,7 +82,6 @@ export default function HeroParallax({ context }) {
     if (images1[0]) images1[0].onload = render1;
     if (images2[0]) images2[0].onload = render2;
 
-    // Bọc toàn bộ timeline và trigger vào gsap.context để tự dọn dẹp và gỡ sạch pin-spacer
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -200,7 +194,7 @@ export default function HeroParallax({ context }) {
         }}
       >
         <span
-          onClick={scrollToExplore}
+          onClick={() => scrollToTarget('explore')}
           style={{
             fontSize: '19px',
             fontWeight: 700,
@@ -222,10 +216,9 @@ export default function HeroParallax({ context }) {
             Community
           </button>
 
-          {/* Nút About cuộn mượt xuống section #about */}
           <button
             type="button"
-            onClick={scrollToAbout}
+            onClick={() => scrollToTarget('about')}
             className="nav-link-btn"
           >
             About
@@ -276,15 +269,27 @@ export default function HeroParallax({ context }) {
                     <span className="dropdown-user-sub">{user.identifier}</span>
                   </div>
                   <div className="dropdown-divider" />
-                  <a href="#profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => { setDropdownOpen(false); openProfileModal?.('profile'); }}
+                  >
                     👤 Profile details
-                  </a>
-                  <a href="#explore" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                  </button>
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => { setDropdownOpen(false); openProfileModal?.('saved'); }}
+                  >
                     ⭐ Saved Repositories
-                  </a>
-                  <a href="#history" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                  </button>
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => { setDropdownOpen(false); openProfileModal?.('history'); }}
+                  >
                     🕒 History
-                  </a>
+                  </button>
                   <div className="dropdown-divider" />
                   <button
                     type="button"
@@ -360,7 +365,7 @@ export default function HeroParallax({ context }) {
         <div style={{ pointerEvents: 'auto' }}>
           <button
             type="button"
-            onClick={scrollToExplore}
+            onClick={() => scrollToTarget('explore')}
             style={{
               background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
               color: '#ffffff',
@@ -437,7 +442,7 @@ export default function HeroParallax({ context }) {
           </p>
           <button
             type="button"
-            onClick={scrollToExplore}
+            onClick={() => scrollToTarget('explore')}
             style={{
               background: 'transparent',
               color: '#fcd34d',

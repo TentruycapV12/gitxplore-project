@@ -13,6 +13,7 @@ import Footer from './Components/Footer.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
+import UserProfileModal from './Components/UserProfileModal.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -23,6 +24,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [navModal, setNavModal] = useState(null);
+  const [userProfileTab, setUserProfileTab] = useState(null); // 'profile' | 'saved' | 'history'
 
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -112,6 +114,8 @@ function App() {
       smoothWheel: true,
     });
 
+    window.lenisInstance = lenis;
+
     function raf(time) {
       lenis.raf(time);
       requestAnimationFrame(raf);
@@ -121,6 +125,7 @@ function App() {
     return () => {
       cancelAnimationFrame(reqId);
       lenis.destroy();
+      window.lenisInstance = null;
     };
   }, [currentPath]);
 
@@ -155,6 +160,8 @@ function App() {
     setSelectedProject,
     closeProjectModal: () => setSelectedProject(null),
     navigate,
+    openProfileModal: (tabName) => setUserProfileTab(tabName),
+    closeProfileModal: () => setUserProfileTab(null),
   };
 
   if (currentPath.startsWith('/community')) {
@@ -191,6 +198,15 @@ function App() {
 
       {appContext.selectedProject && <ProjectModal context={appContext} />}
       {appContext.modalType && <NavModals context={appContext} />}
+
+      {/* Modal Profile, Saved Repositories và History */}
+      {userProfileTab && (
+        <UserProfileModal 
+          context={appContext} 
+          activeTab={userProfileTab} 
+          onClose={() => setUserProfileTab(null)} 
+        />
+      )}
     </>
   );
 }
