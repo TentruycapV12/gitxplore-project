@@ -29,6 +29,15 @@ export default function HeroParallax({ context }) {
     }
   };
 
+  const scrollToAbout = () => {
+    const target = document.getElementById('about');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      scrollToExplore();
+    }
+  };
+
   useEffect(() => {
     const c1 = canvas1Ref.current;
     const c2 = canvas2Ref.current;
@@ -124,7 +133,7 @@ export default function HeroParallax({ context }) {
     }, containerRef);
 
     return () => {
-      ctx.revert(); // Hủy toàn bộ animations, gỡ pin-spacer và khôi phục DOM sạch sẽ
+      ctx.revert();
     };
   }, []);
 
@@ -213,16 +222,26 @@ export default function HeroParallax({ context }) {
             Community
           </button>
 
-          <button onClick={scrollToExplore} className="nav-link-btn">
+          {/* Nút About cuộn mượt xuống section #about */}
+          <button
+            type="button"
+            onClick={scrollToAbout}
+            className="nav-link-btn"
+          >
             About
           </button>
           
-          <button onClick={() => setModal && setModal('support')} className="nav-link-btn">
+          <button 
+            type="button"
+            onClick={() => setModal && setModal('support')} 
+            className="nav-link-btn"
+          >
             Support
           </button>
 
           {!user ? (
             <button
+              type="button"
               onClick={() => setModal && setModal('register')}
               className="register-btn-main"
             >
@@ -230,7 +249,7 @@ export default function HeroParallax({ context }) {
             </button>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
-              <button className="bell-btn" title="Notifications">
+              <button type="button" className="bell-btn" title="Notifications">
                 🔔
               </button>
 
@@ -268,6 +287,7 @@ export default function HeroParallax({ context }) {
                   </a>
                   <div className="dropdown-divider" />
                   <button
+                    type="button"
                     className="dropdown-item logout-item"
                     onClick={() => {
                       setDropdownOpen(false);
@@ -339,6 +359,7 @@ export default function HeroParallax({ context }) {
         </p>
         <div style={{ pointerEvents: 'auto' }}>
           <button
+            type="button"
             onClick={scrollToExplore}
             style={{
               background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
@@ -415,6 +436,7 @@ export default function HeroParallax({ context }) {
             harboring a vast realm of legendary open-source artifacts.
           </p>
           <button
+            type="button"
             onClick={scrollToExplore}
             style={{
               background: 'transparent',
