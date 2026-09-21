@@ -22,9 +22,15 @@ export default function CommunityForum({ context, onBack }) {
   const { user } = context;
   const [topics, setTopics] = useState([]);
   const [activeTopic, setActiveTopic] = useState(null);
+  const [threadTab, setThreadTab] = useState('Discussion'); // 'Discussion' hoặc 'Files'
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState('');
   
+  // Like state cục bộ
+  const [hasLiked, setHasLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+
+  // Tạo bài viết mới
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicDesc, setNewTopicDesc] = useState('');
@@ -34,13 +40,16 @@ export default function CommunityForum({ context, onBack }) {
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Bộ lọc
   const [filterMode, setFilterMode] = useState('newest');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
+  // Quyền Admin
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
 
   const commentsEndRef = useRef(null);
+  const commentInputRef = useRef(null);
 
   useEffect(() => {
     const checkRole = async () => {
@@ -88,6 +97,9 @@ export default function CommunityForum({ context, onBack }) {
 
   const handleOpenTopic = async (topic) => {
     setActiveTopic(topic);
+    setThreadTab('Discussion');
+    setLikesCount(topic.likes_count || 0);
+    setHasLiked(false);
     window.history.pushState({}, '', `/community?thread=${topic.id}`);
     try {
       await supabase.rpc('increment_topic_views', { topic_row_id: topic.id });
@@ -125,6 +137,36 @@ export default function CommunityForum({ context, onBack }) {
     return () => supabase.removeChannel(channel);
   }, [activeTopic]);
 
+  // CHỨC NĂNG: NÚT LIKE (TĂNG/GIẢM LƯỢT THÍCH VÀ ĐỒNG BỘ SUPABASE)
+  const handleToggleLike = async () => {
+    if (!activeTopic) return;
+    const nextLiked = !hasLiked;
+    const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+    setHasLiked(nextLiked);
+    setLikesCount(nextCount);
+
+    await supabase.from('topics').update({ likes_count: nextCount }).eq('id', activeTopic.id);
+  };
+
+  // CHỨC NĂNG: NÚT COMMENT (TỰ ĐỘNG FOCUS XUỐNG INPUT)
+  const handleFocusComment = () => {
+    if (commentInputRef.current) {
+      commentInputRef.current.focus();
+      commentInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  // CHỨC NĂNG: NÚT SHARE (SAO CHÉP LINK VÀO CLIPBOARD)
+  const handleShare = () => {
+    const shareUrl = window.location.href;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert('Link copied to clipboard!\n' + shareUrl);
+    }).catch(() => {
+      prompt('Copy this link:', shareUrl);
+    });
+  };
+
+  // Gửi bình luận
   const handleSendComment = async (e) => {
     e.preventDefault();
     const cleanComment = commentInput.trim();
@@ -184,6 +226,7 @@ export default function CommunityForum({ context, onBack }) {
           author_name: author,
           prefix: newPrefix,
           views_count: 1,
+          likes_count: 0,
           last_reply_user: author,
           last_reply_time: new Date().toISOString()
         }])
@@ -243,10 +286,21 @@ export default function CommunityForum({ context, onBack }) {
     return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
   });
 
+  // Gom các tệp media có trong bài và các bình luận
+  const mediaFiles = [];
+  if (activeTopic?.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://'))) {
+    mediaFiles.push({ url: activeTopic.description, author: activeTopic.author_name, date: activeTopic.created_at });
+  }
+  comments.forEach((c) => {
+    if (c.media_url) {
+      mediaFiles.push({ url: c.media_url, author: c.user_name, date: c.created_at });
+    }
+  });
+
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#090505', color: '#fff', display: 'flex', flexDirection: 'column' }}>
       
-      {/* HEADER DIỄN ĐÀN */}
+      {/* HEADER */}
       <header
         style={{
           display: 'flex',
@@ -300,9 +354,7 @@ export default function CommunityForum({ context, onBack }) {
         </div>
       </header>
 
-      {/* ======================================================== */}
-      {/* TẦNG 1: BẢNG CHỦ ĐỀ BAN ĐẦU (XENFORO STYLE)              */}
-      {/* ======================================================== */}
+      {/* TẦNG 1: BẢNG DANH SÁCH CHỦ ĐỀ */}
       {!activeTopic ? (
         <div style={{ flex: 1, padding: '24px 5vw', maxWidth: '1400px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -550,12 +602,10 @@ export default function CommunityForum({ context, onBack }) {
           </div>
         </div>
       ) : (
-        /* ======================================================== */
-        /* TẦNG 2: GIAO DIỆN BÀI VIẾT (CĂN GIỮA, ĐÃ XÓA HẲN SIDEBAR) */
-        /* ======================================================== */
+        /* TẦNG 2: CHI TIẾT BÀI VIẾT */
         <div style={{ flex: 1, background: '#0b0606' }}>
           
-          {/* BANNER COVER HIỂN THỊ TIÊU ĐỀ */}
+          {/* BANNER COVER */}
           <div style={{ background: '#130a0a', borderBottom: '1px solid #261414' }}>
             <div style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
               <div
@@ -588,26 +638,43 @@ export default function CommunityForum({ context, onBack }) {
                 </div>
               </div>
 
-              {/* TABS ĐIỀU HƯỚNG */}
+              {/* TABS ĐIỀU HƯỚNG & NÚT SHARE */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {['Discussion', 'Files'].map((tab, idx) => (
-                    <button
-                      key={tab}
-                      style={{
-                        background: idx === 0 ? '#2b1414' : 'transparent',
-                        color: idx === 0 ? '#f59e0b' : '#9ca3af',
-                        border: 'none',
-                        borderBottom: idx === 0 ? '3px solid #f59e0b' : '3px solid transparent',
-                        padding: '10px 14px',
-                        fontWeight: 600,
-                        fontSize: '13.5px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {tab}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => setThreadTab('Discussion')}
+                    style={{
+                      background: threadTab === 'Discussion' ? '#2b1414' : 'transparent',
+                      color: threadTab === 'Discussion' ? '#f59e0b' : '#9ca3af',
+                      border: 'none',
+                      borderBottom: threadTab === 'Discussion' ? '3px solid #f59e0b' : '3px solid transparent',
+                      padding: '10px 16px',
+                      fontWeight: 600,
+                      fontSize: '13.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Discussion
+                  </button>
+
+                  <button
+                    onClick={() => setThreadTab('Files')}
+                    style={{
+                      background: threadTab === 'Files' ? '#2b1414' : 'transparent',
+                      color: threadTab === 'Files' ? '#f59e0b' : '#9ca3af',
+                      border: 'none',
+                      borderBottom: threadTab === 'Files' ? '3px solid #f59e0b' : '3px solid transparent',
+                      padding: '10px 16px',
+                      fontWeight: 600,
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    Files <span style={{ background: '#261212', padding: '2px 6px', borderRadius: '10px', fontSize: '11px', color: '#fef08a' }}>{mediaFiles.length}</span>
+                  </button>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -617,7 +684,12 @@ export default function CommunityForum({ context, onBack }) {
                   >
                     ← Back to Topics
                   </button>
-                  <button style={{ background: '#261414', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+
+                  {/* NÚT SHARE TRÊN THANH HEADER */}
+                  <button
+                    onClick={handleShare}
+                    style={{ background: '#261414', color: '#fff', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
                     ↗ Share
                   </button>
                 </div>
@@ -625,101 +697,192 @@ export default function CommunityForum({ context, onBack }) {
             </div>
           </div>
 
-          {/* BÀI VIẾT VÀ BÌNH LUẬN CĂN GIỮA TOÀN KHUNG HÌNH (MAX-WIDTH 960PX) */}
+          {/* VÙNG NỘI DUNG CHÍNH (THEO TAB) */}
           <div style={{ maxWidth: '960px', margin: '20px auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
-              
-              {/* TÁC GIẢ BÀI VIẾT */}
-              <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
-                    {activeTopic.author_name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
-                      {activeTopic.author_name}
+            
+            {/* TAB 1: DISCUSSION */}
+            {threadTab === 'Discussion' && (
+              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
+                
+                {/* TÁC GIẢ BÀI VIẾT */}
+                <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
+                      {activeTopic.author_name.charAt(0).toUpperCase()}
                     </div>
-                    <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
-                      {formatForumTime(activeTopic.created_at)} · 🌐
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
+                        {activeTopic.author_name}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
+                        {formatForumTime(activeTopic.created_at)} · 🌐
+                      </div>
                     </div>
                   </div>
+
+                  <span style={{ fontSize: '11px', background: '#291818', color: '#fef08a', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
+                    {resolvePrefix(activeTopic.prefix).label}
+                  </span>
                 </div>
 
-                <span style={{ fontSize: '11px', background: '#291818', color: '#fef08a', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
-                  {resolvePrefix(activeTopic.prefix).label}
-                </span>
-              </div>
+                {/* NỘI DUNG & HÌNH ẢNH */}
+                <div style={{ padding: '0 16px 14px' }}>
+                  <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
+                    {activeTopic.title}
+                  </h2>
 
-              {/* TIÊU ĐỀ & NỘI DUNG */}
-              <div style={{ padding: '0 16px 14px' }}>
-                <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
-                  {activeTopic.title}
-                </h2>
-
-                {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
-                  <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
-                    <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
-                  </div>
-                ) : activeTopic.description ? (
-                  <div style={{ fontSize: '14.5px', color: '#d1d5db', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {activeTopic.description}
-                  </div>
-                ) : null}
-              </div>
-
-              {/* THỐNG KÊ BÌNH LUẬN */}
-              <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
-                <span>👍 ❤️ 24</span>
-                <span>{comments.length} comments</span>
-              </div>
-
-              {/* NÚT LIKE / COMMENT / SHARE */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
-                <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                  👍 Like
-                </button>
-                <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                  💬 Comment
-                </button>
-                <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                  ↗ Share
-                </button>
-              </div>
-
-              {/* DANH SÁCH BÌNH LUẬN & KHUNG GỬI */}
-              <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {comments.map((c) => (
-                  <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
-                      {c.user_name.charAt(0).toUpperCase()}
+                  {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
+                    <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
+                      <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
                     </div>
-                    <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
-                      <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
-                      <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
-                      <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
+                  ) : activeTopic.description ? (
+                    <div style={{ fontSize: '14.5px', color: '#d1d5db', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {activeTopic.description}
                     </div>
-                  </div>
-                ))}
-                <div ref={commentsEndRef} />
+                  ) : null}
+                </div>
 
-                <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="Write a comment..."
-                    value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
-                    style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
-                  />
+                {/* THỐNG KÊ LIKES VÀ COMMENTS */}
+                <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    👍 ❤️ <strong style={{ color: '#fff' }}>{likesCount}</strong>
+                  </span>
+                  <span>{comments.length} comments</span>
+                </div>
+
+                {/* 3 NÚT TƯƠNG TÁC ĐÃ GẮN HOÀN THIỆN CHỨC NĂNG */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
                   <button
-                    type="submit"
-                    style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={handleToggleLike}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: hasLiked ? '#f59e0b' : '#d1d5db',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
                   >
-                    Send
+                    👍 {hasLiked ? 'Liked' : 'Like'}
                   </button>
-                </form>
-              </div>
 
-            </div>
+                  <button
+                    onClick={handleFocusComment}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#d1d5db',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    💬 Comment
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#d1d5db',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ↗ Share
+                  </button>
+                </div>
+
+                {/* DANH SÁCH BÌNH LUẬN & FORM NHẬP */}
+                <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {comments.map((c) => (
+                    <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
+                        {c.user_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
+                        <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
+                        <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
+                        <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={commentsEndRef} />
+
+                  <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                    <input
+                      ref={commentInputRef}
+                      type="text"
+                      placeholder="Write a comment..."
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
+                    />
+                    <button
+                      type="submit"
+                      style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: FILES (XEM TOÀN BỘ TỆP VÀ HÌNH ẢNH CỦA CHỦ ĐỀ) */}
+            {threadTab === 'Files' && (
+              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>Attached Files & Media</h3>
+                
+                {mediaFiles.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
+                    {mediaFiles.map((file, idx) => (
+                      <div key={idx} style={{ background: '#1c0f0f', border: '1px solid #331919', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ height: '140px', background: '#0a0505', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                          <img src={file.url} alt={`File ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <div style={{ padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#a8a29e' }}>By {file.author}</div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ background: '#2b1414', color: '#fef08a', padding: '4px 10px', borderRadius: '4px', textDecoration: 'none', fontSize: '11.5px', fontWeight: 600 }}
+                          >
+                            View
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', color: '#78716c', padding: '40px 0', fontSize: '14px' }}>
+                    No files or media attachments uploaded in this thread yet.
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
       )}
