@@ -551,16 +551,16 @@ export default function CommunityForum({ context, onBack }) {
         </div>
       ) : (
         /* ======================================================== */
-        /* TẦNG 2: GIAO DIỆN BÀI VIẾT THẬT (TIÊU ĐỀ LẤY THEO CHỦ ĐỀ) */
+        /* TẦNG 2: GIAO DIỆN BÀI VIẾT (CĂN GIỮA, ĐÃ XÓA HẲN SIDEBAR) */
         /* ======================================================== */
         <div style={{ flex: 1, background: '#0b0606' }}>
           
-          {/* BANNER COVER HIỂN THỊ ĐÚNG TIÊU ĐỀ BÀI VIẾT */}
+          {/* BANNER COVER HIỂN THỊ TIÊU ĐỀ */}
           <div style={{ background: '#130a0a', borderBottom: '1px solid #261414' }}>
-            <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+            <div style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
               <div
                 style={{
-                  height: '240px',
+                  height: '220px',
                   width: '100%',
                   borderRadius: '0 0 12px 12px',
                   background: 'linear-gradient(135deg, #450a0a 0%, #1c0a0a 50%, #1e1b4b 100%)',
@@ -578,8 +578,7 @@ export default function CommunityForum({ context, onBack }) {
                     {resolvePrefix(activeTopic.prefix).label} Thread
                   </span>
                   
-                  {/* TIÊU ĐỀ ĐƯỢC ĐẶT TỰ ĐỘNG THEO TÊN CHỦ ĐỀ HIỆN TẠI */}
-                  <h1 style={{ margin: '8px 0 4px', fontSize: '28px', fontWeight: 800, color: '#fff' }}>
+                  <h1 style={{ margin: '8px 0 4px', fontSize: '26px', fontWeight: 800, color: '#fff' }}>
                     {activeTopic.title}
                   </h1>
 
@@ -592,7 +591,7 @@ export default function CommunityForum({ context, onBack }) {
               {/* TABS ĐIỀU HƯỚNG */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {['Discussion', 'About', 'Files'].map((tab, idx) => (
+                  {['Discussion', 'Files'].map((tab, idx) => (
                     <button
                       key={tab}
                       style={{
@@ -626,143 +625,101 @@ export default function CommunityForum({ context, onBack }) {
             </div>
           </div>
 
-          {/* BỐ CỤC 2 CỘT: BÀI POST & CỘT PHẢI (ĐÃ BỎ HẲN RECENT MEDIA) */}
-          <div style={{ maxWidth: '1100px', margin: '20px auto', padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
-            
-            {/* CỘT TRÁI: BÀI POST VÀ BÌNH LUẬN */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* BÀI VIẾT VÀ BÌNH LUẬN CĂN GIỮA TOÀN KHUNG HÌNH (MAX-WIDTH 960PX) */}
+          <div style={{ maxWidth: '960px', margin: '20px auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
               
-              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
-                {/* TÁC GIẢ BÀI VIẾT */}
-                <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
-                      {activeTopic.author_name.charAt(0).toUpperCase()}
+              {/* TÁC GIẢ BÀI VIẾT */}
+              <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
+                    {activeTopic.author_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
+                      {activeTopic.author_name}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
-                        {activeTopic.author_name}
-                      </div>
-                      <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
-                        {formatForumTime(activeTopic.created_at)} · 🌐
-                      </div>
+                    <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
+                      {formatForumTime(activeTopic.created_at)} · 🌐
                     </div>
                   </div>
-
-                  <span style={{ fontSize: '11px', background: '#291818', color: '#fef08a', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
-                    {resolvePrefix(activeTopic.prefix).label}
-                  </span>
                 </div>
 
-                {/* TIÊU ĐỀ & NỘI DUNG BÀI VIẾT */}
-                <div style={{ padding: '0 16px 14px' }}>
-                  <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
-                    {activeTopic.title}
-                  </h2>
+                <span style={{ fontSize: '11px', background: '#291818', color: '#fef08a', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
+                  {resolvePrefix(activeTopic.prefix).label}
+                </span>
+              </div>
 
-                  {/* ẢNH ĐÍNH KÈM HOẶC TEXT NỘI DUNG */}
-                  {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
-                    <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
-                      <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
+              {/* TIÊU ĐỀ & NỘI DUNG */}
+              <div style={{ padding: '0 16px 14px' }}>
+                <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
+                  {activeTopic.title}
+                </h2>
+
+                {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
+                  <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
+                    <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
+                  </div>
+                ) : activeTopic.description ? (
+                  <div style={{ fontSize: '14.5px', color: '#d1d5db', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {activeTopic.description}
+                  </div>
+                ) : null}
+              </div>
+
+              {/* THỐNG KÊ BÌNH LUẬN */}
+              <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
+                <span>👍 ❤️ 24</span>
+                <span>{comments.length} comments</span>
+              </div>
+
+              {/* NÚT LIKE / COMMENT / SHARE */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
+                <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                  👍 Like
+                </button>
+                <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                  💬 Comment
+                </button>
+                <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                  ↗ Share
+                </button>
+              </div>
+
+              {/* DANH SÁCH BÌNH LUẬN & KHUNG GỬI */}
+              <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {comments.map((c) => (
+                  <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
+                      {c.user_name.charAt(0).toUpperCase()}
                     </div>
-                  ) : activeTopic.description ? (
-                    <div style={{ fontSize: '14.5px', color: '#d1d5db', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                      {activeTopic.description}
+                    <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
+                      <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
+                      <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
+                      <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
                     </div>
-                  ) : null}
-                </div>
+                  </div>
+                ))}
+                <div ref={commentsEndRef} />
 
-                {/* THỐNG KÊ BÌNH LUẬN */}
-                <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
-                  <span>👍 ❤️ 24</span>
-                  <span>{comments.length} comments</span>
-                </div>
-
-                {/* NÚT LIKE / COMMENT / SHARE */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
-                  <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                    👍 Like
+                <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Write a comment..."
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
+                  />
+                  <button
+                    type="submit"
+                    style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Send
                   </button>
-                  <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                    💬 Comment
-                  </button>
-                  <button style={{ background: 'transparent', border: 'none', color: '#d1d5db', padding: '8px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                    ↗ Share
-                  </button>
-                </div>
-
-                {/* DANH SÁCH BÌNH LUẬN & KHUNG GỬI */}
-                <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {comments.map((c) => (
-                    <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
-                        {c.user_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
-                        <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
-                        <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
-                        <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={commentsEndRef} />
-
-                  <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="Write a comment..."
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
-                    />
-                    <button
-                      type="submit"
-                      style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Send
-                    </button>
-                  </form>
-                </div>
+                </form>
               </div>
 
             </div>
-
-            {/* CỘT PHẢI: CHỈ GIỮ LẠI WIDGET THÔNG TIN CHỦ ĐỀ (ĐÃ BỎ HẲN BOX RECENT MEDIA) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: '80px' }}>
-              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '18px' }}>
-                <h3 style={{ margin: '0 0 10px', fontSize: '16px', fontWeight: 700, color: '#fef08a' }}>Thread Details</h3>
-                <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af', lineHeight: 1.5 }}>
-                  Active discussion inside GitXplore Forum. Follow the community rules and respect other members.
-                </p>
-
-                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '16px' }}>👤</span>
-                    <div>
-                      <strong style={{ color: '#fff' }}>Author</strong>
-                      <div style={{ fontSize: '11.5px', color: '#fef08a' }}>{activeTopic.author_name}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '16px' }}>🌐</span>
-                    <div>
-                      <strong style={{ color: '#fff' }}>Visibility</strong>
-                      <div style={{ fontSize: '11.5px', color: '#78716c' }}>Public for all community members</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '16px' }}>💬</span>
-                    <div>
-                      <strong style={{ color: '#fff' }}>Total Comments</strong>
-                      <div style={{ fontSize: '11.5px', color: '#78716c' }}>{comments.length} responses</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       )}
