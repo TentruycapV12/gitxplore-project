@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroParallax({ context }) {
-  const { user, logout, setModal, navigate, openProfileModal } = context || {};
+  const { user, logout, setModal, navigate } = context || {};
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
@@ -269,24 +269,33 @@ export default function HeroParallax({ context }) {
                     <span className="dropdown-user-sub">{user.identifier}</span>
                   </div>
                   <div className="dropdown-divider" />
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => { setDropdownOpen(false); openProfileModal?.('profile'); }}
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate && navigate('/saved');
+                    }}
                   >
                     👤 Profile details
                   </button>
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => { setDropdownOpen(false); openProfileModal?.('saved'); }}
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate && navigate('/saved');
+                    }}
                   >
                     ⭐ Saved Repositories
                   </button>
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => { setDropdownOpen(false); openProfileModal?.('history'); }}
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate && navigate('/saved');
+                    }}
                   >
                     🕒 History
                   </button>

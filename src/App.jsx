@@ -13,7 +13,7 @@ import Footer from './Components/Footer.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
-import UserProfileModal from './Components/UserProfileModal.jsx';
+import SavedDashboard from './Components/SavedDashboard.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -24,7 +24,6 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [navModal, setNavModal] = useState(null);
-  const [userProfileTab, setUserProfileTab] = useState(null); // 'profile' | 'saved' | 'history'
 
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -35,7 +34,7 @@ function App() {
     }
   });
 
-  // Hàm dọn dẹp triệt để trạng thái cuộn và pin của GSAP
+  // Dọn dẹp trạng thái cuộn và pin-spacer của GSAP
   const cleanupScroll = () => {
     ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
     document.documentElement.style.removeProperty('overflow');
@@ -45,7 +44,6 @@ function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
-  // Bắt sự kiện nút phụ chuột (Back / Forward) và mũi tên trình duyệt
   useEffect(() => {
     const handlePopState = () => {
       cleanupScroll();
@@ -56,7 +54,6 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Hàm chuyển trang an toàn
   const navigate = (path) => {
     cleanupScroll();
     window.history.pushState({}, '', path);
@@ -160,10 +157,9 @@ function App() {
     setSelectedProject,
     closeProjectModal: () => setSelectedProject(null),
     navigate,
-    openProfileModal: (tabName) => setUserProfileTab(tabName),
-    closeProfileModal: () => setUserProfileTab(null),
   };
 
+  // 1. ROUTE /community: TRANG DIỄN ĐÀN
   if (currentPath.startsWith('/community')) {
     return (
       <CommunityForum
@@ -173,6 +169,17 @@ function App() {
     );
   }
 
+  // 2. ROUTE /saved: TRANG QUẢN LÝ REPO VÀ TÀI KHOẢN ĐỘC LẬP
+  if (currentPath.startsWith('/saved') || currentPath.startsWith('/profile') || currentPath.startsWith('/history')) {
+    return (
+      <SavedDashboard
+        context={appContext}
+        onBack={() => navigate('/')}
+      />
+    );
+  }
+
+  // TRANG CHỦ CHÍNH
   return (
     <>
       <HeroParallax context={appContext} />
@@ -190,23 +197,12 @@ function App() {
         </section>
       </main>
 
-      {/* Phần giới thiệu dự án About */}
       <About />
-
       <SubNavBar context={appContext} />
       <Footer />
 
       {appContext.selectedProject && <ProjectModal context={appContext} />}
       {appContext.modalType && <NavModals context={appContext} />}
-
-      {/* Modal Profile, Saved Repositories và History */}
-      {userProfileTab && (
-        <UserProfileModal 
-          context={appContext} 
-          activeTab={userProfileTab} 
-          onClose={() => setUserProfileTab(null)} 
-        />
-      )}
     </>
   );
 }
