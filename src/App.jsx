@@ -34,7 +34,6 @@ function App() {
     }
   });
 
-  // Dọn dẹp trạng thái cuộn và pin-spacer của GSAP
   const cleanupScroll = () => {
     ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
     document.documentElement.style.removeProperty('overflow');
@@ -159,7 +158,6 @@ function App() {
     navigate,
   };
 
-  // 1. ROUTE /community: TRANG DIỄN ĐÀN
   if (currentPath.startsWith('/community')) {
     return (
       <CommunityForum
@@ -169,7 +167,6 @@ function App() {
     );
   }
 
-  // 2. ROUTE /saved: TRANG QUẢN LÝ REPO VÀ TÀI KHOẢN ĐỘC LẬP
   if (currentPath.startsWith('/saved') || currentPath.startsWith('/profile') || currentPath.startsWith('/history')) {
     return (
       <SavedDashboard
@@ -179,7 +176,6 @@ function App() {
     );
   }
 
-  // TRANG CHỦ CHÍNH
   return (
     <>
       <HeroParallax context={appContext} />
