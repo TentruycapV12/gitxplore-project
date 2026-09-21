@@ -137,7 +137,7 @@ export default function CommunityForum({ context, onBack }) {
     return () => supabase.removeChannel(channel);
   }, [activeTopic]);
 
-  // CHỨC NĂNG: NÚT LIKE (TĂNG/GIẢM LƯỢT THÍCH VÀ ĐỒNG BỘ SUPABASE)
+  // NÚT LIKE (TĂNG/GIẢM LƯỢT THÍCH VÀ ĐỒNG BỘ SUPABASE)
   const handleToggleLike = async () => {
     if (!activeTopic) return;
     const nextLiked = !hasLiked;
@@ -148,15 +148,7 @@ export default function CommunityForum({ context, onBack }) {
     await supabase.from('topics').update({ likes_count: nextCount }).eq('id', activeTopic.id);
   };
 
-  // CHỨC NĂNG: NÚT COMMENT (TỰ ĐỘNG FOCUS XUỐNG INPUT)
-  const handleFocusComment = () => {
-    if (commentInputRef.current) {
-      commentInputRef.current.focus();
-      commentInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  // CHỨC NĂNG: NÚT SHARE (SAO CHÉP LINK VÀO CLIPBOARD)
+  // NÚT SHARE (SAO CHÉP LINK VÀO CLIPBOARD)
   const handleShare = () => {
     const shareUrl = window.location.href;
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -286,7 +278,6 @@ export default function CommunityForum({ context, onBack }) {
     return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
   });
 
-  // Gom các tệp media có trong bài và các bình luận
   const mediaFiles = [];
   if (activeTopic?.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://'))) {
     mediaFiles.push({ url: activeTopic.description, author: activeTopic.author_name, date: activeTopic.created_at });
@@ -750,8 +741,8 @@ export default function CommunityForum({ context, onBack }) {
                   <span>{comments.length} comments</span>
                 </div>
 
-                {/* 3 NÚT TƯƠNG TÁC ĐÃ GẮN HOÀN THIỆN CHỨC NĂNG */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
+                {/* 2 NÚT TƯƠNG TÁC (ĐÃ BỎ NÚT COMMENT) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
                   <button
                     onClick={handleToggleLike}
                     style={{
@@ -770,26 +761,6 @@ export default function CommunityForum({ context, onBack }) {
                     }}
                   >
                     👍 {hasLiked ? 'Liked' : 'Like'}
-                  </button>
-
-                  <button
-                    onClick={handleFocusComment}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#d1d5db',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    💬 Comment
                   </button>
 
                   <button
