@@ -8,6 +8,7 @@ import HeroParallax from './Components/HeroParallax.jsx';
 import Component1 from './Components/Component1.jsx';
 import Component2 from './Components/Component2.jsx';
 import SubNavBar from './Components/SubNavBar.jsx';
+import About from './Components/About.jsx';
 import Footer from './Components/Footer.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
@@ -181,6 +182,9 @@ function App() {
           ))}
         </section>
       </main>
+
+      {/* Phần giới thiệu dự án About */}
+      <About />
 
       <SubNavBar context={appContext} />
       <Footer />
