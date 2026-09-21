@@ -16,6 +16,16 @@ export default function SubNavBar({ context }) {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToAboutSection = () => {
+    setActiveTab('about');
+    const el = document.getElementById('about');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      scrollToExplore();
+    }
+  };
+
   return (
     <nav className="av-subnav">
       <div className="av-left">
@@ -35,7 +45,7 @@ export default function SubNavBar({ context }) {
             className={`av-item ${activeTab === 'explore' ? 'active' : ''}`}
             onClick={scrollToExplore}
           >
-            KHO MÃ NGUỒN
+            Repositories
           </button>
 
           <button
@@ -45,7 +55,7 @@ export default function SubNavBar({ context }) {
               if (navigate) navigate('/community');
             }}
           >
-            CHỦ ĐỀ & THẢO LUẬN
+            Discussions
           </button>
 
           <button
@@ -55,17 +65,14 @@ export default function SubNavBar({ context }) {
               setModal('support');
             }}
           >
-            HỖ TRỢ & FAQ
+            Support & FAQ
           </button>
 
           <button
             className={`av-item ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('about');
-              setModal('about');
-            }}
+            onClick={scrollToAboutSection}
           >
-            VỀ DỰ ÁN
+            About Us
           </button>
 
           <button
@@ -73,7 +80,7 @@ export default function SubNavBar({ context }) {
             style={{ color: '#f43f5e' }}
             onClick={() => setModal('support')}
           >
-            DONATE ❤️
+            Sponsor ❤️
           </button>
         </div>
       </div>
@@ -96,7 +103,7 @@ export default function SubNavBar({ context }) {
         <button
           className="av-social-btn"
           onClick={() => navigate && navigate('/community')}
-          title="Thông báo"
+          title="Notifications"
         >
           🔔
         </button>
@@ -125,7 +132,7 @@ export default function SubNavBar({ context }) {
                     logout();
                   }}
                 >
-                  🚪 Đăng xuất
+                  🚪 Sign out
                 </button>
               </div>
             )}
@@ -136,11 +143,11 @@ export default function SubNavBar({ context }) {
             style={{ marginLeft: '6px' }}
             onClick={() => setModal('signin')}
           >
-            Đăng nhập
+            Sign in
           </button>
         )}
 
-        <button className="av-top-btn" onClick={scrollToTop} title="Cuộn lên đầu trang">
+        <button className="av-top-btn" onClick={scrollToTop} title="Scroll to top">
           ↑
         </button>
       </div>
