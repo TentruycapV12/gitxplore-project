@@ -23,9 +23,9 @@ export default function SavedDashboard({ context, onBack }) {
   const [tempAltEmail, setTempAltEmail] = useState('');
   const [tempBirthday, setTempBirthday] = useState('');
 
-  // Sub-tabs cho Meta Pay & Ad Preferences
+  // Sub-tabs cho Payment & Activity
   const [paySubTab, setPaySubTab] = useState('transactions'); // 'transactions' | 'manage'
-  const [adSubTab, setAdSubTab] = useState('customize'); // 'customize' | 'manage'
+  const [activitySubTab, setActivitySubTab] = useState('projects'); // 'projects' | 'organizations'
 
   // Saved Repositories & History
   const [savedList, setSavedList] = useState([]);
@@ -118,7 +118,7 @@ export default function SavedDashboard({ context, onBack }) {
     a.click();
   };
 
-  // Helper render các thẻ danh sách dạng nhóm chuẩn Meta
+  // Helper render các thẻ danh sách dạng nhóm chuẩn
   const renderMetaGroupItem = ({ icon, title, subtitle, onClick, hasArrow = true, isLast = false }) => (
     <div
       onClick={onClick}
@@ -229,7 +229,7 @@ export default function SavedDashboard({ context, onBack }) {
         {activeTab === 'profile' && (
           <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', background: '#120909', border: '1px solid #2b1414', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
             
-            {/* CỘT TRÁI: SIDEBAR MENU CHUẨN META ACCOUNTS CENTER */}
+            {/* CỘT TRÁI: SIDEBAR MENU */}
             <div style={{ padding: '30px 24px', borderRight: '1px solid #241111', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontSize: '13px', fontWeight: 700 }}>
@@ -237,7 +237,7 @@ export default function SavedDashboard({ context, onBack }) {
                 </div>
                 <h2 style={{ margin: '6px 0 4px', fontSize: '22px', fontWeight: 700, color: '#fff' }}>Accounts Center</h2>
                 <p style={{ margin: 0, fontSize: '12px', color: '#8c827a', lineHeight: 1.5 }}>
-                  Manage your connected experiences and account settings across GitXplore technologies.
+                  Manage your developer profile, open-source repositories and account preferences across GitXplore.
                 </p>
               </div>
 
@@ -272,9 +272,9 @@ export default function SavedDashboard({ context, onBack }) {
                     { id: 'security', icon: '🛡️', label: 'Password and security' },
                     { id: 'connected', icon: '🔗', label: 'Connected experiences' },
                     { id: 'permissions', icon: '📄', label: 'Your information and permissions' },
-                    { id: 'ad_preferences', icon: '📢', label: 'Ad preferences' },
-                    { id: 'meta_pay', icon: '💳', label: 'Meta Pay' },
-                    { id: 'subscriptions', icon: '💲', label: 'Subscriptions' },
+                    { id: 'project_activity', icon: '🚀', label: 'Project activity & tracking' },
+                    { id: 'git_pay', icon: '💳', label: 'Billing & Payments' },
+                    { id: 'subscriptions', icon: '⭐', label: 'Sponsorships & Subscriptions' },
                     { id: 'manage', icon: '👥', label: 'Manage accounts' },
                   ].map((item) => (
                     <div
@@ -302,7 +302,7 @@ export default function SavedDashboard({ context, onBack }) {
               </div>
             </div>
 
-            {/* CỘT PHẢI: NỘI DUNG THEO TỪNG HÌNH ẢNH */}
+            {/* CỘT PHẢI: NỘI DUNG CHI TIẾT */}
             <div style={{ padding: '34px 40px', background: '#120909', display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* ======================================================== */}
@@ -316,8 +316,8 @@ export default function SavedDashboard({ context, onBack }) {
                         🚀
                       </div>
                       <div>
-                        <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Learn more about the upcoming update to Meta Accounts</div>
-                        <div style={{ color: '#8c827a', fontSize: '11.5px' }}>Review accounts and access settings</div>
+                        <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Explore upcoming updates to GitXplore Developer Accounts</div>
+                        <div style={{ color: '#8c827a', fontSize: '11.5px' }}>Unified workspace, repository synchronization, and real-time collaboration</div>
                       </div>
                     </div>
                     <span style={{ color: '#9ca3af', fontSize: '16px' }}>›</span>
@@ -326,7 +326,7 @@ export default function SavedDashboard({ context, onBack }) {
                   <div>
                     <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Profiles and personal details</h1>
                     <p style={{ margin: 0, fontSize: '13.5px', color: '#9ca3af', lineHeight: 1.5 }}>
-                      Review the profiles and personal details you've added to this Accounts Center. Add more profiles by adding your accounts.
+                      Review the profiles and personal details you've added to this Accounts Center. Add more profiles by linking your GitHub or OAuth accounts.
                     </p>
                   </div>
 
@@ -348,7 +348,7 @@ export default function SavedDashboard({ context, onBack }) {
                           <div>
                             <div style={{ fontWeight: 600, color: '#fff', fontSize: '15px' }}>{user?.name}</div>
                             <div style={{ color: '#38bdf8', fontSize: '12px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <span>🌐</span> GitXplore Core / GitHub Connected
+                              <span>🐙</span> GitXplore Core / GitHub Account Connected
                             </div>
                           </div>
                         </div>
@@ -373,7 +373,7 @@ export default function SavedDashboard({ context, onBack }) {
 
                       <div style={{ padding: '12px 20px', borderTop: '1px solid #221212', background: '#140b0b' }}>
                         <button 
-                          onClick={() => alert('Add accounts feature initialized.')}
+                          onClick={() => alert('Connect secondary GitHub account feature initialized.')}
                           style={{ background: 'transparent', border: 'none', color: '#60a5fa', fontSize: '13px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                         >
                           + Add accounts
@@ -427,15 +427,15 @@ export default function SavedDashboard({ context, onBack }) {
                     </span>
                     <div style={{ marginTop: '10px', width: '220px', background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                       <div style={{ fontSize: '36px' }}>🕶️</div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>AI Glasses</div>
-                      <div style={{ fontSize: '11px', color: '#8c827a', textAlign: 'center' }}>Smart assistant integration</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>AI Kinetic Engine</div>
+                      <div style={{ fontSize: '11px', color: '#8c827a', textAlign: 'center' }}>Realtime 3D Canvas integration</div>
                     </div>
                   </div>
                 </>
               )}
 
               {/* ======================================================== */}
-              {/* 2. PASSWORD AND SECURITY (ẢNH 1)                         */}
+              {/* 2. PASSWORD AND SECURITY                                 */}
               {/* ======================================================== */}
               {activeSideMenu === 'security' && (
                 <>
@@ -471,25 +471,25 @@ export default function SavedDashboard({ context, onBack }) {
               )}
 
               {/* ======================================================== */}
-              {/* 3. CONNECTED EXPERIENCES (ẢNH 2)                         */}
+              {/* 3. CONNECTED EXPERIENCES (ĐÃ BỎ CHỮ FACEBOOK/META)       */}
               {/* ======================================================== */}
               {activeSideMenu === 'connected' && (
                 <>
                   <div>
                     <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Connected experiences</h1>
                     <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>
-                      Activities and features that work across two or more accounts you've added to the same Accounts Center. Control how you use these experiences across your accounts.
+                      Activities and features that work across two or more accounts you've added to the same Accounts Center. Control how you use these experiences across your developer profiles.
                     </p>
                   </div>
 
                   {/* Content */}
                   <div>
-                    <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Content</h3>
+                    <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Content & Code Sync</h3>
                     <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                      {renderMetaGroupItem({ icon: '🔄', title: 'Sharing across profiles', onClick: () => alert('Profile sharing enabled.') })}
-                      {renderMetaGroupItem({ icon: '💖', title: 'Facebook Dating and Instagram', onClick: () => alert('Dating & Instagram sync active.') })}
-                      {renderMetaGroupItem({ icon: '🌅', title: 'Memories from Instagram', onClick: () => alert('Memories feature enabled.') })}
-                      {renderMetaGroupItem({ icon: '🖼️', title: 'Media on Meta devices', isLast: true, onClick: () => alert('Media streaming configured.') })}
+                      {renderMetaGroupItem({ icon: '🔄', title: 'Sharing across profiles', subtitle: 'Cross-post repository activities', onClick: () => alert('Profile sharing enabled.') })}
+                      {renderMetaGroupItem({ icon: '🐙', title: 'GitHub Stars and Repository Sync', subtitle: 'Keep bookmarked repositories up to date', onClick: () => alert('GitHub sync active.') })}
+                      {renderMetaGroupItem({ icon: '📁', title: 'Developer commits & showcases', subtitle: 'Show latest project milestones in community', onClick: () => alert('Commit showcase active.') })}
+                      {renderMetaGroupItem({ icon: '💻', title: 'Media on developer workstations', subtitle: 'Stream code snippets to connected devices', isLast: true, onClick: () => alert('Device stream configured.') })}
                     </div>
                   </div>
 
@@ -497,32 +497,30 @@ export default function SavedDashboard({ context, onBack }) {
                   <div>
                     <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Profile info and access</h3>
                     <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                      {renderMetaGroupItem({ icon: '🖼️', title: 'Syncing profile pictures', onClick: () => alert('Profile picture synchronization active.') })}
-                      {renderMetaGroupItem({ icon: '🔗', title: 'Showing links for your profiles', isLast: true, onClick: () => alert('Showing profile links across services.') })}
+                      {renderMetaGroupItem({ icon: '🖼️', title: 'Syncing profile avatars', subtitle: 'Use unified avatar across forum & explorer', onClick: () => alert('Profile avatar synchronization active.') })}
+                      {renderMetaGroupItem({ icon: '🔗', title: 'Showing links for your repositories', isLast: true, onClick: () => alert('Showing repository links across profiles.') })}
                     </div>
                   </div>
 
-                  {/* Friends and followers */}
+                  {/* Friends and collaborators */}
                   <div>
-                    <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Friends and followers</h3>
+                    <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Collaborators and network</h3>
                     <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                      {renderMetaGroupItem({ icon: '👥', title: 'Following people in Meta Horizon', isLast: true, onClick: () => alert('Meta Horizon followers list synced.') })}
+                      {renderMetaGroupItem({ icon: '👥', title: 'Following developers in GitXplore Network', isLast: true, onClick: () => alert('Network followers list synced.') })}
                     </div>
                   </div>
                 </>
               )}
 
               {/* ======================================================== */}
-              {/* 4. YOUR INFORMATION AND PERMISSIONS (ẢNH 3)              */}
+              {/* 4. YOUR INFORMATION AND PERMISSIONS                      */}
               {/* ======================================================== */}
               {activeSideMenu === 'permissions' && (
                 <>
                   <div>
                     <h1 style={{ margin: '0 0 12px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Your information and permissions</h1>
-                    
-                    {/* Top notice pill */}
                     <div style={{ background: '#180d0d', border: '1px solid #381a1a', borderRadius: '24px', padding: '14px 20px', fontSize: '13px', color: '#d1d5db', marginBottom: '20px' }}>
-                      To download or transfer a copy of your information, go to Export your Information below.
+                      To download or transfer a copy of your developer data, go to Export your Information below.
                     </div>
                   </div>
 
@@ -533,122 +531,131 @@ export default function SavedDashboard({ context, onBack }) {
                       {renderMetaGroupItem({ title: 'Access your information', subtitle: 'Inspect data recorded across sessions', onClick: () => alert('Displaying personal index data.') })}
                       {renderMetaGroupItem({ title: 'Search history', subtitle: 'Manage search queries and cache', isLast: true, onClick: () => alert('Search cache cleared.') })}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#78716c', marginTop: '6px' }}>View or export your information and activity on our apps.</div>
+                    <div style={{ fontSize: '12px', color: '#78716c', marginTop: '6px' }}>View or export your information and activity across GitXplore.</div>
                   </div>
 
                   {/* Group 2 */}
                   <div style={{ marginTop: '10px' }}>
                     <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                      {renderMetaGroupItem({ title: 'Activity from other businesses', onClick: () => alert('External activity connections listed.') })}
-                      {renderMetaGroupItem({ title: 'App connections', onClick: () => alert('Third-party application tokens active.') })}
-                      {renderMetaGroupItem({ title: 'External accounts', onClick: () => alert('External developer accounts synced.') })}
-                      {renderMetaGroupItem({ title: 'Identity confirmation', isLast: true, onClick: () => alert('Identity confirmed ✓') })}
+                      {renderMetaGroupItem({ title: 'Activity from open-source organizations', onClick: () => alert('Organization contributions listed.') })}
+                      {renderMetaGroupItem({ title: 'OAuth token connections', onClick: () => alert('Third-party application tokens active.') })}
+                      {renderMetaGroupItem({ title: 'External accounts (GitHub, Discord)', onClick: () => alert('External developer accounts synced.') })}
+                      {renderMetaGroupItem({ title: 'Identity confirmation', isLast: true, onClick: () => alert('Developer identity confirmed ✓') })}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#78716c', marginTop: '6px' }}>Control what information Meta technologies can use to influence your experiences.</div>
+                    <div style={{ fontSize: '12px', color: '#78716c', marginTop: '6px' }}>Control what information GitXplore technologies can use to personalize your experience.</div>
                   </div>
                 </>
               )}
 
               {/* ======================================================== */}
-              {/* 5. AD PREFERENCES (ẢNH 5, 6)                             */}
+              {/* 5. PROJECT ACTIVITY & TRACKING (THAY THẾ AD ACTIVITY)    */}
               {/* ======================================================== */}
-              {activeSideMenu === 'ad_preferences' && (
+              {activeSideMenu === 'project_activity' && (
                 <>
                   <div>
-                    <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Ad preferences</h1>
-                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#9ca3af' }}>Take control of your ad experience and the information used to show you ads.</p>
+                    <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Project activity & tracking</h1>
+                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#9ca3af' }}>Track active development, pull requests, and releases across monitored GitHub projects.</p>
 
-                    {/* Sub-tabs header */}
                     <div style={{ display: 'flex', borderBottom: '1px solid #2b1414', gap: '30px' }}>
                       <button
-                        onClick={() => setAdSubTab('customize')}
+                        onClick={() => setActivitySubTab('projects')}
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          borderBottom: adSubTab === 'customize' ? '2px solid #fff' : '2px solid transparent',
-                          color: adSubTab === 'customize' ? '#fff' : '#9ca3af',
+                          borderBottom: activitySubTab === 'projects' ? '2px solid #fff' : '2px solid transparent',
+                          color: activitySubTab === 'projects' ? '#fff' : '#9ca3af',
                           fontWeight: 700,
                           fontSize: '14px',
                           padding: '10px 0',
                           cursor: 'pointer'
                         }}
                       >
-                        Customize ads
+                        Recent Project Activity
                       </button>
                       <button
-                        onClick={() => setAdSubTab('manage')}
+                        onClick={() => setActivitySubTab('organizations')}
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          borderBottom: adSubTab === 'manage' ? '2px solid #fff' : '2px solid transparent',
-                          color: adSubTab === 'manage' ? '#fff' : '#9ca3af',
+                          borderBottom: activitySubTab === 'organizations' ? '2px solid #fff' : '2px solid transparent',
+                          color: activitySubTab === 'organizations' ? '#fff' : '#9ca3af',
                           fontWeight: 700,
                           fontSize: '14px',
                           padding: '10px 0',
                           cursor: 'pointer'
                         }}
                       >
-                        Manage info
+                        Monitored Topics & Tech
                       </button>
                     </div>
                   </div>
 
-                  {adSubTab === 'customize' ? (
+                  {activitySubTab === 'projects' ? (
                     <>
-                      {/* Ad activity carousel cards */}
+                      {/* Project Activity Cards (Thay cho Ad Cards) */}
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>Ad activity</h3>
-                          <button style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>See all</button>
+                          <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>Live Repository Updates</h3>
+                          <button style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>View all repos</button>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                          {/* Card 1 */}
+                          {/* Project Card 1 */}
                           <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                            <div style={{ height: '120px', background: 'linear-gradient(135deg, #d97706, #dc2626)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
-                              🍗
+                            <div style={{ height: '120px', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+                              ⚡
                             </div>
                             <div style={{ padding: '14px' }}>
-                              <strong style={{ color: '#fff', fontSize: '14px' }}>1000 COMBO KFC 0Đ</strong>
-                              <div style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 12px' }}>ShopeeFood VN</div>
-                              <button style={{ width: '100%', background: '#2563eb', color: '#fff', border: 'none', padding: '8px', borderRadius: '20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Ad details</button>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <strong style={{ color: '#fff', fontSize: '14px' }}>Supabase Realtime v2.4</strong>
+                                <span style={{ fontSize: '11px', color: '#10b981', background: '#064e3b', padding: '2px 8px', borderRadius: '10px' }}>Release</span>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 12px' }}>supabase / realtime-js • 1.2k commits</div>
+                              <a href="https://github.com/supabase/realtime" target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center', background: '#2563eb', color: '#fff', textDecoration: 'none', padding: '8px', borderRadius: '20px', fontWeight: 600, fontSize: '13px' }}>
+                                Project details ↗
+                              </a>
                             </div>
                           </div>
 
-                          {/* Card 2 */}
+                          {/* Project Card 2 */}
                           <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                            <div style={{ height: '120px', background: 'linear-gradient(135deg, #0284c7, #1e1b4b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
-                              🎮
+                            <div style={{ height: '120px', background: 'linear-gradient(135deg, #1e1b4b, #4338ca)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+                              🎨
                             </div>
                             <div style={{ padding: '14px' }}>
-                              <strong style={{ color: '#fff', fontSize: '14px' }}>Garena Delta Force</strong>
-                              <div style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 12px' }}>Garena Delta Force</div>
-                              <button style={{ width: '100%', background: '#2563eb', color: '#fff', border: 'none', padding: '8px', borderRadius: '20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Ad details</button>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <strong style={{ color: '#fff', fontSize: '14px' }}>Three.js WebGL Engine</strong>
+                                <span style={{ fontSize: '11px', color: '#38bdf8', background: '#1e3a8a', padding: '2px 8px', borderRadius: '10px' }}>Pull Request</span>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 12px' }}>mrdoob / three.js • 98k stars</div>
+                              <a href="https://github.com/mrdoob/three.js" target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center', background: '#2563eb', color: '#fff', textDecoration: 'none', padding: '8px', borderRadius: '20px', fontWeight: 600, fontSize: '13px' }}>
+                                Project details ↗
+                              </a>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Advertisers you saw ads from */}
+                      {/* Monitored Repositories */}
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                          <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>Advertisers you saw ads from</h3>
-                          <button style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>See all</button>
+                          <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>Organizations & Repositories you follow</h3>
+                          <button style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Manage list</button>
                         </div>
                         <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                          {renderMetaGroupItem({ icon: '⚽', title: 'FC Online Esports Việt Nam', onClick: () => alert('FC Online preferences opened.') })}
-                          {renderMetaGroupItem({ icon: '🍜', title: 'Phở - Bún - Hủ tiếu Acecook', onClick: () => alert('Acecook preferences opened.') })}
-                          {renderMetaGroupItem({ icon: '📺', title: 'K2L TV', isLast: true, onClick: () => alert('K2L TV preferences opened.') })}
+                          {renderMetaGroupItem({ icon: '⚛️', title: 'Facebook / React Open Source', subtitle: 'Latest core commits and compiler updates', onClick: () => alert('React repository tracker opened.') })}
+                          {renderMetaGroupItem({ icon: '🌐', title: 'Vercel / Next.js Framework', subtitle: 'App router & server actions tracking', onClick: () => alert('Next.js tracker opened.') })}
+                          {renderMetaGroupItem({ icon: '⚡', title: 'Greensock (GSAP)', subtitle: 'ScrollTrigger & animation timeline engine', isLast: true, onClick: () => alert('GSAP tracker opened.') })}
                         </div>
                       </div>
                     </>
                   ) : (
                     <div>
-                      <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Ad topics</h3>
+                      <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Technology Domains</h3>
                       <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                        {renderMetaGroupItem({ icon: '📺', title: 'Television', onClick: () => alert('Topic adjusted.') })}
-                        {renderMetaGroupItem({ icon: '📱', title: 'Mobile phones', onClick: () => alert('Topic adjusted.') })}
-                        {renderMetaGroupItem({ icon: '🎉', title: 'Party supplies', isLast: true, onClick: () => alert('Topic adjusted.') })}
+                        {renderMetaGroupItem({ icon: '🤖', title: 'Artificial Intelligence & Neural Networks', onClick: () => alert('AI tracking adjusted.') })}
+                        {renderMetaGroupItem({ icon: '🎮', title: 'WebGL, WebGPU & 3D Shaders', onClick: () => alert('3D graphics tracking adjusted.') })}
+                        {renderMetaGroupItem({ icon: '☁️', title: 'Cloud Native & Edge Computing', isLast: true, onClick: () => alert('Cloud tracking adjusted.') })}
                       </div>
                     </div>
                   )}
@@ -656,13 +663,13 @@ export default function SavedDashboard({ context, onBack }) {
               )}
 
               {/* ======================================================== */}
-              {/* 6. META PAY (ẢNH 4, 7, 8)                                */}
+              {/* 6. BILLING & PAYMENTS                                    */}
               {/* ======================================================== */}
-              {activeSideMenu === 'meta_pay' && (
+              {activeSideMenu === 'git_pay' && (
                 <>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>
-                      <span>♾️</span> Meta Pay
+                      <span>💳</span> Billing & Payments
                     </div>
 
                     {/* Sub-tabs header */}
@@ -704,7 +711,7 @@ export default function SavedDashboard({ context, onBack }) {
                     <div>
                       {/* Pills filter */}
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '30px' }}>
-                        {['All', 'Money transfer', 'Orders', 'Donations', 'Games', 'Subscriptions', 'Others'].map((pill, i) => (
+                        {['All', 'Donations', 'Sponsorships', 'API Credits', 'Subscriptions', 'Others'].map((pill, i) => (
                           <button
                             key={i}
                             style={{
@@ -723,17 +730,17 @@ export default function SavedDashboard({ context, onBack }) {
                         ))}
                       </div>
 
-                      {/* Empty state (Ảnh 4, 7) */}
+                      {/* Empty state */}
                       <div style={{ textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
                         <div style={{ fontSize: '48px', color: '#6b7280' }}>👝</div>
                         <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>Your transactions</h2>
                         <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af', maxWidth: '420px', lineHeight: 1.5 }}>
-                          Looks like you don't have any transactions from the last two years. Any new transactions will appear here.
+                          Looks like you don't have any transactions from the last two years. Any sponsorship contributions or receipts will appear here.
                         </p>
                       </div>
                     </div>
                   ) : (
-                    /* Manage Sub-tab (Ảnh 8) */
+                    /* Manage Sub-tab */
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                       {/* Linked Account Card */}
                       <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -741,31 +748,31 @@ export default function SavedDashboard({ context, onBack }) {
                           {user?.avatarChar || 'H'}
                         </div>
                         <div>
-                          <strong style={{ color: '#fff', fontSize: '14px' }}>{user?.name || 'Hoàng PH'}</strong>
-                          <div style={{ color: '#38bdf8', fontSize: '12px' }}>Facebook / GitXplore</div>
+                          <strong style={{ color: '#fff', fontSize: '14px' }}>{user?.name}</strong>
+                          <div style={{ color: '#38bdf8', fontSize: '12px' }}>GitXplore Developer Account</div>
                         </div>
                       </div>
 
-                      {/* Add payment method illustration card */}
+                      {/* Add payment method card */}
                       <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '16px', overflow: 'hidden' }}>
                         <div style={{ height: '140px', background: 'linear-gradient(135deg, #0284c7, #0f766e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px' }}>
                           💳
                         </div>
                         <div style={{ padding: '20px' }}>
                           <strong style={{ color: '#fff', fontSize: '15px' }}>Add a payment method</strong>
-                          <p style={{ fontSize: '13px', color: '#9ca3af', margin: '6px 0 16px' }}>Save a card or link your PayPal to make your next purchase easier.</p>
-                          <button onClick={() => alert('Secure payment gateway modal initialized.')} style={{ width: '100%', background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '10px', borderRadius: '24px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' }}>
+                          <p style={{ fontSize: '13px', color: '#9ca3af', margin: '6px 0 16px' }}>Save a card or link your PayPal to sponsor open-source maintainers easily.</p>
+                          <button onClick={() => alert('Payment gateway initialized.')} style={{ width: '100%', background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '10px', borderRadius: '24px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' }}>
                             Add payment method
                           </button>
                         </div>
                       </div>
 
-                      {/* Shipping info */}
+                      {/* Billing info */}
                       <div>
-                        <h4 style={{ margin: '0 0 8px', fontSize: '14px', color: '#fff' }}>Shipping info</h4>
+                        <h4 style={{ margin: '0 0 8px', fontSize: '14px', color: '#fff' }}>Billing address & info</h4>
                         <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                          {renderMetaGroupItem({ title: 'Shipping address', onClick: () => alert('Set shipping destination.') })}
-                          {renderMetaGroupItem({ title: 'Email', subtitle: personalDetails.altEmail || user?.identifier, onClick: () => openEditDetails('contact') })}
+                          {renderMetaGroupItem({ title: 'Billing address', onClick: () => alert('Set billing address.') })}
+                          {renderMetaGroupItem({ title: 'Email address', subtitle: personalDetails.altEmail || user?.identifier, onClick: () => openEditDetails('contact') })}
                           {renderMetaGroupItem({ title: 'Phone number', subtitle: personalDetails.phone || 'None', isLast: true, onClick: () => openEditDetails('contact') })}
                         </div>
                       </div>
@@ -774,10 +781,10 @@ export default function SavedDashboard({ context, onBack }) {
                       <div>
                         <h4 style={{ margin: '0 0 8px', fontSize: '14px', color: '#fff' }}>Settings</h4>
                         <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                          {renderMetaGroupItem({ icon: '🛡️', title: 'Security', onClick: () => alert('Payment security check verified.') })}
-                          {renderMetaGroupItem({ icon: '💱', title: 'Currency', subtitle: 'VND (₫) - Vietnamese Dong', onClick: () => alert('Default currency: VND') })}
-                          {renderMetaGroupItem({ icon: '❓', title: 'Help', onClick: () => alert('Support ticket opened.') })}
-                          {renderMetaGroupItem({ icon: '📄', title: 'Terms and privacy', isLast: true, onClick: () => alert('Displaying terms & privacy.') })}
+                          {renderMetaGroupItem({ icon: '🛡️', title: 'Payment Security', onClick: () => alert('Payment encryption verified.') })}
+                          {renderMetaGroupItem({ icon: '💱', title: 'Currency', subtitle: 'VND (₫) - Vietnamese Dong', onClick: () => alert('Default currency set.') })}
+                          {renderMetaGroupItem({ icon: '❓', title: 'Sponsorship Help', onClick: () => alert('Support ticket opened.') })}
+                          {renderMetaGroupItem({ icon: '📄', title: 'Terms and Privacy', isLast: true, onClick: () => alert('Terms & conditions.') })}
                         </div>
                       </div>
                     </div>
@@ -786,42 +793,42 @@ export default function SavedDashboard({ context, onBack }) {
               )}
 
               {/* ======================================================== */}
-              {/* 7. SUBSCRIPTIONS (ẢNH 9)                                 */}
+              {/* 7. SPONSORSHIPS & SUBSCRIPTIONS                          */}
               {/* ======================================================== */}
               {activeSideMenu === 'subscriptions' && (
                 <>
                   <div>
-                    <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Subscriptions</h1>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>Find and manage your subscriptions all in one place.</p>
+                    <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Sponsorships & Subscriptions</h1>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>Find and manage your repository sponsorships and maintainer subscriptions in one place.</p>
                   </div>
 
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden', marginTop: '10px' }}>
                     {renderMetaGroupItem({
                       icon: '⭐',
-                      title: 'Creators',
-                      subtitle: 'Support your favorite creators.',
+                      title: 'Open Source Creators & Maintainers',
+                      subtitle: 'Sponsor developers maintaining tools you use every day.',
                       isLast: true,
-                      onClick: () => alert('Creator subscriptions & sponsorships active.')
+                      onClick: () => alert('Maintainer sponsorship dashboard active.')
                     })}
                   </div>
                 </>
               )}
 
               {/* ======================================================== */}
-              {/* 8. MANAGE ACCOUNTS (ẢNH 10)                              */}
+              {/* 8. MANAGE ACCOUNTS (ĐÃ BỎ CHỮ FACEBOOK)                  */}
               {/* ======================================================== */}
               {activeSideMenu === 'manage' && (
                 <>
                   <div>
                     <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Manage accounts</h1>
                     <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>
-                      Control which accounts are in this Accounts Center. <span style={{ color: '#38bdf8', cursor: 'pointer' }}>Learn more</span>
+                      Control which accounts are linked to this GitXplore Accounts Center. <span style={{ color: '#38bdf8', cursor: 'pointer' }}>Learn more</span>
                     </p>
                   </div>
 
                   {/* Add accounts pill */}
                   <div 
-                    onClick={() => alert('Add secondary authentication account.')}
+                    onClick={() => alert('Add secondary developer account.')}
                     style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', padding: '14px 20px', color: '#38bdf8', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' }}
                   >
                     Add accounts
@@ -830,10 +837,10 @@ export default function SavedDashboard({ context, onBack }) {
                   {/* Account entry */}
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
                     <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #241212' }}>
-                      <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#fff' }}>Facebook / GitXplore</span>
+                      <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#fff' }}>GitXplore Core / GitHub</span>
                       <button 
                         onClick={() => alert('Account sessions manager active.')} 
-                        style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ background: '#261212', color: '#fef08a', border: '1px solid #3d1b1b', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                       >
                         Manage
                       </button>
@@ -843,7 +850,7 @@ export default function SavedDashboard({ context, onBack }) {
                       <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#7f1d1d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
                         {user?.avatarChar || 'H'}
                       </div>
-                      <strong style={{ color: '#fff', fontSize: '14px' }}>{user?.name || 'Hoàng PH'}</strong>
+                      <strong style={{ color: '#fff', fontSize: '14px' }}>{user?.name}</strong>
                     </div>
                   </div>
                 </>
