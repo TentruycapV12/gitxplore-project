@@ -11,16 +11,16 @@ import About from '../Components/About.jsx';
 import Footer from '../Components/Footer.jsx';
 import ProjectModal from '../Components/ProjectModal.jsx';
 import NavModals from '../Components/NavModals.jsx';
+import SupportModal from '../Components/SupportModal.jsx';
 
 export default function HomePage() {
   useLenis();
 
   const { projects } = useProjectFilters();
-  const { selectedProject, modalType, selectProject, openModal } = useUI();
+  const { selectedProject, modalType, closeModal, selectProject, openModal } = useUI();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Bị RequireAuth đẩy về đây → mở form đăng nhập rồi xoá state để reload không mở lại.
   useEffect(() => {
     if (location.state?.requireLogin) {
       openModal('signin');
@@ -47,7 +47,10 @@ export default function HomePage() {
       <Footer />
 
       {selectedProject && <ProjectModal />}
-      {modalType && <NavModals />}
+      
+      {/* Phân biệt rõ: Support mở SupportModal, còn đăng ký/đăng nhập mở NavModals */}
+      {modalType === 'support' && <SupportModal onClose={closeModal} />}
+      {modalType && modalType !== 'support' && <NavModals />}
     </>
   );
 }
