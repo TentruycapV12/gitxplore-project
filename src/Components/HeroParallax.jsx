@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -53,7 +53,8 @@ export default function HeroParallax() {
   const slide2Ref = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  useEffect(() => {
+  // useLayoutEffect: cleanup chạy TRƯỚC khi React gỡ DOM, nên ctx.revert() trả DOM về nguyên trạng kịp lúc.
+  useLayoutEffect(() => {
     const c1 = canvas1Ref.current;
     const c2 = canvas2Ref.current;
     if (!c1 || !c2) return;
@@ -96,7 +97,11 @@ export default function HeroParallax() {
     return () => ctx.revert();
   }, []);
 
+  // GSAP pin bọc `containerRef` trong một "pin-spacer" mà React không biết.
+  // Bọc thêm 1 div ngoài cùng để khi đổi route React gỡ cả khối này một lần,
+  // thay vì gỡ `containerRef` khỏi cha cũ (đã bị đổi) → lỗi removeChild làm treo trang.
   return (
+    <div className="hero-pin-root">
     <div
       ref={containerRef}
       style={{
@@ -437,6 +442,7 @@ export default function HeroParallax() {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }
