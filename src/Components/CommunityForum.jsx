@@ -66,7 +66,6 @@ export default function CommunityForum() {
   const navigate = useNavigate();
   const onBack = () => navigate('/');
   const [topics, setTopics] = useState([]);
-  // Bài viết đang mở nằm trên URL (?thread=ID) → link chia sẻ mở thẳng đúng bài, Back hoạt động đúng.
   const [searchParams, setSearchParams] = useSearchParams();
   const threadId = searchParams.get('thread');
   const [threadTab, setThreadTab] = useState('Discussion');
@@ -135,7 +134,6 @@ export default function CommunityForum() {
     }
   }, []);
 
-
   useEffect(() => {
     fetchTopics();
 
@@ -148,13 +146,11 @@ export default function CommunityForum() {
     return () => supabase.removeChannel(channel);
   }, [fetchTopics]);
 
-  // useMemo: chỉ tìm lại khi danh sách hoặc id trên URL đổi.
   const activeTopic = useMemo(
     () => topics.find((t) => String(t.id) === threadId) ?? null,
     [topics, threadId]
   );
 
-  // Đổi sang bài khác (hoặc về danh sách) thì reset phần state riêng của bài.
   useEffect(() => {
     setThreadTab('Discussion');
     setHasLiked(false);
@@ -222,7 +218,6 @@ export default function CommunityForum() {
     });
   };
 
-  // Chọn file đính kèm trong bình luận
   const handleSelectCommentFile = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -235,7 +230,6 @@ export default function CommunityForum() {
     }
   };
 
-  // Gửi bình luận (hỗ trợ kèm ảnh/tệp)
   const handleSendComment = async (e) => {
     e.preventDefault();
     const cleanComment = commentInput.trim();
@@ -380,7 +374,6 @@ export default function CommunityForum() {
     return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
   });
 
-  // Gom toàn bộ ảnh/file của bài viết và bình luận hiển thị trong tab Files[cite: 39]
   const mediaFiles = [];
   if (activeTopic?.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://'))) {
     mediaFiles.push({ url: activeTopic.description, author: activeTopic.author_name, date: activeTopic.created_at });
@@ -591,30 +584,63 @@ export default function CommunityForum() {
                   </div>
                 )}
 
-                {comments.map((c) => (
-                  <div key={c.id} className="cf-comment">
-                    <span className="cf-avatar">{c.user_name.charAt(0).toUpperCase()}</span>
-                    <div className="cf-comment-body">
-                      <div className="cf-comment-head">
-                        <strong>{c.user_name}</strong>
-                        <time title={formatForumTime(c.created_at)}>{formatRelative(c.created_at)}</time>
+                {/* LUỒNG BÌNH LUẬN TRÒ CHUYỆN: BÊN PHẢI (CHÍNH BẠN), BÊN TRÁI (NGƯỜI KHÁC) */}
+                {comments.map((c) => {
+                  const currentIdentifier = user?.name || user?.identifier;
+                  const isSelf = Boolean(
+                    user &&
+                    (c.user_name === user.name ||
+                     c.user_name === user.identifier ||
+                     c.user_name === currentIdentifier)
+                  );
+
+                  return (
+                    <div
+                      key={c.id}
+                      className={`cf-comment ${isSelf ? 'cf-comment--self' : 'cf-comment--other'}`}
+                    >
+                      <span className="cf-avatar cf-avatar--sm">
+                        {c.user_name?.charAt(0).toUpperCase()}
+                      </span>
+
+                      <div className="cf-comment-body">
+                        <div className="cf-bubble">
+                          <div className="cf-comment-head">
+                            <strong>{isSelf ? 'You' : c.user_name}</strong>
+                            <time title={formatForumTime(c.created_at)}>
+                              {formatRelative(c.created_at)}
+                            </time>
+                          </div>
+
+                          {c.content && <p className="cf-comment-text">{c.content}</p>}
+
+                          {c.media_url &&
+                            (IMAGE_RE.test(c.media_url) ? (
+                              <a
+                                className="cf-attach"
+                                href={c.media_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ marginTop: '8px', display: 'block' }}
+                              >
+                                <img src={c.media_url} alt="Attachment" />
+                              </a>
+                            ) : (
+                              <a
+                                className="cf-attach-link"
+                                href={c.media_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ marginTop: '8px' }}
+                              >
+                                <IconClip /> View attachment
+                              </a>
+                            ))}
+                        </div>
                       </div>
-
-                      {c.content && <p className="cf-comment-text">{c.content}</p>}
-
-                      {c.media_url &&
-                        (IMAGE_RE.test(c.media_url) ? (
-                          <a className="cf-attach" href={c.media_url} target="_blank" rel="noopener noreferrer">
-                            <img src={c.media_url} alt="Attachment" />
-                          </a>
-                        ) : (
-                          <a className="cf-attach-link" href={c.media_url} target="_blank" rel="noopener noreferrer">
-                            <IconClip /> View attachment
-                          </a>
-                        ))}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={commentsEndRef} />
               </div>
 
