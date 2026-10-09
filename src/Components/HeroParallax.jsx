@@ -1,11 +1,51 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { scrollToId } from '../lib/scroll';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function HeroParallax({ context }) {
-  const { user, logout, setModal, navigate } = context || {};
+// Hằng số + hàm thuần đặt NGOÀI component: không bị tạo lại ở mỗi lần render.
+const FRAME_COUNT = 120;
+const frame1Src = (i) => `/frames/frame_${String(i + 1).padStart(4, '0')}.jpg`;
+const frame2Src = (i) => `/frames/frames2/frame_${String(i + 1).padStart(4, '0')}.jpg`;
+
+/** Tạo canvas sequence: nạp trước các frame và trả về hàm vẽ frame hiện tại. */
+function createSequence(canvas, srcOf) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = 1920;
+  canvas.height = 1080;
+
+  const images = Array.from({ length: FRAME_COUNT }, (_, i) => {
+    const img = new Image();
+    img.src = srcOf(i);
+    return img;
+  });
+  const state = { frame: 0 };
+
+  const render = () => {
+    const img = images[state.frame];
+    if (img?.complete) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  // Frame đầu có thể đã tải xong (cache) → vẽ ngay, nếu chưa thì chờ onload.
+  if (images[0].complete) render();
+  else images[0].onload = render;
+
+  return { state, render };
+}
+
+export default function HeroParallax() {
+  const { user, logout } = useAuth();
+  const { openModal: setModal } = useUI();
+  const navigate = useNavigate();
+
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
@@ -13,74 +53,13 @@ export default function HeroParallax({ context }) {
   const slide2Ref = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const frameCount1 = 120;
-  const frameCount2 = 120;
-
-  const currentFrame1 = (index) =>
-    `/frames/frame_${(index + 1).toString().padStart(4, '0')}.jpg`;
-
-  const currentFrame2 = (index) =>
-    `/frames/frames2/frame_${(index + 1).toString().padStart(4, '0')}.jpg`;
-
-  const scrollToTarget = (targetId) => {
-    const target = document.getElementById(targetId);
-    if (!target) return;
-
-    if (window.lenisInstance) {
-      window.lenisInstance.scrollTo(target);
-    } else {
-      target.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   useEffect(() => {
     const c1 = canvas1Ref.current;
     const c2 = canvas2Ref.current;
     if (!c1 || !c2) return;
 
-    const ctx1 = c1.getContext('2d');
-    const ctx2 = c2.getContext('2d');
-
-    c1.width = 1920;
-    c1.height = 1080;
-    c2.width = 1920;
-    c2.height = 1080;
-
-    const images1 = [];
-    const images2 = [];
-    const sequence1 = { frame: 0 };
-    const sequence2 = { frame: 0 };
-
-    for (let i = 0; i < frameCount1; i++) {
-      const img = new Image();
-      img.src = currentFrame1(i);
-      images1.push(img);
-    }
-
-    for (let i = 0; i < frameCount2; i++) {
-      const img = new Image();
-      img.src = currentFrame2(i);
-      images2.push(img);
-    }
-
-    const render1 = () => {
-      const img = images1[sequence1.frame];
-      if (img && img.complete) {
-        ctx1.clearRect(0, 0, c1.width, c1.height);
-        ctx1.drawImage(img, 0, 0, c1.width, c1.height);
-      }
-    };
-
-    const render2 = () => {
-      const img = images2[sequence2.frame];
-      if (img && img.complete) {
-        ctx2.clearRect(0, 0, c2.width, c2.height);
-        ctx2.drawImage(img, 0, 0, c2.width, c2.height);
-      }
-    };
-
-    if (images1[0]) images1[0].onload = render1;
-    if (images2[0]) images2[0].onload = render2;
+    const seq1 = createSequence(c1, frame1Src);
+    const seq2 = createSequence(c2, frame2Src);
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -94,41 +73,27 @@ export default function HeroParallax({ context }) {
         },
       });
 
-      tl.to(sequence1, {
-        frame: frameCount1 - 1,
+      tl.to(seq1.state, {
+        frame: FRAME_COUNT - 1,
         snap: 'frame',
         ease: 'none',
-        onUpdate: render1,
+        onUpdate: seq1.render,
         duration: 2,
       }, 0)
-      .to(slide1Ref.current, {
-        opacity: 0,
-        y: -60,
-        scale: 0.92,
-        duration: 0.8,
-      }, 0.8)
+      .to(slide1Ref.current, { opacity: 0, y: -60, scale: 0.92, duration: 0.8 }, 0.8)
       .to(c1, { opacity: 0, duration: 1 }, 1.4)
       .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
-      .fromTo(slide2Ref.current, {
-        opacity: 0,
-        x: 60,
-      }, {
-        opacity: 1,
-        x: 0,
-        duration: 0.8,
-      }, 1.8)
-      .to(sequence2, {
-        frame: frameCount2 - 1,
+      .fromTo(slide2Ref.current, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8 }, 1.8)
+      .to(seq2.state, {
+        frame: FRAME_COUNT - 1,
         snap: 'frame',
         ease: 'none',
-        onUpdate: render2,
+        onUpdate: seq2.render,
         duration: 2,
       }, 1.8);
     }, containerRef);
 
-    return () => {
-      ctx.revert();
-    };
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -194,7 +159,7 @@ export default function HeroParallax({ context }) {
         }}
       >
         <span
-          onClick={() => scrollToTarget('explore')}
+          onClick={() => scrollToId('explore')}
           style={{
             fontSize: '19px',
             fontWeight: 700,
@@ -210,7 +175,7 @@ export default function HeroParallax({ context }) {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => navigate && navigate('/community')}
+            onClick={() => navigate('/community')}
             className="nav-link-btn"
           >
             Community
@@ -218,7 +183,7 @@ export default function HeroParallax({ context }) {
 
           <button
             type="button"
-            onClick={() => scrollToTarget('about')}
+            onClick={() => scrollToId('about')}
             className="nav-link-btn"
           >
             About
@@ -226,7 +191,7 @@ export default function HeroParallax({ context }) {
           
           <button 
             type="button"
-            onClick={() => setModal && setModal('support')} 
+            onClick={() => setModal('support')} 
             className="nav-link-btn"
           >
             Support
@@ -235,7 +200,7 @@ export default function HeroParallax({ context }) {
           {!user ? (
             <button
               type="button"
-              onClick={() => setModal && setModal('register')}
+              onClick={() => setModal('register')}
               className="register-btn-main"
             >
               Register
@@ -269,34 +234,48 @@ export default function HeroParallax({ context }) {
                     <span className="dropdown-user-sub">{user.identifier}</span>
                   </div>
                   <div className="dropdown-divider" />
+                  
+                  {/* Điều hướng trực tiếp sang các tab Accounts Center chuẩn URL */}
                   <button 
                     type="button" 
                     className="dropdown-item" 
-                    onClick={() => { setDropdownOpen(false); navigate && navigate('/saved'); }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/accountscenter/profiles');
+                    }}
                   >
                     👤 Profile details
                   </button>
+
                   <button 
                     type="button" 
                     className="dropdown-item" 
-                    onClick={() => { setDropdownOpen(false); navigate && navigate('/saved'); }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/accountscenter/saved');
+                    }}
                   >
                     ⭐ Saved Repositories
                   </button>
+
                   <button 
                     type="button" 
                     className="dropdown-item" 
-                    onClick={() => { setDropdownOpen(false); navigate && navigate('/saved'); }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/accountscenter/history');
+                    }}
                   >
                     🕒 History
                   </button>
+
                   <div className="dropdown-divider" />
                   <button
                     type="button"
                     className="dropdown-item logout-item"
                     onClick={() => {
                       setDropdownOpen(false);
-                      if (logout) logout();
+                      logout();
                     }}
                   >
                     ⏻ Sign out
@@ -365,7 +344,7 @@ export default function HeroParallax({ context }) {
         <div style={{ pointerEvents: 'auto' }}>
           <button
             type="button"
-            onClick={() => scrollToTarget('explore')}
+            onClick={() => scrollToId('explore')}
             style={{
               background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
               color: '#ffffff',
@@ -442,7 +421,7 @@ export default function HeroParallax({ context }) {
           </p>
           <button
             type="button"
-            onClick={() => scrollToTarget('explore')}
+            onClick={() => scrollToId('explore')}
             style={{
               background: 'transparent',
               color: '#fcd34d',
