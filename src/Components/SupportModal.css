@@ -1,0 +1,276 @@
+/* ============================================================
+   Support modal: một màu nhấn (amber), không gradient, không emoji.
+   Cùng hệ màu với CommunityForum.css. Mọi class bắt đầu bằng sp-
+   nên không đụng App.css.
+   ============================================================ */
+.sp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.sp {
+  --bg: #0d0909;
+  --surface: #161010;
+  --surface-2: #1e1616;
+  --line: #2d2121;
+  --text: #f6f2ef;
+  --muted: #b9ada7;
+  --faint: #8d817b;
+  --accent: #f59e0b;
+  --accent-ink: #1a1006;
+  --accent-soft: rgba(245, 158, 11, 0.14);
+  --danger: #f87171;
+
+  /* Chiều cao cố định để cửa sổ không giật khi đổi tab */
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  height: min(620px, calc(100dvh - 32px));
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  font-size: 15px;
+  line-height: 1.5;
+  outline: none;
+}
+.sp *, .sp *::before, .sp *::after { box-sizing: border-box; }
+.sp button, .sp input, .sp textarea { font-family: inherit; }
+.sp :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Header ---------- */
+.sp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 24px 0;
+}
+.sp-title { margin: 0; font-size: 22px; font-weight: 600; color: var(--text); }
+.sp-sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+.sp-close {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: -6px -8px 0 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.sp-close:hover { background: var(--surface-2); color: var(--text); }
+
+/* ---------- Segmented control (tab + loại yêu cầu) ---------- */
+.sp-tabs { padding: 18px 24px 0; }
+
+.sp-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.sp-segment--full { display: flex; }
+.sp-segment--full label { flex: 1; }
+.sp-tabs .sp-segment { display: flex; }
+.sp-tabs .sp-segment button { flex: 1; }
+
+.sp-segment button,
+.sp-segment label span {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 14px;
+  text-align: center;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sp-segment button:hover,
+.sp-segment label span:hover { color: var(--text); }
+.sp-segment button[aria-pressed="true"],
+.sp-segment input:checked + span {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* radio thật nhưng ẩn, để vẫn dùng được bàn phím và trình đọc màn hình */
+.sp-segment input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.sp-segment input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---------- Body (vùng duy nhất cuộn) ---------- */
+.sp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 24px 20px;
+  overscroll-behavior: contain;
+}
+.sp-body::-webkit-scrollbar { width: 8px; }
+.sp-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
+/* ---------- FAQ ---------- */
+.sp-faq { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.sp-faq-item { border-bottom: 1px solid var(--line); }
+
+.sp-faq-q {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 4px;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sp-faq-q:hover { color: var(--accent); }
+.sp-chev { flex: none; color: var(--faint); transition: transform 0.15s; }
+.sp-faq-q[aria-expanded="true"] .sp-chev { transform: rotate(180deg); color: var(--accent); }
+
+.sp-faq-a { margin: 0; padding: 0 4px 16px; color: var(--muted); font-size: 14.5px; line-height: 1.65; max-width: 70ch; }
+
+.sp-fallback { margin: 18px 0 0; color: var(--muted); font-size: 14px; }
+.sp-link {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sp-link:hover { color: #fbbf24; }
+
+/* ---------- Form ---------- */
+.sp-form { display: flex; flex-direction: column; gap: 16px; }
+.sp-field { margin: 0; padding: 0; border: 0; min-width: 0; }
+.sp-label { display: block; margin: 0 0 6px; padding: 0; color: var(--text); font-size: 14px; font-weight: 600; }
+
+.sp-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 16px; /* >= 16px để iOS không tự phóng to khi bấm vào ô */
+  line-height: 1.5;
+}
+.sp-input::placeholder { color: var(--faint); }
+.sp-input:hover { border-color: #4a3636; }
+.sp-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.sp-textarea { resize: vertical; min-height: 120px; }
+
+.sp-error {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.sp-error a { color: inherit; text-decoration: underline; }
+
+.sp-actions { display: flex; justify-content: flex-end; }
+
+/* ---------- Buttons ---------- */
+.sp-btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sp-btn:hover { background: var(--surface-2); border-color: #4a3636; }
+.sp-btn--primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.sp-btn--primary:hover { background: #fbbf24; border-color: #fbbf24; }
+.sp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.sp-btn--primary:disabled:hover { background: var(--accent); border-color: var(--accent); }
+
+/* ---------- Đã gửi ---------- */
+.sp-done { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 36px 8px 8px; }
+.sp-done-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 50%;
+}
+.sp-done h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.sp-done p { margin: 6px 0 0; color: var(--muted); font-size: 14.5px; overflow-wrap: anywhere; }
+.sp-done p strong { color: var(--text); font-weight: 600; }
+.sp-done-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+/* ---------- Footer ---------- */
+.sp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 13.5px;
+}
+.sp-foot a { color: var(--muted); text-decoration: none; }
+.sp-foot a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.sp-soon { opacity: 0.7; }
+
+/* ---------- Chuyển tab: chỉ một cú mờ nhẹ, theo hành động của người dùng ---------- */
+.sp-fade { animation: sp-in 0.16s ease-out; }
+@keyframes sp-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-fade { animation: none; }
+  .sp-chev, .sp-segment button, .sp-segment label span, .sp-btn { transition: none; }
+}
+
+/* ---------- Điện thoại: dạng bottom sheet ---------- */
+@media (max-width: 560px) {
+  .sp-overlay { padding: 0; align-items: flex-end; }
+  .sp { width: 100%; height: min(92dvh, 680px); border-radius: 16px 16px 0 0; border-bottom: 0; }
+  .sp-head, .sp-tabs, .sp-body, .sp-foot { padding-left: 18px; padding-right: 18px; }
+  .sp-done-actions { flex-direction: column; width: 100%; }
+}

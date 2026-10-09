@@ -1,273 +1,279 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import './SupportModal.css';
+
+// TODO: đổi sang link issues của repo thật, ví dụ https://github.com/<user>/<repo>/issues
+const GITHUB_ISSUES_URL = 'https://github.com';
+const SUPPORT_EMAIL = 'support@gitxplore.dev';
 
 const FAQS = [
   {
     q: 'Làm thế nào để lưu một repository vào danh sách cá nhân?',
-    a: 'Bạn chỉ cần nhấn vào dự án bất kỳ trong mục Khám phá (Explore), sau đó bấm nút "Lưu Repo" hoặc vào trang Accounts Center > Saved Repositories để quản lý toàn bộ kho mã nguồn đã đánh dấu.'
+    a: 'Mở một dự án bất kỳ trong mục Khám phá (Explore), rồi bấm "Lưu Repo". Để xem lại, vào Accounts Center > Saved Repositories.',
   },
   {
     q: 'Dự án trên GitXplore được đồng bộ như thế nào?',
-    a: 'Các dự án mã nguồn mở được cập nhật định kỳ từ GitHub API. Bạn có thể xem mã nguồn, số sao (stars), forks và lệnh git clone trực tiếp tại Project Modal.'
+    a: 'Các dự án mã nguồn mở được cập nhật định kỳ từ GitHub API. Bạn có thể xem mã nguồn, số sao (stars), forks và lệnh git clone ngay trong cửa sổ chi tiết dự án.',
   },
   {
     q: 'Làm sao để liên kết tài khoản GitHub hoặc Google?',
-    a: 'Đăng nhập vào hệ thống, truy cập Accounts Center > Connected experiences, sau đó chọn Link GitHub hoặc Google Gateway để đồng bộ danh tính.'
+    a: 'Đăng nhập, vào Accounts Center > Connected experiences, rồi chọn Link GitHub hoặc Google.',
   },
   {
     q: 'Làm thế nào để xuất hoặc xóa dữ liệu của tôi?',
-    a: 'Truy cập mục "Your information and permissions" trong Accounts Center, nhấn "Export JSON" để tải toàn bộ dữ liệu cá nhân về máy tính bất cứ lúc nào.'
-  }
+    a: 'Vào "Your information and permissions" trong Accounts Center. Bấm "Export JSON" để tải toàn bộ dữ liệu cá nhân về máy bất cứ lúc nào.',
+  },
+];
+
+// id giữ nguyên như bản cũ để không ảnh hưởng dữ liệu trong bảng support_tickets
+const TYPES = [
+  { id: 'bug', label: 'Báo lỗi', hint: 'Bạn đang làm gì và điều gì đã xảy ra? Ghi rõ trang bị lỗi nếu có thể.' },
+  { id: 'feature', label: 'Góp ý', hint: 'Bạn muốn GitXplore làm được thêm điều gì?' },
+  { id: 'account', label: 'Tài khoản', hint: 'Mô tả vấn đề về đăng nhập, liên kết hoặc dữ liệu tài khoản của bạn.' },
 ];
 
 export default function SupportModal({ onClose }) {
   const { user } = useAuth();
-  const [activeFaq, setActiveFaq] = useState(null);
-  
-  // Feedback / Ticket state
-  const [ticketType, setTicketType] = useState('bug');
-  const [message, setMessage] = useState('');
-  const [senderContact, setSenderContact] = useState(user?.identifier || '');
-  const [isSending, setIsSending] = useState(false);
-  const [sentSuccess, setSentSuccess] = useState(false);
+  const panelRef = useRef(null);
 
-  const handleSubmitTicket = async (e) => {
+  const [tab, setTab] = useState('faq'); // 'faq' | 'form'
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const [ticketType, setTicketType] = useState('bug');
+  const [contact, setContact] = useState(user?.identifier || '');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
+
+  const currentType = TYPES.find((t) => t.id === ticketType);
+  const canSend = message.trim() && contact.trim() && status !== 'sending';
+
+  // Khoá cuộn nền, đưa focus vào hộp thoại, trả focus khi đóng
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panelRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+    // Giữ focus trong hộp thoại khi bấm Tab
+    if (e.key === 'Tab') {
+      const items = panelRef.current.querySelectorAll(
+        'button:not([disabled]), a[href], input, textarea'
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
-    setIsSending(true);
+    if (!canSend) return;
+    setStatus('sending');
 
     try {
-      await supabase.from('support_tickets').insert([
+      const { error } = await supabase.from('support_tickets').insert([
         {
-          user_contact: senderContact.trim() || 'Anonymous',
+          user_contact: contact.trim(),
           ticket_type: ticketType,
           message: message.trim(),
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ]);
+      if (error) throw error;
+      setStatus('sent');
     } catch {
-      const old = JSON.parse(localStorage.getItem('gxp_tickets') || '[]');
-      old.push({ type: ticketType, msg: message, contact: senderContact, time: new Date() });
-      localStorage.setItem('gxp_tickets', JSON.stringify(old));
+      // Giữ nguyên nội dung người dùng đã nhập để họ gửi lại
+      setStatus('error');
     }
+  };
 
-    setTimeout(() => {
-      setIsSending(false);
-      setSentSuccess(true);
-      setMessage('');
-      setTimeout(() => setSentSuccess(false), 3500);
-    }, 400);
+  const sendAnother = () => {
+    setMessage('');
+    setStatus('idle');
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div 
-        className="modal-card" 
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          maxWidth: '750px',
-          width: '92%',
-          maxHeight: '88vh',
-          background: '#0d0707',
-          border: '1px solid #3d1b1b',
-          borderRadius: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '28px',
-          color: '#fef3c7',
-          overflowY: 'auto',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9)'
-        }}
+    <div
+      className="sp-overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="sp"
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sp-title"
+        onKeyDown={handleKeyDown}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #291212', paddingBottom: '18px' }}>
+        <header className="sp-head">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <span>🎧</span> Help & Assistance Hub
-            </div>
-            <h2 style={{ margin: '4px 0 0', fontSize: '24px', fontWeight: 800, color: '#fff' }}>
-              Bạn cần hỗ trợ điều gì?
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#a8a29e' }}>
-              Tra cứu nhanh câu hỏi thường gặp hoặc gửi yêu cầu trực tiếp cho đội ngũ GitXplore.
-            </p>
+            <h2 id="sp-title" className="sp-title">Hỗ trợ</h2>
+            <p className="sp-sub">Tìm câu trả lời nhanh hoặc gửi yêu cầu cho đội ngũ GitXplore.</p>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose}
-            style={{
-              background: '#1c0d0d',
-              border: '1px solid #381a1a',
-              color: '#d1d5db',
-              width: '34px',
-              height: '34px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '15px'
-            }}
-          >
-            ✕
+          <button type="button" className="sp-close" onClick={onClose} aria-label="Đóng">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
           </button>
-        </div>
+        </header>
 
-        {/* 1. Direct Channels */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', margin: '20px 0' }}>
-          <a 
-            href="https://github.com" 
-            target="_blank" 
-            rel="noreferrer"
-            style={{ textDecoration: 'none', background: '#160a0a', border: '1px solid #2b1414', borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}
-          >
-            <div style={{ fontSize: '24px' }}>🐙</div>
-            <div>
-              <strong style={{ color: '#fff', fontSize: '13.5px', display: 'block' }}>GitHub Issues</strong>
-              <span style={{ color: '#9ca3af', fontSize: '11.5px' }}>Báo lỗi mã nguồn ↗</span>
-            </div>
-          </a>
-
-          <div 
-            onClick={() => alert('Kênh Discord chính thức của GitXplore sẽ ra mắt trong bản cập nhật tới!')}
-            style={{ background: '#160a0a', border: '1px solid #2b1414', borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
-          >
-            <div style={{ fontSize: '24px' }}>💬</div>
-            <div>
-              <strong style={{ color: '#fff', fontSize: '13.5px', display: 'block' }}>Discord Chat</strong>
-              <span style={{ color: '#9ca3af', fontSize: '11.5px' }}>Trò chuyện cộng đồng</span>
-            </div>
-          </div>
-
-          <a 
-            href="mailto:support@gitxplore.dev" 
-            style={{ textDecoration: 'none', background: '#160a0a', border: '1px solid #2b1414', borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}
-          >
-            <div style={{ fontSize: '24px' }}>✉️</div>
-            <div>
-              <strong style={{ color: '#fff', fontSize: '13.5px', display: 'block' }}>Email Support</strong>
-              <span style={{ color: '#9ca3af', fontSize: '11.5px' }}>Phản hồi nhanh</span>
-            </div>
-          </a>
-        </div>
-
-        {/* 2. FAQ Accordion */}
-        <div style={{ marginBottom: '22px' }}>
-          <h3 style={{ fontSize: '15px', color: '#fef08a', margin: '0 0 10px' }}>
-            ⚡ Câu hỏi thường gặp
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {FAQS.map((faq, idx) => (
-              <div key={idx} style={{ background: '#140808', border: '1px solid #241111', borderRadius: '10px', overflow: 'hidden' }}>
-                <div 
-                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                  style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: 600, fontSize: '13.5px', color: '#f3f4f6' }}
-                >
-                  <span>{faq.q}</span>
-                  <span style={{ color: '#f59e0b', fontSize: '13px' }}>{activeFaq === idx ? '▲' : '▼'}</span>
-                </div>
-                {activeFaq === idx && (
-                  <div style={{ padding: '0 16px 14px', color: '#a8a29e', fontSize: '13px', lineHeight: 1.6, borderTop: '1px solid #1c0d0d', paddingTop: '10px' }}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
+        {/* Chuyển giữa 2 việc người dùng hay làm nhất */}
+        <div className="sp-tabs">
+          <div className="sp-segment">
+            <button type="button" aria-pressed={tab === 'faq'} onClick={() => setTab('faq')}>
+              Câu hỏi thường gặp
+            </button>
+            <button type="button" aria-pressed={tab === 'form'} onClick={() => setTab('form')}>
+              Gửi yêu cầu
+            </button>
           </div>
         </div>
 
-        {/* 3. Send Feedback Form */}
-        <div style={{ background: '#140808', border: '1px solid #2b1414', borderRadius: '14px', padding: '18px' }}>
-          <h3 style={{ fontSize: '15px', color: '#fef08a', margin: '0 0 12px' }}>
-            📝 Gửi phản hồi / Báo lỗi trực tiếp
-          </h3>
+        {/* Nội dung — chỉ vùng này cuộn */}
+        <div className="sp-body" data-lenis-prevent>
+          {tab === 'faq' && (
+            <div className="sp-fade">
+              <ul className="sp-faq">
+                {FAQS.map((faq, i) => {
+                  const open = openFaq === i;
+                  return (
+                    <li key={faq.q} className="sp-faq-item">
+                      <button
+                        type="button"
+                        className="sp-faq-q"
+                        aria-expanded={open}
+                        aria-controls={`sp-faq-a-${i}`}
+                        onClick={() => setOpenFaq(open ? null : i)}
+                      >
+                        <span>{faq.q}</span>
+                        <svg className="sp-chev" width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      {open && (
+                        <p id={`sp-faq-a-${i}`} className="sp-faq-a">{faq.a}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
 
-          <form onSubmit={handleSubmitTicket} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {[
-                { id: 'bug', label: '🐛 Báo lỗi Bug' },
-                { id: 'feature', label: '💡 Ý tưởng mới' },
-                { id: 'account', label: '🔐 Tài khoản' },
-              ].map((pill) => (
-                <button
-                  key={pill.id}
-                  type="button"
-                  onClick={() => setTicketType(pill.id)}
-                  style={{
-                    background: ticketType === pill.id ? 'linear-gradient(135deg, #7f1d1d, #c2410c)' : '#1e0e0e',
-                    color: ticketType === pill.id ? '#fff' : '#9ca3af',
-                    border: '1px solid #381a1a',
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {pill.label}
+              <p className="sp-fallback">
+                Chưa thấy câu trả lời?{' '}
+                <button type="button" className="sp-link" onClick={() => setTab('form')}>
+                  Gửi yêu cầu cho chúng tôi
                 </button>
-              ))}
+              </p>
             </div>
+          )}
 
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', color: '#8c827a', marginBottom: '4px' }}>
-                Email / Số điện thoại liên hệ
-              </label>
-              <input 
-                type="text" 
-                placeholder="email@example.com..."
-                value={senderContact}
-                onChange={(e) => setSenderContact(e.target.value)}
-                className="lusion-search"
-                style={{ width: '100%', borderRadius: '8px', fontSize: '13px', padding: '8px 12px' }}
-                required
-              />
+          {tab === 'form' && status === 'sent' && (
+            <div className="sp-fade sp-done" role="status">
+              <span className="sp-done-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                  <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <h3>Đã nhận yêu cầu của bạn</h3>
+              <p>Chúng tôi sẽ liên hệ qua <strong>{contact.trim()}</strong> khi có phản hồi.</p>
+              <div className="sp-done-actions">
+                <button type="button" className="sp-btn" onClick={sendAnother}>Gửi yêu cầu khác</button>
+                <button type="button" className="sp-btn sp-btn--primary" onClick={onClose}>Đóng</button>
+              </div>
             </div>
+          )}
 
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', color: '#8c827a', marginBottom: '4px' }}>
-                Nội dung chi tiết
-              </label>
-              <textarea 
-                rows={3}
-                placeholder="Mô tả sự cố bạn gặp phải..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: '#0d0606',
-                  border: '1px solid #381a1a',
-                  borderRadius: '8px',
-                  padding: '10px 12px',
-                  color: '#fff',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  resize: 'none',
-                  outline: 'none'
-                }}
-                required
-              />
-            </div>
+          {tab === 'form' && status !== 'sent' && (
+            <form className="sp-fade sp-form" onSubmit={handleSubmit}>
+              <fieldset className="sp-field sp-types">
+                <legend className="sp-label">Bạn muốn gửi gì?</legend>
+                <div className="sp-segment sp-segment--full">
+                  {TYPES.map((t) => (
+                    <label key={t.id}>
+                      <input
+                        type="radio"
+                        name="sp-ticket-type"
+                        value={t.id}
+                        checked={ticketType === t.id}
+                        onChange={() => setTicketType(t.id)}
+                      />
+                      <span>{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {sentSuccess ? (
-                <span style={{ color: '#22c55e', fontSize: '13px', fontWeight: 600 }}>
-                  ✓ Đã gửi thành công! Cảm ơn bạn.
-                </span>
-              ) : <span />}
-              <button 
-                type="submit" 
-                disabled={isSending}
-                className="link-btn btn-primary"
-                style={{ padding: '8px 24px', fontSize: '13px' }}
-              >
-                {isSending ? 'Đang gửi...' : 'Gửi yêu cầu'}
-              </button>
-            </div>
-          </form>
+              <div className="sp-field">
+                <label className="sp-label" htmlFor="sp-contact">Email hoặc số điện thoại</label>
+                <input
+                  id="sp-contact"
+                  className="sp-input"
+                  type="text"
+                  autoComplete="email"
+                  placeholder="Để chúng tôi liên hệ lại với bạn"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="sp-field">
+                <label className="sp-label" htmlFor="sp-message">Nội dung</label>
+                <textarea
+                  id="sp-message"
+                  className="sp-input sp-textarea"
+                  rows={5}
+                  maxLength={2000}
+                  placeholder={currentType.hint}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                />
+              </div>
+
+              {status === 'error' && (
+                <p className="sp-error" role="alert">
+                  Chưa gửi được yêu cầu. Nội dung của bạn vẫn còn nguyên, hãy thử lại hoặc gửi email tới{' '}
+                  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+                </p>
+              )}
+
+              <div className="sp-actions">
+                <button type="submit" className="sp-btn sp-btn--primary" disabled={!canSend}>
+                  {status === 'sending' ? 'Đang gửi…' : 'Gửi yêu cầu'}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
+        {/* Kênh khác — luôn nằm ở chân, không chiếm chỗ của nội dung chính */}
+        <footer className="sp-foot">
+          <span>Kênh khác:</span>
+          <a href={GITHUB_ISSUES_URL} target="_blank" rel="noreferrer">GitHub Issues</a>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>Email</a>
+          <span className="sp-soon">Discord (sắp ra mắt)</span>
+        </footer>
       </div>
     </div>
   );
