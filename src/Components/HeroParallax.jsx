@@ -26,16 +26,19 @@ function createSequence(canvas, srcOf) {
 
   const render = () => {
     const img = images[state.frame];
-    if (img?.complete) {
+    if (img && img.complete && img.naturalWidth > 0) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
   };
 
-  if (images[0].complete) render();
-  else images[0].onload = render;
+  // Đảm bảo vẽ ngay frame đầu tiên khi ảnh sẵn sàng
+  images[0].onload = render;
+  if (images[0].complete) {
+    render();
+  }
 
-  return { state, render };
+  return { state, render, images };
 }
 
 export default function HeroParallax() {
@@ -58,6 +61,9 @@ export default function HeroParallax() {
     const seq1 = createSequence(c1, frame1Src);
     const seq2 = createSequence(c2, frame2Src);
 
+    // Vẽ ngay lập tức
+    seq1.render();
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -67,27 +73,38 @@ export default function HeroParallax() {
           pin: true,
           scrub: 0.5,
           invalidateOnRefresh: true,
+          onRefresh: () => {
+            seq1.render();
+          },
         },
       });
 
-      tl.to(seq1.state, {
-        frame: FRAME_COUNT - 1,
-        snap: 'frame',
-        ease: 'none',
-        onUpdate: seq1.render,
-        duration: 2,
-      }, 0)
-      .to(slide1Ref.current, { opacity: 0, y: -60, scale: 0.92, duration: 0.8 }, 0.8)
-      .to(c1, { opacity: 0, duration: 1 }, 1.4)
-      .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
-      .fromTo(slide2Ref.current, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8 }, 1.8)
-      .to(seq2.state, {
-        frame: FRAME_COUNT - 1,
-        snap: 'frame',
-        ease: 'none',
-        onUpdate: seq2.render,
-        duration: 2,
-      }, 1.8);
+      tl.to(
+        seq1.state,
+        {
+          frame: FRAME_COUNT - 1,
+          snap: 'frame',
+          ease: 'none',
+          onUpdate: seq1.render,
+          duration: 2,
+        },
+        0
+      )
+        .to(slide1Ref.current, { opacity: 0, y: -60, scale: 0.92, duration: 0.8 }, 0.8)
+        .to(c1, { opacity: 0, duration: 1 }, 1.4)
+        .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
+        .fromTo(slide2Ref.current, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8 }, 1.8)
+        .to(
+          seq2.state,
+          {
+            frame: FRAME_COUNT - 1,
+            snap: 'frame',
+            ease: 'none',
+            onUpdate: seq2.render,
+            duration: 2,
+          },
+          1.8
+        );
     }, containerRef);
 
     return () => ctx.revert();
@@ -186,10 +203,10 @@ export default function HeroParallax() {
             >
               About
             </button>
-            
-            <button 
+
+            <button
               type="button"
-              onClick={() => openModal('support')} 
+              onClick={() => openModal('support')}
               className="nav-link-btn"
             >
               Support
@@ -232,10 +249,10 @@ export default function HeroParallax() {
                       <span className="dropdown-user-sub">{user.identifier}</span>
                     </div>
                     <div className="dropdown-divider" />
-                    
-                    <button 
-                      type="button" 
-                      className="dropdown-item" 
+
+                    <button
+                      type="button"
+                      className="dropdown-item"
                       onClick={() => {
                         setDropdownOpen(false);
                         navigate('/accountscenter/profiles');
@@ -244,9 +261,9 @@ export default function HeroParallax() {
                       👤 Profile details
                     </button>
 
-                    <button 
-                      type="button" 
-                      className="dropdown-item" 
+                    <button
+                      type="button"
+                      className="dropdown-item"
                       onClick={() => {
                         setDropdownOpen(false);
                         navigate('/accountscenter/saved');
@@ -255,9 +272,9 @@ export default function HeroParallax() {
                       ⭐ Saved Repositories
                     </button>
 
-                    <button 
-                      type="button" 
-                      className="dropdown-item" 
+                    <button
+                      type="button"
+                      className="dropdown-item"
                       onClick={() => {
                         setDropdownOpen(false);
                         navigate('/accountscenter/history');
