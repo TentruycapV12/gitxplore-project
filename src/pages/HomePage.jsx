@@ -11,13 +11,12 @@ import About from '../Components/About.jsx';
 import Footer from '../Components/Footer.jsx';
 import ProjectModal from '../Components/ProjectModal.jsx';
 import NavModals from '../Components/NavModals.jsx';
-import SupportModal from '../Components/SupportModal.jsx';
 
 export default function HomePage() {
   useLenis();
 
   const { projects } = useProjectFilters();
-  const { selectedProject, modalType, closeModal, selectProject, openModal } = useUI();
+  const { selectedProject, modalType, selectProject, openModal } = useUI();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -47,10 +46,7 @@ export default function HomePage() {
       <Footer />
 
       {selectedProject && <ProjectModal />}
-      
-      {/* Phân tách: 'support' mở SupportModal, các trường hợp khác mở NavModals (đăng ký/đăng nhập) */}
-      {modalType === 'support' && <SupportModal onClose={closeModal} />}
-      {modalType && modalType !== 'support' && <NavModals />}
+      {modalType && <NavModals />}
     </>
   );
 }

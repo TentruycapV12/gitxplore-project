@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import SupportModal from './SupportModal';
 
 export default function NavModals() {
   const { modalType, closeModal } = useUI();
@@ -14,6 +15,11 @@ export default function NavModals() {
   const [errorMessage, setErrorMessage] = useState('');
 
   if (!modalType) return null;
+
+  // Nếu bấm Support -> Mở thẳng SupportModal Hub
+  if (modalType === 'support') {
+    return <SupportModal onClose={closeModal} />;
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -35,7 +41,7 @@ export default function NavModals() {
       provider: 'Local',
     };
 
-    setUser(userData); // AuthContext tự lưu localStorage
+    setUser(userData);
     closeModal();
   };
 
