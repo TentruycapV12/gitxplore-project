@@ -15,17 +15,19 @@ import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Dọn sạch GSAP ScrollTrigger, pin-spacer và khôi phục thanh cuộn khi đổi trang */
+/** Khôi phục thanh cuộn, về đầu trang và refresh ScrollTrigger khi đổi trang */
 function ScrollCleanup() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
+    // Không kill ScrollTrigger ở đây: HeroParallax tự dọn bằng ctx.revert() khi unmount.
+    // (kill-all ở đây chạy sau useLayoutEffect của HeroParallax nên phá luôn hiệu ứng frame)
     document.documentElement.style.removeProperty('overflow');
     document.documentElement.style.removeProperty('height');
     document.body.style.removeProperty('overflow');
     document.body.style.removeProperty('height');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    ScrollTrigger.refresh();
   }, [pathname]);
 
   return null;
