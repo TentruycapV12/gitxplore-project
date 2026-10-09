@@ -9,15 +9,12 @@ import Component2 from '../Components/Component2.jsx';
 import SubNavBar from '../Components/SubNavBar.jsx';
 import About from '../Components/About.jsx';
 import Footer from '../Components/Footer.jsx';
-import ProjectModal from '../Components/ProjectModal.jsx';
-import NavModals from '../Components/NavModals.jsx';
-import SupportModal from '../Components/SupportModal.jsx';
 
 export default function HomePage() {
   useLenis();
 
   const { projects } = useProjectFilters();
-  const { selectedProject, modalType, closeModal, selectProject, openModal } = useUI();
+  const { selectProject, openModal } = useUI();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,12 +42,6 @@ export default function HomePage() {
       <About />
       <SubNavBar />
       <Footer />
-
-      {selectedProject && <ProjectModal />}
-      
-      {/* Phân định modal rõ ràng: Support mở SupportModal, Authentication mở NavModals */}
-      {modalType === 'support' && <SupportModal onClose={closeModal} />}
-      {modalType && modalType !== 'support' && <NavModals />}
     </>
   );
 }

@@ -1,56 +1,76 @@
 import { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useLenis } from '../hooks/useLenis';
-import { useProjectFilters } from '../hooks/useProjectFilters';
-import { useUI } from '../context/UIContext';
-import HeroParallax from '../Components/HeroParallax.jsx';
-import Component1 from '../Components/Component1.jsx';
-import Component2 from '../Components/Component2.jsx';
-import SubNavBar from '../Components/SubNavBar.jsx';
-import About from '../Components/About.jsx';
-import Footer from '../Components/Footer.jsx';
-import ProjectModal from '../Components/ProjectModal.jsx';
-import NavModals from '../Components/NavModals.jsx';
-import SupportModal from '../Components/SupportModal.jsx'; // <-- Thêm import này
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useAuth } from './context/AuthContext';
+import { useUI } from './context/UIContext';
+import HomePage from './pages/HomePage.jsx';
+import CommunityForum from './Components/CommunityForum.jsx';
+import SavedDashboard from './Components/SavedDashboard.jsx';
+import NotFoundPage from './pages/NotFoundPage.jsx';
+import ProjectModal from './Components/ProjectModal.jsx';
+import NavModals from './Components/NavModals.jsx';
+import SupportModal from './Components/SupportModal.jsx';
+import './App.css';
 
-export default function HomePage() {
-  useLenis();
+gsap.registerPlugin(ScrollTrigger);
 
-  const { projects } = useProjectFilters();
-  const { selectedProject, modalType, closeModal, selectProject, openModal } = useUI();
-  const location = useLocation();
-  const navigate = useNavigate();
+/** Dọn sạch GSAP ScrollTrigger, pin-spacer và khôi phục thanh cuộn khi đổi trang */
+function ScrollCleanup() {
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    if (location.state?.requireLogin) {
-      openModal('signin');
-      navigate(location.pathname + location.search, { replace: true, state: null });
-    }
-  }, [location, navigate, openModal]);
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
+    document.documentElement.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('height');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('height');
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+
+  return null;
+}
+
+/** Protected route: chưa đăng nhập thì đẩy về trang chủ và mở modal đăng nhập */
+function RequireAuth({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace state={{ requireLogin: true }} />;
+  return children;
+}
+
+export default function App() {
+  const { modalType, closeModal, selectedProject } = useUI();
 
   return (
     <>
-      <HeroParallax />
+      <ScrollCleanup />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/community" element={<CommunityForum />} />
 
-      <main className="lusion-container" id="explore">
-        <Component1 />
+        {/* /accountscenter/:section */}
+        <Route
+          path="/accountscenter/:section?"
+          element={
+            <RequireAuth>
+              <SavedDashboard />
+            </RequireAuth>
+          }
+        />
 
-        <section className="projects-grid">
-          {projects.map((project) => (
-            <Component2 key={project.id} project={project} onSelect={selectProject} />
-          ))}
-        </section>
-      </main>
+        {/* Các route cũ chuyển hướng sang Accounts Center */}
+        <Route path="/profiles" element={<Navigate to="/accountscenter/profiles" replace />} />
+        <Route path="/saved" element={<Navigate to="/accountscenter/saved" replace />} />
+        <Route path="/history" element={<Navigate to="/accountscenter/history" replace />} />
 
-      <About />
-      <SubNavBar />
-      <Footer />
+        {/* Trang 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
 
+      {/* QUẢN LÝ TẤT CẢ MODAL TẠI TẦNG CAO NHẤT (APP ROOT) */}
       {selectedProject && <ProjectModal />}
-      {modalType && modalType !== 'support' && <NavModals />}
-      
-      {/* Hiển thị Support Modal khi bấm Support */}
       {modalType === 'support' && <SupportModal onClose={closeModal} />}
+      {modalType && modalType !== 'support' && <NavModals />}
     </>
   );
 }
