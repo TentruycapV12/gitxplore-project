@@ -5,7 +5,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { scrollToId } from '../lib/scroll';
-import SupportModal from './SupportModal';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -50,7 +49,6 @@ export default function HeroParallax() {
   const slide1Ref = useRef(null);
   const slide2Ref = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   useLayoutEffect(() => {
     const c1 = canvas1Ref.current;
@@ -191,7 +189,7 @@ export default function HeroParallax() {
             
             <button 
               type="button"
-              onClick={() => setIsSupportOpen(true)} 
+              onClick={() => openModal('support')} 
               className="nav-link-btn"
             >
               Support
@@ -437,9 +435,6 @@ export default function HeroParallax() {
           </div>
         </div>
       </div>
-
-      {/* Hiển thị SupportModal trực tiếp khi bấm Support */}
-      {isSupportOpen && <SupportModal onClose={() => setIsSupportOpen(false)} />}
     </div>
   );
 }
