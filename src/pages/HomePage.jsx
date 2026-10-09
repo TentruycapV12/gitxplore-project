@@ -48,7 +48,7 @@ export default function HomePage() {
 
       {selectedProject && <ProjectModal />}
       
-      {/* Phân biệt rõ: Support mở SupportModal, còn đăng ký/đăng nhập mở NavModals */}
+      {/* Phân tách: 'support' mở SupportModal, các trường hợp khác mở NavModals (đăng ký/đăng nhập) */}
       {modalType === 'support' && <SupportModal onClose={closeModal} />}
       {modalType && modalType !== 'support' && <NavModals />}
     </>
