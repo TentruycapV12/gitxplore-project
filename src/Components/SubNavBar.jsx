@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { useProjectFilters } from '../hooks/useProjectFilters';
+import { scrollToId } from '../lib/scroll';
 
-export default function SubNavBar({ context }) {
-  const { user, logout, setModal, setCategory, navigate } = context;
+export default function SubNavBar() {
+  const { user, logout } = useAuth();
+  const { openModal: setModal } = useUI();
+  const { setCategory } = useProjectFilters();
   const [activeTab, setActiveTab] = useState('explore');
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -11,34 +18,21 @@ export default function SubNavBar({ context }) {
 
   const scrollToExplore = () => {
     setActiveTab('explore');
-    if (setCategory) setCategory('all');
-    const el = document.getElementById('explore');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    setCategory('all');
+    scrollToId('explore');
   };
 
   const scrollToAboutSection = () => {
     setActiveTab('about');
-    const el = document.getElementById('about');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      scrollToExplore();
-    }
+    if (!scrollToId('about')) scrollToExplore();
   };
 
   return (
     <nav className="av-subnav">
       <div className="av-left">
-        <a
-          href="/"
-          className="av-logo"
-          onClick={(e) => {
-            e.preventDefault();
-            if (navigate) navigate('/');
-          }}
-        >
+        <Link to="/" className="av-logo">
           GIT<span>XPLORE</span>
-        </a>
+        </Link>
 
         <div className="av-menu">
           <button
@@ -48,15 +42,13 @@ export default function SubNavBar({ context }) {
             Repositories
           </button>
 
-          <button
-            className={`av-item ${activeTab === 'community' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('community');
-              if (navigate) navigate('/community');
-            }}
+          {/* NavLink tự biết link nào đang active, không cần state riêng */}
+          <NavLink
+            to="/community"
+            className={({ isActive }) => `av-item ${isActive ? 'active' : ''}`}
           >
             Discussions
-          </button>
+          </NavLink>
 
           <button
             className={`av-item ${activeTab === 'support' ? 'active' : ''}`}
@@ -100,13 +92,9 @@ export default function SubNavBar({ context }) {
           𝕏
         </a>
 
-        <button
-          className="av-social-btn"
-          onClick={() => navigate && navigate('/community')}
-          title="Notifications"
-        >
+        <Link to="/community" className="av-social-btn" title="Notifications">
           🔔
-        </button>
+        </Link>
 
         {user ? (
           <div style={{ position: 'relative', marginLeft: '4px' }}>

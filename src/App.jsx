@@ -1,206 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import Lenis from 'lenis';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { supabase } from './supabaseClient';
-import { openSourceProjects } from './data/projectsData';
-import HeroParallax from './Components/HeroParallax.jsx';
-import Component1 from './Components/Component1.jsx';
-import Component2 from './Components/Component2.jsx';
-import SubNavBar from './Components/SubNavBar.jsx';
-import About from './Components/About.jsx';
-import Footer from './Components/Footer.jsx';
-import ProjectModal from './Components/ProjectModal.jsx';
-import NavModals from './Components/NavModals.jsx';
+import { useAuth } from './context/AuthContext';
+import HomePage from './pages/HomePage.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
 import SavedDashboard from './Components/SavedDashboard.jsx';
+import NotFoundPage from './pages/NotFoundPage.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [navModal, setNavModal] = useState(null);
+/** Mỗi lần đổi trang (pathname) thì cuộn về đầu. Đổi query (?q=...) thì không. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('hka_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const cleanupScroll = () => {
-    ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
-    document.documentElement.style.removeProperty('overflow');
-    document.documentElement.style.removeProperty('height');
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('height');
+  useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  };
+  }, [pathname]);
 
-  useEffect(() => {
-    const handlePopState = () => {
-      cleanupScroll();
-      setCurrentPath(window.location.pathname);
-    };
+  return null;
+}
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+/** Protected route (slide 14): chưa đăng nhập thì <Navigate> về trang chủ và mở form đăng nhập. */
+function RequireAuth({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace state={{ requireLogin: true }} />;
+  return children;
+}
 
-  const navigate = (path) => {
-    cleanupScroll();
-    window.history.pushState({}, '', path);
-    setCurrentPath(path);
-  };
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const u = session.user;
-        const userData = {
-          name: u.user_metadata?.full_name || u.user_metadata?.user_name || u.email?.split('@')[0],
-          identifier: u.email,
-          avatarChar: (u.email || 'U').charAt(0).toUpperCase(),
-          avatarUrl: u.user_metadata?.avatar_url || null,
-          provider: u.app_metadata?.provider || 'OAuth',
-        };
-        localStorage.setItem('hka_user', JSON.stringify(userData));
-        setCurrentUser(userData);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const u = session.user;
-        const userData = {
-          name: u.user_metadata?.full_name || u.user_metadata?.user_name || u.email?.split('@')[0],
-          identifier: u.email,
-          avatarChar: (u.email || 'U').charAt(0).toUpperCase(),
-          avatarUrl: u.user_metadata?.avatar_url || null,
-          provider: u.app_metadata?.provider || 'OAuth',
-        };
-        localStorage.setItem('hka_user', JSON.stringify(userData));
-        setCurrentUser(userData);
-      } else {
-        localStorage.removeItem('hka_user');
-        setCurrentUser(null);
-      }
-    });
-
-    return () => subscription?.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('hka_user');
-    setCurrentUser(null);
-  };
-
-  useEffect(() => {
-    if (currentPath !== '/') return;
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    });
-
-    window.lenisInstance = lenis;
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    const reqId = requestAnimationFrame(raf);
-
-    return () => {
-      cancelAnimationFrame(reqId);
-      lenis.destroy();
-      window.lenisInstance = null;
-    };
-  }, [currentPath]);
-
-  const filteredProjects = (() => {
-    if (searchTerm.trim() !== '') {
-      return openSourceProjects.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.language.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (activeCategory === 'all') {
-      return openSourceProjects.slice(0, 4);
-    }
-
-    return openSourceProjects.filter((item) => item.category === activeCategory);
-  })();
-
-  const appContext = {
-    user: currentUser,
-    setUser: setCurrentUser,
-    logout: handleLogout,
-    modalType: navModal,
-    setModal: setNavModal,
-    closeModal: () => setNavModal(null),
-    activeCategory,
-    setCategory: setActiveCategory,
-    searchTerm,
-    setSearchTerm,
-    selectedProject,
-    setSelectedProject,
-    closeProjectModal: () => setSelectedProject(null),
-    navigate,
-  };
-
-  if (currentPath.startsWith('/community')) {
-    return (
-      <CommunityForum
-        context={appContext}
-        onBack={() => navigate('/')}
-      />
-    );
-  }
-
-  if (currentPath.startsWith('/saved') || currentPath.startsWith('/profile') || currentPath.startsWith('/history')) {
-    return (
-      <SavedDashboard
-        context={appContext}
-        onBack={() => navigate('/')}
-      />
-    );
-  }
-
+export default function App() {
   return (
     <>
-      <HeroParallax context={appContext} />
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/community" element={<CommunityForum />} />
 
-      <main className="lusion-container" id="explore">
-        <Component1 context={appContext} />
+        {/* /accountscenter/:section — mục menu nằm trên URL, không cần tự pushState */}
+        <Route
+          path="/accountscenter/:section?"
+          element={
+            <RequireAuth>
+              <SavedDashboard />
+            </RequireAuth>
+          }
+        />
 
-        <section className="projects-grid">
-          {filteredProjects.map((project) => (
-            <Component2
-              key={project.id}
-              context={{ ...appContext, project }}
-            />
-          ))}
-        </section>
-      </main>
+        {/* Các URL cũ vẫn dùng được nhờ <Navigate> */}
+        <Route path="/profiles" element={<Navigate to="/accountscenter/profiles" replace />} />
+        <Route path="/saved" element={<Navigate to="/accountscenter/saved" replace />} />
+        <Route path="/history" element={<Navigate to="/accountscenter/history" replace />} />
 
-      <About />
-      <SubNavBar context={appContext} />
-      <Footer />
-
-      {appContext.selectedProject && <ProjectModal context={appContext} />}
-      {appContext.modalType && <NavModals context={appContext} />}
+        {/* Catch-all (slide 10-11) */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </>
   );
 }
-
-export default App;

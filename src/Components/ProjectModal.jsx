@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useUI } from '../context/UIContext';
 
-export default function ProjectModal({ context }) {
-  const { selectedProject: project, closeProjectModal } = context;
+export default function ProjectModal() {
+  const { selectedProject: project, closeProject: closeProjectModal } = useUI();
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef(null);
+
+  // Huỷ timer nếu modal đóng trước khi hết 2s (tránh setState sau khi unmount).
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  // Đóng modal bằng phím Esc; cleanup gỡ listener khi modal đóng.
+  useEffect(() => {
+    const onKeyDown = (e) => e.key === 'Escape' && closeProjectModal();
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [closeProjectModal]);
 
   if (!project) return null;
 
@@ -11,7 +23,8 @@ export default function ProjectModal({ context }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(cloneCommand);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   return (

@@ -782,6 +782,7 @@
 }
 
 .av-item {
+  text-decoration: none;
   background: transparent;
   border: none;
   color: #d1d5db;

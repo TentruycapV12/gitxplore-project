@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
 
-export default function NavModals({ context }) {
-  const { modalType, closeModal, setUser } = context;
+export default function NavModals() {
+  const { modalType, closeModal } = useUI();
+  const { setUser } = useAuth();
 
   const [authMode, setAuthMode] = useState('signup');
   const [identifier, setIdentifier] = useState('');
@@ -32,8 +35,7 @@ export default function NavModals({ context }) {
       provider: 'Local',
     };
 
-    localStorage.setItem('hka_user', JSON.stringify(userData));
-    setUser(userData);
+    setUser(userData); // AuthContext tự lưu localStorage
     closeModal();
   };
 

@@ -1,26 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { openSourceProjects } from '../data/projectsData';
 
-export default function SavedDashboard({ context, onBack }) {
-  const { user, setUser, logout, navigate } = context;
+const SECTIONS = [
+  'profiles', 'security', 'connected', 'permissions', 'activity',
+  'billing', 'subscriptions', 'manage', 'saved', 'history',
+];
 
-  // Lấy subpath trực tiếp từ URL, mặc định là profiles
-  const getSubRouteFromPath = () => {
-    const path = window.location.pathname;
-    if (path.includes('/security')) return 'security';
-    if (path.includes('/connected')) return 'connected';
-    if (path.includes('/permissions')) return 'permissions';
-    if (path.includes('/activity')) return 'activity';
-    if (path.includes('/billing')) return 'billing';
-    if (path.includes('/subscriptions')) return 'subscriptions';
-    if (path.includes('/manage')) return 'manage';
-    if (path.includes('/saved')) return 'saved';
-    if (path.includes('/history')) return 'history';
-    return 'profiles';
-  };
+export default function SavedDashboard() {
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const onBack = () => navigate('/');
 
-  const [activeMenu, setActiveMenu] = useState(getSubRouteFromPath());
+  // Mục menu lấy từ URL (/accountscenter/:section) bằng useParams — không cần state riêng
+  // nên Back/Forward của trình duyệt tự đúng.
+  const { section } = useParams();
+  const activeMenu = SECTIONS.includes(section) ? section : 'profiles';
 
   // Profile fields
   const [nameInput, setNameInput] = useState(user?.name || '');
@@ -59,15 +55,6 @@ export default function SavedDashboard({ context, onBack }) {
   const [savedList, setSavedList] = useState([]);
   const [historyList, setHistoryList] = useState([]);
 
-  // Bắt sự kiện back/forward của trình duyệt
-  useEffect(() => {
-    const handlePop = () => {
-      setActiveMenu(getSubRouteFromPath());
-    };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, []);
-
   useEffect(() => {
     if (!user?.identifier) return;
 
@@ -98,22 +85,18 @@ export default function SavedDashboard({ context, onBack }) {
         { id: 3, action: 'Account Authentication', details: `Signed in as ${user.identifier}`, time: 'Today at 08:30 PM' },
       ]);
     }
-  }, [user]);
+  }, [user?.identifier]);
 
   // Đổi mục menu và cập nhật URL trình duyệt chuẩn accountscenter style
   const handleSelectMenu = (menuKey) => {
-    setActiveMenu(menuKey);
-    const newPath = `/accountscenter/${menuKey}`;
-    window.history.pushState({}, '', newPath);
+    navigate(`/accountscenter/${menuKey}`);
   };
 
   const handleUpdateName = (e) => {
     e.preventDefault();
     if (!nameInput.trim()) return;
     setIsSaving(true);
-    const updated = { ...user, name: nameInput.trim() };
-    localStorage.setItem('hka_user', JSON.stringify(updated));
-    setUser(updated);
+    updateUser({ name: nameInput.trim() }); // AuthContext tự lưu localStorage
     setTimeout(() => {
       setIsSaving(false);
       setIsEditingName(false);
@@ -157,6 +140,7 @@ export default function SavedDashboard({ context, onBack }) {
     a.href = url;
     a.download = `gitxplore_account_${user?.name || 'user'}.json`;
     a.click();
+    URL.revokeObjectURL(url); // giải phóng bộ nhớ
   };
 
   const renderGroupItem = ({ icon, title, subtitle, onClick, hasArrow = true, isLast = false }) => (

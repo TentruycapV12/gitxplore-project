@@ -1,11 +1,11 @@
-import React, { useRef } from 'react';
+import { memo, useCallback, useRef } from 'react';
 
 // Ảnh nền công nghệ dự phòng khi link gốc bị lỗi
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
 
-function Component2({ context }) {
-  const { project, setSelectedProject } = context;
+function Component2({ project, onSelect }) {
   const cardRef = useRef(null);
+  const handleSelect = useCallback(() => onSelect(project), [onSelect, project]);
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
@@ -37,7 +37,7 @@ function Component2({ context }) {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="media-container" onClick={() => setSelectedProject(project)} style={{ cursor: 'pointer' }}>
+      <div className="media-container" onClick={handleSelect} style={{ cursor: 'pointer' }}>
         {project.mediaType === 'video' ? (
           <video
             src={project.mediaUrl}
@@ -71,14 +71,14 @@ function Component2({ context }) {
           </div>
         </div>
 
-        <h3 className="project-name" onClick={() => setSelectedProject(project)} style={{ cursor: 'pointer' }}>
+        <h3 className="project-name" onClick={handleSelect} style={{ cursor: 'pointer' }}>
           {project.name}
         </h3>
         <p className="project-description">{project.description}</p>
 
         <div className="actions-row">
           <button
-            onClick={() => setSelectedProject(project)}
+            onClick={handleSelect}
             className="link-btn btn-secondary"
             style={{ cursor: 'pointer' }}
           >
@@ -98,4 +98,5 @@ function Component2({ context }) {
   );
 }
 
-export default Component2;
+// memo: card chỉ render lại khi `project` hoặc `onSelect` đổi (không render lại khi gõ ô tìm kiếm...).
+export default memo(Component2);

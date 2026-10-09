@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 
-export default function AdminDashboardModal({ context, onClose }) {
-  const { user } = context;
+export default function AdminDashboardModal({ onClose }) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [userList, setUserList] = useState([]);
   const [logs, setLogs] = useState([]);
