@@ -11,18 +11,24 @@ import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Mỗi lần đổi trang (pathname) thì cuộn về đầu. Đổi query (?q=...) thì không. */
-function ScrollToTop() {
+/** Dọn sạch GSAP ScrollTrigger, pin-spacer và khôi phục thanh cuộn khi đổi trang */
+function ScrollCleanup() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    // Dọn dẹp triệt để pin-spacer và trigger của GSAP
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
+    document.documentElement.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('height');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('height');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [pathname]);
 
   return null;
 }
 
-/** Protected route (slide 14): chưa đăng nhập thì <Navigate> về trang chủ và mở form đăng nhập. */
+/** Protected route: chưa đăng nhập thì đẩy về trang chủ và mở modal đăng nhập */
 function RequireAuth({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/" replace state={{ requireLogin: true }} />;
@@ -32,12 +38,12 @@ function RequireAuth({ children }) {
 export default function App() {
   return (
     <>
-      <ScrollToTop />
+      <ScrollCleanup />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/community" element={<CommunityForum />} />
 
-        {/* /accountscenter/:section — mục menu nằm trên URL, không cần tự pushState */}
+        {/* /accountscenter/:section */}
         <Route
           path="/accountscenter/:section?"
           element={
@@ -47,12 +53,12 @@ export default function App() {
           }
         />
 
-        {/* Các URL cũ vẫn dùng được nhờ <Navigate> */}
+        {/* Các route cũ chuyển hướng sang Accounts Center */}
         <Route path="/profiles" element={<Navigate to="/accountscenter/profiles" replace />} />
         <Route path="/saved" element={<Navigate to="/accountscenter/saved" replace />} />
         <Route path="/history" element={<Navigate to="/accountscenter/history" replace />} />
 
-        {/* Catch-all (slide 10-11) */}
+        {/* Trang 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
