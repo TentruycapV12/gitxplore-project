@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 import { scrollToId } from '../lib/scroll';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -25,7 +26,6 @@ function createSequence(canvas, srcOf) {
   const state = { frame: 0 };
 
   const render = () => {
-    // Luôn làm tròn số nguyên để lấy đúng vị trí trong mảng images
     const idx = Math.min(FRAME_COUNT - 1, Math.max(0, Math.floor(state.frame)));
     const img = images[idx];
     if (img && img.complete && img.naturalWidth > 0) {
@@ -43,6 +43,7 @@ function createSequence(canvas, srcOf) {
 export default function HeroParallax() {
   const { user, logout } = useAuth();
   const { openModal } = useUI();
+  const { lang, setLang, t, languages } = useLanguage();
   const navigate = useNavigate();
 
   const containerRef = useRef(null);
@@ -51,6 +52,9 @@ export default function HeroParallax() {
   const slide1Ref = useRef(null);
   const slide2Ref = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+
+  const activeLangObj = languages.find((l) => l.code === lang) || languages[0];
 
   useLayoutEffect(() => {
     const c1 = canvas1Ref.current;
@@ -183,13 +187,13 @@ export default function HeroParallax() {
             NOTOSAN
           </span>
 
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '22px', alignItems: 'center' }}>
             <button
               type="button"
               onClick={() => navigate('/community')}
               className="nav-link-btn"
             >
-              Community
+              {t('community')}
             </button>
 
             <button
@@ -197,16 +201,94 @@ export default function HeroParallax() {
               onClick={() => scrollToId('about')}
               className="nav-link-btn"
             >
-              About
+              {t('about')}
             </button>
-
-            <button
+            
+            <button 
               type="button"
-              onClick={() => openModal('support')}
+              onClick={() => openModal('support')} 
               className="nav-link-btn"
             >
-              Support
+              {t('support')}
             </button>
+
+            {/* BỘ CHUYỂN ĐỔI NGÔN NGỮ (10 NGÔN NGỮ) */}
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="nav-link-btn"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(251, 191, 36, 0.25)',
+                  color: '#fef3c7',
+                }}
+              >
+                <span>{activeLangObj.flag}</span>
+                <span style={{ fontWeight: 600 }}>{activeLangObj.code.toUpperCase()}</span>
+                <span style={{ fontSize: '10px', opacity: 0.7 }}>▾</span>
+              </button>
+
+              {langMenuOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '42px',
+                    right: 0,
+                    width: '210px',
+                    background: '#140809',
+                    border: '1px solid #3d1b1b',
+                    borderRadius: '12px',
+                    boxShadow: '0 15px 35px rgba(0, 0, 0, 0.85)',
+                    padding: '6px 0',
+                    zIndex: 100,
+                    maxHeight: '320px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  <div style={{ padding: '6px 14px', fontSize: '11px', color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #231112' }}>
+                    Select Language
+                  </div>
+                  {languages.map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => {
+                        setLang(item.code);
+                        setLangMenuOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        padding: '9px 14px',
+                        background: lang === item.code ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                        border: 'none',
+                        color: lang === item.code ? '#fef08a' : '#d1d5db',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#221112')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = lang === item.code ? 'rgba(245, 158, 11, 0.15)' : 'transparent')}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{item.flag}</span>
+                        <span>{item.label}</span>
+                      </span>
+                      {lang === item.code && <span style={{ color: '#f59e0b', fontSize: '12px' }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {!user ? (
               <button
@@ -214,7 +296,7 @@ export default function HeroParallax() {
                 onClick={() => openModal('signup')}
                 className="register-btn-main"
               >
-                Register
+                {t('register')}
               </button>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
@@ -322,7 +404,7 @@ export default function HeroParallax() {
               fontWeight: 600,
             }}
           >
-            ▲ Journey to new frontiers, Journey to Noto Nature Park
+            {t('welcome_sub')}
           </p>
           <h1
             style={{
@@ -336,7 +418,7 @@ export default function HeroParallax() {
               textShadow: '0 4px 30px rgba(185, 28, 28, 0.35)',
             }}
           >
-            WELCOME
+            {t('welcome_title')}
           </h1>
           <p
             style={{
@@ -348,8 +430,7 @@ export default function HeroParallax() {
               opacity: 0.9,
             }}
           >
-            Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. 
-            Surprising and captivating in equal measure.
+            {t('welcome_desc')}
           </p>
           <div style={{ pointerEvents: 'auto' }}>
             <button
@@ -370,7 +451,7 @@ export default function HeroParallax() {
               onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
               onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
             >
-              Start the journey ▸
+              {t('start_journey')}
             </button>
           </div>
         </div>
@@ -402,7 +483,7 @@ export default function HeroParallax() {
                 fontWeight: 600,
               }}
             >
-              3D Experience
+              {t('experience_3d')}
             </p>
             <h2
               style={{
@@ -415,7 +496,7 @@ export default function HeroParallax() {
                 textShadow: '0 4px 28px rgba(245, 158, 11, 0.3)',
               }}
             >
-              Tranquility
+              {t('tranquility')}
             </h2>
             <p
               style={{
@@ -426,8 +507,7 @@ export default function HeroParallax() {
                 opacity: 0.9,
               }}
             >
-              Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes 
-              harboring a vast realm of legendary open-source artifacts.
+              {t('tranquility_desc')}
             </p>
             <button
               type="button"
@@ -443,7 +523,7 @@ export default function HeroParallax() {
                 cursor: 'pointer',
               }}
             >
-              — Learn more
+              {t('learn_more')}
             </button>
           </div>
         </div>
