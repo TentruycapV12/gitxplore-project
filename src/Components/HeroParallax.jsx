@@ -25,18 +25,17 @@ function createSequence(canvas, srcOf) {
   const state = { frame: 0 };
 
   const render = () => {
-    const img = images[state.frame];
+    // Luôn làm tròn số nguyên để lấy đúng vị trí trong mảng images
+    const idx = Math.min(FRAME_COUNT - 1, Math.max(0, Math.floor(state.frame)));
+    const img = images[idx];
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
   };
 
-  // Đảm bảo vẽ ngay frame đầu tiên khi ảnh sẵn sàng
   images[0].onload = render;
-  if (images[0].complete) {
-    render();
-  }
+  if (images[0].complete) render();
 
   return { state, render, images };
 }
@@ -61,7 +60,6 @@ export default function HeroParallax() {
     const seq1 = createSequence(c1, frame1Src);
     const seq2 = createSequence(c2, frame2Src);
 
-    // Vẽ ngay lập tức
     seq1.render();
 
     const ctx = gsap.context(() => {
@@ -83,7 +81,6 @@ export default function HeroParallax() {
         seq1.state,
         {
           frame: FRAME_COUNT - 1,
-          snap: 'frame',
           ease: 'none',
           onUpdate: seq1.render,
           duration: 2,
@@ -98,7 +95,6 @@ export default function HeroParallax() {
           seq2.state,
           {
             frame: FRAME_COUNT - 1,
-            snap: 'frame',
             ease: 'none',
             onUpdate: seq2.render,
             duration: 2,

@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { setLenis } from '../lib/scroll';
 
-/** Smooth scroll chỉ chạy ở trang dùng nó; unmount là dọn sạch (cleanup). */
 export function useLenis() {
   useEffect(() => {
     const lenis = new Lenis({
@@ -12,13 +13,18 @@ export function useLenis() {
     });
     setLenis(lenis);
 
-    let rafId = requestAnimationFrame(function raf(time) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    });
+    // Đồng bộ vị trí cuộn của Lenis với GSAP ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
+
+    const updateTicker = (time) => {
+      lenis.raf(time * 1000);
+    };
+
+    gsap.ticker.add(updateTicker);
+    gsap.ticker.lagSmoothing(0);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      gsap.ticker.remove(updateTicker);
       lenis.destroy();
       setLenis(null);
     };
