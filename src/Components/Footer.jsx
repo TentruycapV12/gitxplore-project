@@ -12,11 +12,11 @@ export default function Footer() {
           </div>
           
           <p className="footer-text">
-            Thương hiệu <strong>HKA</strong>, được đồng sáng lập và vận hành bởi nhóm 3 thành viên.
+            The <strong>HKA</strong> brand, co-founded and operated by a collaborative team of three members.
           </p>
           
           <p className="footer-text">
-            Giao diện trang web và nền tảng được phát triển nhằm chuyên sâu vào việc khảo sát, khám phá và khai thác các dự án tiềm năng. Chúng tôi cung cấp các giải pháp kết nối tài nguyên, quản trị rủi ro và triển khai các dự án chiến lược mang lại giá trị gia tăng vượt trội cho khách hàng và đối tác.
+            The web platform is designed to specialize in surveying, discovering, and exploring high-potential open-source repositories. We provide resource integration, risk management, and strategic project deployments that deliver exceptional value to developers and partners worldwide.
           </p>
         </div>
 
