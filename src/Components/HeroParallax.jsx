@@ -336,7 +336,7 @@ export default function HeroParallax() {
                         navigate('/accountscenter/profiles');
                       }}
                     >
-                      👤 Profile details
+                      👤 {t('profile_details')}
                     </button>
 
                     <button
@@ -347,7 +347,7 @@ export default function HeroParallax() {
                         navigate('/accountscenter/saved');
                       }}
                     >
-                      ⭐ Saved Repositories
+                      ⭐ {t('saved_repos')}
                     </button>
 
                     <button
@@ -358,7 +358,7 @@ export default function HeroParallax() {
                         navigate('/accountscenter/history');
                       }}
                     >
-                      🕒 History
+                      🕒 {t('history')}
                     </button>
 
                     <div className="dropdown-divider" />
@@ -370,7 +370,7 @@ export default function HeroParallax() {
                         logout();
                       }}
                     >
-                      ⏻ Sign out
+                      ⏻ {t('signout')}
                     </button>
                   </div>
                 )}
