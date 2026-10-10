@@ -12,6 +12,7 @@ import NewsPage from './pages/NewsPage.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
 import SupportModal from './Components/SupportModal.jsx';
+import QuickDock from './Components/QuickDock.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -67,6 +68,9 @@ export default function App() {
       {selectedProject && <ProjectModal />}
       {modalType === 'support' && <SupportModal onClose={closeModal} />}
       {modalType && modalType !== 'support' && <NavModals />}
+
+      {/* Thanh tiện ích bên phải (cửa sổ lối tắt) */}
+      <QuickDock />
     </>
   );
 }

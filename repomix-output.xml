@@ -61,6 +61,8 @@ src/
     HeroParallax.jsx
     NavModals.jsx
     ProjectModal.jsx
+    QuickDock.css
+    QuickDock.jsx
     SavedDashboard.jsx
     SubNavBar.jsx
     SupportModal.css
@@ -101,6 +103,366 @@ vite.config.js
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/Components/QuickDock.css">
+/* QuickDock: mọi class bắt đầu bằng qd- nên không đụng CSS khác.
+   Cùng bảng màu amber/tối với SupportModal. */
+.qd-root {
+  --qd-surface: #161010;
+  --qd-surface-2: #1e1616;
+  --qd-line: #2d2121;
+  --qd-text: #f6f2ef;
+  --qd-muted: #b9ada7;
+  --qd-accent: #f59e0b;
+  --qd-accent-soft: rgba(245, 158, 11, 0.14);
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none; /* chỉ rail và panel nhận chuột */
+  font-family: inherit;
+}
+.qd-root *, .qd-root *::before, .qd-root *::after { box-sizing: border-box; }
+
+/* ---------- Thanh biểu tượng bên phải ---------- */
+.qd-rail {
+  pointer-events: auto;
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-line);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.qd-tab {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--qd-muted);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.qd-tab:hover { background: var(--qd-surface-2); color: var(--qd-text); }
+.qd-tab[aria-pressed='true'] { background: var(--qd-accent-soft); color: var(--qd-accent); }
+.qd-tab:focus-visible, .qd-close:focus-visible, .qd-row:focus-visible {
+  outline: 2px solid var(--qd-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Cửa sổ trượt ra ---------- */
+.qd-panel {
+  pointer-events: auto;
+  position: absolute;
+  top: 84px;
+  right: 74px;
+  bottom: 24px;
+  width: min(360px, calc(100vw - 96px));
+  display: flex;
+  flex-direction: column;
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  border: 1px solid var(--qd-line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: qd-in 0.18s ease-out;
+}
+@keyframes qd-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qd-panel { animation: none; }
+}
+
+.qd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 12px 8px 20px;
+}
+.qd-title { margin: 0; font-size: 18px; font-weight: 600; }
+.qd-close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--qd-muted);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.qd-close:hover { background: var(--qd-surface-2); color: var(--qd-text); }
+
+.qd-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px 16px; }
+
+/* ---------- Danh sách ---------- */
+.qd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.qd-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 12px;
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.qd-row:hover { background: var(--qd-surface-2); border-color: var(--qd-line); }
+.qd-row-title { font-size: 15px; font-weight: 600; }
+.qd-row-desc { font-size: 13px; color: var(--qd-muted); }
+.qd-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.qd-empty { margin: 24px 8px; color: var(--qd-muted); font-size: 14px; line-height: 1.6; text-align: center; }
+
+/* ---------- Ghi chú ---------- */
+.qd-notes { display: flex; flex-direction: column; gap: 8px; height: 100%; padding-top: 4px; }
+.qd-textarea {
+  flex: 1;
+  min-height: 160px;
+  resize: none;
+  padding: 12px;
+  background: #0d0909;
+  color: var(--qd-text);
+  border: 1px solid var(--qd-line);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.qd-textarea:focus { outline: 2px solid var(--qd-accent); outline-offset: 1px; }
+.qd-hint { margin: 0; font-size: 12px; color: #8d817b; }
+
+/* ---------- Điện thoại: rail nhỏ lại, panel gần full ---------- */
+@media (max-width: 640px) {
+  .qd-rail { right: 6px; padding: 6px; }
+  .qd-tab { width: 36px; height: 36px; }
+  .qd-panel { top: 70px; right: 58px; bottom: 16px; width: calc(100vw - 70px); }
+}
+</file>
+
+<file path="src/Components/QuickDock.jsx">
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { useBookmarks } from '../hooks/useBookmarks';
+import { openSourceProjects } from '../data/projectsData';
+import './QuickDock.css';
+
+/**
+ * QuickDock: thanh biểu tượng cố định ở mép phải + cửa sổ trượt ra
+ * (giống thanh tiện ích bên phải của Gmail).
+ * Gắn MỘT lần trong App.jsx, hiện ở mọi trang.
+ */
+
+const NOTES_KEY = 'gx_quick_notes';
+
+const Icon = ({ children }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const TABS = [
+  {
+    id: 'links',
+    label: 'Lối tắt',
+    icon: <Icon><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></Icon>,
+  },
+  {
+    id: 'saved',
+    label: 'Repo đã lưu',
+    icon: <Icon><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z" /></Icon>,
+  },
+  {
+    id: 'notes',
+    label: 'Ghi chú nhanh',
+    icon: <Icon><path d="M4 4h16v12l-4 4H4V4z" /><path d="M16 20v-4h4M8 9h8M8 13h5" /></Icon>,
+  },
+];
+
+/* ---------- Tab: Lối tắt ---------- */
+function LinksPane({ go, openSupport }) {
+  const { user } = useAuth();
+  const items = [
+    { label: 'Tin tức', desc: 'Tin mới về mã nguồn mở', onClick: () => go('/news') },
+    { label: 'Cộng đồng', desc: 'Thảo luận, hỏi đáp, chia sẻ', onClick: () => go('/community') },
+    {
+      label: 'Trung tâm tài khoản',
+      desc: user ? 'Repo đã lưu, hồ sơ, lịch sử' : 'Đăng nhập để sử dụng',
+      onClick: () => go('/accountscenter/saved'),
+    },
+    { label: 'Hỗ trợ', desc: 'Câu hỏi thường gặp, gửi yêu cầu', onClick: openSupport },
+  ];
+  return (
+    <ul className="qd-list">
+      {items.map((it) => (
+        <li key={it.label}>
+          <button type="button" className="qd-row" onClick={it.onClick}>
+            <span className="qd-row-title">{it.label}</span>
+            <span className="qd-row-desc">{it.desc}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ---------- Tab: Repo đã lưu ---------- */
+function SavedPane({ go }) {
+  const { user } = useAuth();
+  const { selectProject } = useUI();
+  const { bookmarks } = useBookmarks();
+
+  if (!user) {
+    return <p className="qd-empty">Đăng nhập để xem các repo bạn đã lưu.</p>;
+  }
+  if (!bookmarks.length) {
+    return <p className="qd-empty">Bạn chưa lưu repo nào. Mở một dự án và bấm “Lưu Repo”.</p>;
+  }
+
+  const open = (b) => {
+    const project = openSourceProjects.find((p) => p.id === b.repo_id);
+    if (project) selectProject(project);
+    else go('/accountscenter/saved');
+  };
+
+  return (
+    <ul className="qd-list">
+      {bookmarks.map((b) => (
+        <li key={b.repo_id}>
+          <button type="button" className="qd-row" onClick={() => open(b)}>
+            <span className="qd-row-title">{b.repo_name}</span>
+            {b.repo_desc && <span className="qd-row-desc qd-clamp">{b.repo_desc}</span>}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ---------- Tab: Ghi chú nhanh ---------- */
+function NotesPane() {
+  const [text, setText] = useState(() => {
+    try { return localStorage.getItem(NOTES_KEY) || ''; } catch { return ''; }
+  });
+
+  const onChange = (e) => {
+    const v = e.target.value;
+    setText(v);
+    try { localStorage.setItem(NOTES_KEY, v); } catch { /* bị chặn (private mode) */ }
+  };
+
+  return (
+    <div className="qd-notes">
+      <textarea
+        className="qd-textarea"
+        value={text}
+        onChange={onChange}
+        maxLength={5000}
+        placeholder="Ghi lại ý tưởng, tên repo muốn xem sau…"
+        aria-label="Ghi chú nhanh"
+      />
+      <p className="qd-hint">Tự động lưu trên trình duyệt này.</p>
+    </div>
+  );
+}
+
+/* ---------- Thành phần chính ---------- */
+export default function QuickDock() {
+  const navigate = useNavigate();
+  const { openModal, modalType, selectedProject } = useUI();
+  const [active, setActive] = useState(null); // null = đóng
+  const panelRef = useRef(null);
+
+  const current = TABS.find((t) => t.id === active);
+
+  // Esc để đóng
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e) => e.key === 'Escape' && setActive(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active]);
+
+  // Bấm ra ngoài thì đóng (không đóng khi đang mở modal khác)
+  useEffect(() => {
+    if (!active) return;
+    const onDown = (e) => {
+      if (!e.target.closest?.('.qd-root')) setActive(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [active]);
+
+  // Ẩn hẳn khi có modal/dự án đang mở để khỏi chồng lên nhau
+  if (modalType || selectedProject) return null;
+
+  const go = (path) => {
+    setActive(null);
+    navigate(path);
+  };
+  const openSupport = () => {
+    setActive(null);
+    openModal('support');
+  };
+
+  return (
+    <div className="qd-root">
+      {current && (
+        <aside className="qd-panel" ref={panelRef} role="dialog" aria-label={current.label}>
+          <header className="qd-head">
+            <h2 className="qd-title">{current.label}</h2>
+            <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label="Đóng">
+              <Icon><path d="M6 6l12 12M18 6L6 18" /></Icon>
+            </button>
+          </header>
+          <div className="qd-body">
+            {active === 'links' && <LinksPane go={go} openSupport={openSupport} />}
+            {active === 'saved' && <SavedPane go={go} />}
+            {active === 'notes' && <NotesPane />}
+          </div>
+        </aside>
+      )}
+
+      <nav className="qd-rail" aria-label="Thanh tiện ích">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className="qd-tab"
+            aria-pressed={active === t.id}
+            aria-label={t.label}
+            title={t.label}
+            onClick={() => setActive((a) => (a === t.id ? null : t.id))}
+          >
+            {t.icon}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+</file>
 
 <file path="public/favicon.svg">
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
@@ -5178,289 +5540,6 @@ function Component2({ project, onSelect }) {
 export default memo(Component2);
 </file>
 
-<file path="src/Components/SupportModal.jsx">
-import { useEffect, useRef, useState } from 'react';
-import { supabase } from '../supabaseClient';
-import { useAuth } from '../context/AuthContext';
-import './SupportModal.css';
-
-// TODO: đổi sang link issues của repo thật, ví dụ https://github.com/<user>/<repo>/issues
-const GITHUB_ISSUES_URL = 'https://github.com';
-const SUPPORT_EMAIL = 'support@gitxplore.dev';
-
-const FAQS = [
-  {
-    q: 'Làm thế nào để lưu một repository vào danh sách cá nhân?',
-    a: 'Mở một dự án bất kỳ trong mục Khám phá (Explore), rồi bấm "Lưu Repo". Để xem lại, vào Accounts Center > Saved Repositories.',
-  },
-  {
-    q: 'Dự án trên GitXplore được đồng bộ như thế nào?',
-    a: 'Các dự án mã nguồn mở được cập nhật định kỳ từ GitHub API. Bạn có thể xem mã nguồn, số sao (stars), forks và lệnh git clone ngay trong cửa sổ chi tiết dự án.',
-  },
-  {
-    q: 'Làm sao để liên kết tài khoản GitHub hoặc Google?',
-    a: 'Đăng nhập, vào Accounts Center > Connected experiences, rồi chọn Link GitHub hoặc Google.',
-  },
-  {
-    q: 'Làm thế nào để xuất hoặc xóa dữ liệu của tôi?',
-    a: 'Vào "Your information and permissions" trong Accounts Center. Bấm "Export JSON" để tải toàn bộ dữ liệu cá nhân về máy bất cứ lúc nào.',
-  },
-];
-
-// id giữ nguyên như bản cũ để không ảnh hưởng dữ liệu trong bảng support_tickets
-const TYPES = [
-  { id: 'bug', label: 'Báo lỗi', hint: 'Bạn đang làm gì và điều gì đã xảy ra? Ghi rõ trang bị lỗi nếu có thể.' },
-  { id: 'feature', label: 'Góp ý', hint: 'Bạn muốn GitXplore làm được thêm điều gì?' },
-  { id: 'account', label: 'Tài khoản', hint: 'Mô tả vấn đề về đăng nhập, liên kết hoặc dữ liệu tài khoản của bạn.' },
-];
-
-export default function SupportModal({ onClose }) {
-  const { user } = useAuth();
-  const panelRef = useRef(null);
-
-  const [tab, setTab] = useState('faq'); // 'faq' | 'form'
-  const [openFaq, setOpenFaq] = useState(null);
-
-  const [ticketType, setTicketType] = useState('bug');
-  const [contact, setContact] = useState(user?.identifier || '');
-  const [message, setMessage] = useState('');
-  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
-
-  const currentType = TYPES.find((t) => t.id === ticketType);
-  const canSend = message.trim() && contact.trim() && status !== 'sending';
-
-  // Khoá cuộn nền, đưa focus vào hộp thoại, trả focus khi đóng
-  useEffect(() => {
-    const previouslyFocused = document.activeElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panelRef.current?.focus();
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, []);
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-      return;
-    }
-    // Giữ focus trong hộp thoại khi bấm Tab
-    if (e.key === 'Tab') {
-      const items = panelRef.current.querySelectorAll(
-        'button:not([disabled]), a[href], input, textarea'
-      );
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canSend) return;
-    setStatus('sending');
-
-    try {
-      const { error } = await supabase.from('support_tickets').insert([
-        {
-          user_contact: contact.trim(),
-          ticket_type: ticketType,
-          message: message.trim(),
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      if (error) throw error;
-      setStatus('sent');
-    } catch {
-      // Giữ nguyên nội dung người dùng đã nhập để họ gửi lại
-      setStatus('error');
-    }
-  };
-
-  const sendAnother = () => {
-    setMessage('');
-    setStatus('idle');
-  };
-
-  return (
-    <div
-      className="sp-overlay"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="sp"
-        ref={panelRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sp-title"
-        onKeyDown={handleKeyDown}
-      >
-        {/* Header */}
-        <header className="sp-head">
-          <div>
-            <h2 id="sp-title" className="sp-title">Hỗ trợ</h2>
-            <p className="sp-sub">Tìm câu trả lời nhanh hoặc gửi yêu cầu cho đội ngũ GitXplore.</p>
-          </div>
-          <button type="button" className="sp-close" onClick={onClose} aria-label="Đóng">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          </button>
-        </header>
-
-        {/* Chuyển giữa 2 việc người dùng hay làm nhất */}
-        <div className="sp-tabs">
-          <div className="sp-segment">
-            <button type="button" aria-pressed={tab === 'faq'} onClick={() => setTab('faq')}>
-              Câu hỏi thường gặp
-            </button>
-            <button type="button" aria-pressed={tab === 'form'} onClick={() => setTab('form')}>
-              Gửi yêu cầu
-            </button>
-          </div>
-        </div>
-
-        {/* Nội dung — chỉ vùng này cuộn */}
-        <div className="sp-body" data-lenis-prevent>
-          {tab === 'faq' && (
-            <div className="sp-fade">
-              <ul className="sp-faq">
-                {FAQS.map((faq, i) => {
-                  const open = openFaq === i;
-                  return (
-                    <li key={faq.q} className="sp-faq-item">
-                      <button
-                        type="button"
-                        className="sp-faq-q"
-                        aria-expanded={open}
-                        aria-controls={`sp-faq-a-${i}`}
-                        onClick={() => setOpenFaq(open ? null : i)}
-                      >
-                        <span>{faq.q}</span>
-                        <svg className="sp-chev" width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                          <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                      {open && (
-                        <p id={`sp-faq-a-${i}`} className="sp-faq-a">{faq.a}</p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <p className="sp-fallback">
-                Chưa thấy câu trả lời?{' '}
-                <button type="button" className="sp-link" onClick={() => setTab('form')}>
-                  Gửi yêu cầu cho chúng tôi
-                </button>
-              </p>
-            </div>
-          )}
-
-          {tab === 'form' && status === 'sent' && (
-            <div className="sp-fade sp-done" role="status">
-              <span className="sp-done-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
-                  <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <h3>Đã nhận yêu cầu của bạn</h3>
-              <p>Chúng tôi sẽ liên hệ qua <strong>{contact.trim()}</strong> khi có phản hồi.</p>
-              <div className="sp-done-actions">
-                <button type="button" className="sp-btn" onClick={sendAnother}>Gửi yêu cầu khác</button>
-                <button type="button" className="sp-btn sp-btn--primary" onClick={onClose}>Đóng</button>
-              </div>
-            </div>
-          )}
-
-          {tab === 'form' && status !== 'sent' && (
-            <form className="sp-fade sp-form" onSubmit={handleSubmit}>
-              <fieldset className="sp-field sp-types">
-                <legend className="sp-label">Bạn muốn gửi gì?</legend>
-                <div className="sp-segment sp-segment--full">
-                  {TYPES.map((t) => (
-                    <label key={t.id}>
-                      <input
-                        type="radio"
-                        name="sp-ticket-type"
-                        value={t.id}
-                        checked={ticketType === t.id}
-                        onChange={() => setTicketType(t.id)}
-                      />
-                      <span>{t.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-
-              <div className="sp-field">
-                <label className="sp-label" htmlFor="sp-contact">Email hoặc số điện thoại</label>
-                <input
-                  id="sp-contact"
-                  className="sp-input"
-                  type="text"
-                  autoComplete="email"
-                  placeholder="Để chúng tôi liên hệ lại với bạn"
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="sp-field">
-                <label className="sp-label" htmlFor="sp-message">Nội dung</label>
-                <textarea
-                  id="sp-message"
-                  className="sp-input sp-textarea"
-                  rows={5}
-                  maxLength={2000}
-                  placeholder={currentType.hint}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  required
-                />
-              </div>
-
-              {status === 'error' && (
-                <p className="sp-error" role="alert">
-                  Chưa gửi được yêu cầu. Nội dung của bạn vẫn còn nguyên, hãy thử lại hoặc gửi email tới{' '}
-                  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
-                </p>
-              )}
-
-              <div className="sp-actions">
-                <button type="submit" className="sp-btn sp-btn--primary" disabled={!canSend}>
-                  {status === 'sending' ? 'Đang gửi…' : 'Gửi yêu cầu'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* Kênh khác — luôn nằm ở chân, không chiếm chỗ của nội dung chính */}
-        <footer className="sp-foot">
-          <span>Kênh khác:</span>
-          <a href={GITHUB_ISSUES_URL} target="_blank" rel="noreferrer">GitHub Issues</a>
-          <a href={`mailto:${SUPPORT_EMAIL}`}>Email</a>
-          <span className="sp-soon">Discord (sắp ra mắt)</span>
-        </footer>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/context/LanguageContext.jsx">
 import { createContext, useContext, useState } from 'react';
 
@@ -6777,101 +6856,309 @@ export default function NewsPage() {
 }
 </file>
 
-<file path="src/pages/NewsPage.css">
-/* News page — cùng hệ màu amber với CommunityForum. Mọi class bắt đầu bằng nw- */
-.nw {
-  --bg: #0d0909; --surface: #161010; --surface-2: #1e1616; --line: #2d2121;
-  --text: #f6f2ef; --muted: #b9ada7; --faint: #8d817b;
-  --accent: #f59e0b; --accent-ink: #1a1006; --accent-soft: rgba(245,158,11,.14);
-  min-height: 100vh; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
-  position: relative; z-index: 1;
-}
-.nw *, .nw *::before, .nw *::after { box-sizing: border-box; }
-.nw :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+<file path="src/Components/SupportModal.jsx">
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import './SupportModal.css';
 
-.nw-top {
-  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 12px 5vw; background: rgba(13,9,9,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
-}
-.nw-brand { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 19px; letter-spacing: 1.5px; color: #fef08a; margin-right: auto; }
-.nw-brand span { color: var(--accent); }
-.nw-back, .nw-btn {
-  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
-  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
-}
-.nw-back:hover, .nw-btn:hover:not(:disabled) { border-color: var(--accent); }
-.nw-btn:disabled { opacity: .5; cursor: default; }
-.nw-live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-.nw-dot.is-live { background: #34d399; animation: nw-pulse 2s infinite; }
-.nw-dot.is-loading { background: var(--accent); animation: nw-pulse .8s infinite; }
-@keyframes nw-pulse { 50% { opacity: .3; transform: scale(1.4); } }
-.nw-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.nw-select select, .nw-input {
-  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
-  padding: 7px 10px; font: inherit; font-size: 13px;
+// TODO: đổi sang link issues của repo thật, ví dụ https://github.com/<user>/<repo>/issues
+const GITHUB_ISSUES_URL = 'https://github.com';
+const SUPPORT_EMAIL = 'support@gitxplore.dev';
+
+const FAQS = [
+  {
+    q: 'Làm thế nào để lưu một repository vào danh sách cá nhân?',
+    a: 'Mở một dự án bất kỳ trong mục Khám phá (Explore), rồi bấm "Lưu Repo". Để xem lại, vào Accounts Center > Saved Repositories.',
+  },
+  {
+    q: 'Dự án trên GitXplore được đồng bộ như thế nào?',
+    a: 'Các dự án mã nguồn mở được cập nhật định kỳ từ GitHub API. Bạn có thể xem mã nguồn, số sao (stars), forks và lệnh git clone ngay trong cửa sổ chi tiết dự án.',
+  },
+  {
+    q: 'Làm sao để liên kết tài khoản GitHub hoặc Google?',
+    a: 'Đăng nhập, vào Accounts Center > Connected experiences, rồi chọn Link GitHub hoặc Google.',
+  },
+  {
+    q: 'Làm thế nào để xuất hoặc xóa dữ liệu của tôi?',
+    a: 'Vào "Your information and permissions" trong Accounts Center. Bấm "Export JSON" để tải toàn bộ dữ liệu cá nhân về máy bất cứ lúc nào.',
+  },
+];
+
+// id giữ nguyên như bản cũ để không ảnh hưởng dữ liệu trong bảng support_tickets
+const TYPES = [
+  { id: 'bug', label: 'Báo lỗi', hint: 'Bạn đang làm gì và điều gì đã xảy ra? Ghi rõ trang bị lỗi nếu có thể.' },
+  { id: 'feature', label: 'Góp ý', hint: 'Bạn muốn GitXplore làm được thêm điều gì?' },
+  { id: 'account', label: 'Tài khoản', hint: 'Mô tả vấn đề về đăng nhập, liên kết hoặc dữ liệu tài khoản của bạn.' },
+];
+
+// Chuyển lỗi Supabase thành gợi ý dễ hiểu (đồng thời log đầy đủ ra console)
+function getErrorHint(err) {
+  const code = err?.code || '';
+  const msg = err?.message || '';
+  if (code === 'PGRST205' || code === '42P01') return 'Bảng support_tickets chưa tồn tại trên Supabase.';
+  if (code === '42501' || /row-level security/i.test(msg)) return 'Bị chặn bởi RLS: thiếu policy INSERT cho bảng support_tickets.';
+  if (code === 'PGRST204' || code === '42703') return 'Tên cột không khớp với bảng support_tickets.';
+  if (/Failed to fetch|NetworkError/i.test(msg)) return 'Không kết nối được Supabase (kiểm tra mạng hoặc biến môi trường VITE_SUPABASE_URL).';
+  if (/Invalid API key|JWT/i.test(msg)) return 'API key Supabase không hợp lệ (kiểm tra VITE_SUPABASE_ANON_KEY).';
+  return msg;
 }
 
-.nw-main { max-width: 1240px; margin: 0 auto; padding: 32px 5vw 80px; }
-.nw-head h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
-.nw-head p { color: var(--muted); margin: 0 0 22px; }
+export default function SupportModal({ onClose }) {
+  const { user } = useAuth();
+  const panelRef = useRef(null);
 
-.nw-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
-.nw-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
-.nw-chips button {
-  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
-  padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
-}
-.nw-chips button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-.nw-search { min-width: 200px; }
+  const [tab, setTab] = useState('faq'); // 'faq' | 'form'
+  const [openFaq, setOpenFaq] = useState(null);
 
-.nw-new {
-  display: block; margin: 0 auto 18px; background: var(--accent); color: var(--accent-ink); border: 0;
-  border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
-}
-.nw-warn { font-size: 13px; color: var(--faint); margin-bottom: 16px; }
-.nw-empty { color: var(--muted); text-align: center; padding: 60px 0; }
+  const [ticketType, setTicketType] = useState('bug');
+  const [contact, setContact] = useState(user?.identifier || '');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
+  const [errorDetail, setErrorDetail] = useState('');
 
-.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
-.nw-card {
-  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-  transition: border-color .2s, transform .2s;
-}
-.nw-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.nw-skel { min-height: 170px; background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: nw-shimmer 1.4s infinite; }
-@keyframes nw-shimmer { to { background-position: -200% 0; } }
-.nw-img { width: 100%; height: 150px; object-fit: cover; background: var(--surface-2); }
-.nw-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; flex: 1; }
-.nw-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
-.nw-time { margin-left: auto; }
-.nw-tag { border-radius: 4px; padding: 1px 7px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
-.nw-tag--repo { background: rgba(167,139,250,.15); color: #a78bfa; }
-.nw-tag--article { background: rgba(96,165,250,.15); color: #60a5fa; }
-.nw-tag--social { background: rgba(52,211,153,.15); color: #34d399; }
-.nw-body h3 { margin: 0; font-size: 16px; line-height: 1.35; display: flex; align-items: flex-start; gap: 8px; word-break: break-word; }
-.nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
-.nw-body p {
-  margin: 0; color: var(--muted); font-size: 13.5px;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
-}
-.nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
-.nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  const currentType = TYPES.find((t) => t.id === ticketType);
+  const canSend = message.trim() && contact.trim() && status !== 'sending';
 
-@media (max-width: 640px) { .nw-head h1 { font-size: 30px; } .nw-search { width: 100%; } }
+  // Khoá cuộn nền, đưa focus vào hộp thoại, trả focus khi đóng
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panelRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
-/* ---- v2: tìm kiếm ---- */
-.nw-search--main { flex: 1 1 100%; font-size: 15px; padding: 11px 14px; border-radius: 10px; }
-.nw-search--main:focus { border-color: var(--accent); outline: none; }
-.nw-tag--package { background: rgba(244,114,182,.15); color: #f472b6; }
-.nw-tag--discussion { background: rgba(251,146,60,.15); color: #fb923c; }
-.nw-mark { background: rgba(245,158,11,.28); color: inherit; border-radius: 3px; padding: 0 2px; }
-.nw-more {
-  display: block; margin: 28px auto 0; background: var(--surface-2); color: var(--text);
-  border: 1px solid var(--line); border-radius: 999px; padding: 10px 24px; font: inherit; font-size: 14px; cursor: pointer;
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+    // Giữ focus trong hộp thoại khi bấm Tab
+    if (e.key === 'Tab') {
+      const items = panelRef.current.querySelectorAll(
+        'button:not([disabled]), a[href], input, textarea'
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!canSend) return;
+    setStatus('sending');
+    setErrorDetail('');
+
+    try {
+      const { error } = await supabase.from('support_tickets').insert([
+        {
+          user_contact: contact.trim(),
+          ticket_type: ticketType,
+          message: message.trim(),
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      if (error) throw error;
+      setStatus('sent');
+    } catch (err) {
+      // Giữ nguyên nội dung người dùng đã nhập để họ gửi lại
+      console.error('Support ticket error:', err);
+      setErrorDetail(getErrorHint(err));
+      setStatus('error');
+    }
+  };
+
+  const sendAnother = () => {
+    setMessage('');
+    setStatus('idle');
+  };
+
+  return (
+    <div
+      className="sp-overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="sp"
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sp-title"
+        onKeyDown={handleKeyDown}
+      >
+        {/* Header */}
+        <header className="sp-head">
+          <div>
+            <h2 id="sp-title" className="sp-title">Hỗ trợ</h2>
+            <p className="sp-sub">Tìm câu trả lời nhanh hoặc gửi yêu cầu cho đội ngũ GitXplore.</p>
+          </div>
+          <button type="button" className="sp-close" onClick={onClose} aria-label="Đóng">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+        </header>
+
+        {/* Chuyển giữa 2 việc người dùng hay làm nhất */}
+        <div className="sp-tabs">
+          <div className="sp-segment">
+            <button type="button" aria-pressed={tab === 'faq'} onClick={() => setTab('faq')}>
+              Câu hỏi thường gặp
+            </button>
+            <button type="button" aria-pressed={tab === 'form'} onClick={() => setTab('form')}>
+              Gửi yêu cầu
+            </button>
+          </div>
+        </div>
+
+        {/* Nội dung — chỉ vùng này cuộn */}
+        <div className="sp-body" data-lenis-prevent>
+          {tab === 'faq' && (
+            <div className="sp-fade">
+              <ul className="sp-faq">
+                {FAQS.map((faq, i) => {
+                  const open = openFaq === i;
+                  return (
+                    <li key={faq.q} className="sp-faq-item">
+                      <button
+                        type="button"
+                        className="sp-faq-q"
+                        aria-expanded={open}
+                        aria-controls={`sp-faq-a-${i}`}
+                        onClick={() => setOpenFaq(open ? null : i)}
+                      >
+                        <span>{faq.q}</span>
+                        <svg className="sp-chev" width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      {open && (
+                        <p id={`sp-faq-a-${i}`} className="sp-faq-a">{faq.a}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p className="sp-fallback">
+                Chưa thấy câu trả lời?{' '}
+                <button type="button" className="sp-link" onClick={() => setTab('form')}>
+                  Gửi yêu cầu cho chúng tôi
+                </button>
+              </p>
+            </div>
+          )}
+
+          {tab === 'form' && status === 'sent' && (
+            <div className="sp-fade sp-done" role="status">
+              <span className="sp-done-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                  <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <h3>Đã nhận yêu cầu của bạn</h3>
+              <p>Chúng tôi sẽ liên hệ qua <strong>{contact.trim()}</strong> khi có phản hồi.</p>
+              <div className="sp-done-actions">
+                <button type="button" className="sp-btn" onClick={sendAnother}>Gửi yêu cầu khác</button>
+                <button type="button" className="sp-btn sp-btn--primary" onClick={onClose}>Đóng</button>
+              </div>
+            </div>
+          )}
+
+          {tab === 'form' && status !== 'sent' && (
+            <form className="sp-fade sp-form" onSubmit={handleSubmit}>
+              <fieldset className="sp-field sp-types">
+                <legend className="sp-label">Bạn muốn gửi gì?</legend>
+                <div className="sp-segment sp-segment--full">
+                  {TYPES.map((t) => (
+                    <label key={t.id}>
+                      <input
+                        type="radio"
+                        name="sp-ticket-type"
+                        value={t.id}
+                        checked={ticketType === t.id}
+                        onChange={() => setTicketType(t.id)}
+                      />
+                      <span>{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <div className="sp-field">
+                <label className="sp-label" htmlFor="sp-contact">Email hoặc số điện thoại</label>
+                <input
+                  id="sp-contact"
+                  className="sp-input"
+                  type="text"
+                  autoComplete="email"
+                  placeholder="Để chúng tôi liên hệ lại với bạn"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="sp-field">
+                <label className="sp-label" htmlFor="sp-message">Nội dung</label>
+                <textarea
+                  id="sp-message"
+                  className="sp-input sp-textarea"
+                  rows={5}
+                  maxLength={2000}
+                  placeholder={currentType.hint}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                />
+              </div>
+
+              {status === 'error' && (
+                <p className="sp-error" role="alert">
+                  Chưa gửi được yêu cầu. Nội dung của bạn vẫn còn nguyên, hãy thử lại hoặc gửi email tới{' '}
+                  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+                  {errorDetail && (
+                    <>
+                      <br />
+                      <small>Chi tiết: {errorDetail}</small>
+                    </>
+                  )}
+                </p>
+              )}
+
+              <div className="sp-actions">
+                <button type="submit" className="sp-btn sp-btn--primary" disabled={!canSend}>
+                  {status === 'sending' ? 'Đang gửi…' : 'Gửi yêu cầu'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Kênh khác — luôn nằm ở chân, không chiếm chỗ của nội dung chính */}
+        <footer className="sp-foot">
+          <span>Kênh khác:</span>
+          <a href={GITHUB_ISSUES_URL} target="_blank" rel="noreferrer">GitHub Issues</a>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>Email</a>
+          <span className="sp-soon">Discord (sắp ra mắt)</span>
+        </footer>
+      </div>
+    </div>
+  );
 }
-.nw-more:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.nw-more:disabled { opacity: .6; cursor: default; }
 </file>
 
 <file path="src/Components/NavModals.jsx">
@@ -7056,6 +7343,103 @@ export default function NavModals() {
     </div>
   );
 }
+</file>
+
+<file path="src/pages/NewsPage.css">
+/* News page — cùng hệ màu amber với CommunityForum. Mọi class bắt đầu bằng nw- */
+.nw {
+  --bg: #0d0909; --surface: #161010; --surface-2: #1e1616; --line: #2d2121;
+  --text: #f6f2ef; --muted: #b9ada7; --faint: #8d817b;
+  --accent: #f59e0b; --accent-ink: #1a1006; --accent-soft: rgba(245,158,11,.14);
+  min-height: 100vh; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
+  position: relative; z-index: 1;
+}
+.nw *, .nw *::before, .nw *::after { box-sizing: border-box; }
+.nw :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.nw-top {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 5vw; background: rgba(13,9,9,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.nw-brand { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 19px; letter-spacing: 1.5px; color: #fef08a; margin-right: auto; }
+.nw-brand span { color: var(--accent); }
+.nw-back, .nw-btn {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-back:hover, .nw-btn:hover:not(:disabled) { border-color: var(--accent); }
+.nw-btn:disabled { opacity: .5; cursor: default; }
+.nw-live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.nw-dot.is-live { background: #34d399; animation: nw-pulse 2s infinite; }
+.nw-dot.is-loading { background: var(--accent); animation: nw-pulse .8s infinite; }
+@keyframes nw-pulse { 50% { opacity: .3; transform: scale(1.4); } }
+.nw-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-select select, .nw-input {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font: inherit; font-size: 13px;
+}
+
+.nw-main { max-width: 1240px; margin: 0 auto; padding: 32px 5vw 80px; }
+.nw-head h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
+.nw-head p { color: var(--muted); margin: 0 0 22px; }
+
+.nw-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.nw-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
+.nw-chips button {
+  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-chips button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.nw-search { min-width: 200px; }
+
+.nw-new {
+  display: block; margin: 0 auto 18px; background: var(--accent); color: var(--accent-ink); border: 0;
+  border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.nw-warn { font-size: 13px; color: var(--faint); margin-bottom: 16px; }
+.nw-empty { color: var(--muted); text-align: center; padding: 60px 0; }
+
+.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.nw-card {
+  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color .2s, transform .2s;
+}
+.nw-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.nw-skel { min-height: 170px; background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: nw-shimmer 1.4s infinite; }
+@keyframes nw-shimmer { to { background-position: -200% 0; } }
+.nw-img { width: 100%; height: 150px; object-fit: cover; background: var(--surface-2); }
+.nw-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; flex: 1; }
+.nw-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-time { margin-left: auto; }
+.nw-tag { border-radius: 4px; padding: 1px 7px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.nw-tag--repo { background: rgba(167,139,250,.15); color: #a78bfa; }
+.nw-tag--article { background: rgba(96,165,250,.15); color: #60a5fa; }
+.nw-tag--social { background: rgba(52,211,153,.15); color: #34d399; }
+.nw-body h3 { margin: 0; font-size: 16px; line-height: 1.35; display: flex; align-items: flex-start; gap: 8px; word-break: break-word; }
+.nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+.nw-body p {
+  margin: 0; color: var(--muted); font-size: 13.5px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+}
+.nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 640px) { .nw-head h1 { font-size: 30px; } .nw-search { width: 100%; } }
+
+/* ---- v2: tìm kiếm ---- */
+.nw-search--main { flex: 1 1 100%; font-size: 15px; padding: 11px 14px; border-radius: 10px; }
+.nw-search--main:focus { border-color: var(--accent); outline: none; }
+.nw-tag--package { background: rgba(244,114,182,.15); color: #f472b6; }
+.nw-tag--discussion { background: rgba(251,146,60,.15); color: #fb923c; }
+.nw-mark { background: rgba(245,158,11,.28); color: inherit; border-radius: 3px; padding: 0 2px; }
+.nw-more {
+  display: block; margin: 28px auto 0; background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 999px; padding: 10px 24px; font: inherit; font-size: 14px; cursor: pointer;
+}
+.nw-more:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.nw-more:disabled { opacity: .6; cursor: default; }
 </file>
 
 <file path="src/main.jsx">
@@ -8509,6 +8893,7 @@ import NewsPage from './pages/NewsPage.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
 import SupportModal from './Components/SupportModal.jsx';
+import QuickDock from './Components/QuickDock.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -8564,6 +8949,9 @@ export default function App() {
       {selectedProject && <ProjectModal />}
       {modalType === 'support' && <SupportModal onClose={closeModal} />}
       {modalType && modalType !== 'support' && <NavModals />}
+
+      {/* Thanh tiện ích bên phải (cửa sổ lối tắt) */}
+      <QuickDock />
     </>
   );
 }
