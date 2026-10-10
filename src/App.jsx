@@ -6,7 +6,7 @@ import { useAuth } from './context/AuthContext';
 import { useUI } from './context/UIContext';
 import HomePage from './pages/HomePage.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
-import CommunityHub from './pages/CommunityHub.jsx';
+import CommunityHub from './Components/CommunityHub.jsx';
 import SavedDashboard from './Components/SavedDashboard.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import NewsPage from './pages/NewsPage.jsx';

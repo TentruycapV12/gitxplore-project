@@ -55,10 +55,11 @@ src/
     AdminDashboardModal.jsx
     CommunityForum.css
     CommunityForum.jsx
+    CommunityHub.css
+    CommunityHub.jsx
     Component1.jsx
     Component2.jsx
     Footer.jsx
-    HeroParallax.jsx
     NavModals.jsx
     ProjectModal.jsx
     QuickDock.css
@@ -1256,6 +1257,492 @@ export default function FeatureModal(props) {
     case 'ai_glasses': return <GlassesModal {...props} />;
     default: return <p style={S.muted}>{title}</p>;
   }
+}
+</file>
+
+<file path="src/Components/CommunityHub.css">
+/* Trang Cộng đồng: sidebar kiểu Accounts Center + lưới thẻ kiểu Facebook Friends.
+   Mọi class bắt đầu bằng ch- và nằm trong .ch nên không đụng CSS khác. */
+.ch {
+  --bg: #090505;
+  --side: #0e0707;
+  --surface: #161010;
+  --surface-2: #1e1616;
+  --line: #241111;
+  --text: #f6f2ef;
+  --muted: #8c827a;
+  --soft: #d1d5db;
+  --accent: #f59e0b;
+  --accent-ink: #1a1006;
+  --gold: #fef08a;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.ch *, .ch *::before, .ch *::after { box-sizing: border-box; }
+.ch button { font-family: inherit; }
+.ch :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* TopNav gốc dùng position:absolute trên trang chủ; ở đây cho nó dính trên cùng. */
+.ch .tn {
+  position: sticky;
+  background: rgba(9, 5, 5, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.ch-shell {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  align-items: start;
+}
+
+/* ---------- Sidebar ---------- */
+.ch-side {
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px 20px;
+  background: var(--side);
+  border-right: 1px solid var(--line);
+}
+.ch-brand {
+  display: flex; align-items: center; gap: 8px;
+  color: #38bdf8; font-size: 13px; font-weight: 700;
+}
+.ch-title { margin: 6px 0 4px; font-size: 24px; font-weight: 700; color: #fff; }
+.ch-sub { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+
+.ch-main-item, .ch-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  text-align: left; cursor: pointer; border: 1px solid transparent;
+  background: transparent; transition: background .15s, color .15s;
+}
+.ch-main-item {
+  padding: 12px 14px; border-radius: 10px;
+  color: var(--soft); font-size: 13.5px; font-weight: 600;
+}
+.ch-item {
+  padding: 10px 14px; border-radius: 8px;
+  color: #9ca3af; font-size: 13px;
+}
+.ch-item:hover, .ch-main-item:hover { background: #1a0e0e; }
+.ch-main-item.is-on { background: #261414; color: var(--gold); border-color: #4a1d1d; }
+.ch-item.is-on { background: #1e0e0e; color: var(--gold); }
+
+.ch-group {
+  margin: 0 0 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  color: #78716c;
+}
+.ch-nav { display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Nội dung ---------- */
+.ch-content { padding: 28px 32px 64px; min-width: 0; }
+.ch-section { margin-bottom: 8px; }
+.ch-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ch-h2 { margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #fff; }
+.ch-lead { margin: -8px 0 20px; color: var(--muted); font-size: 14px; }
+.ch-link {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: #60a5fa; font-size: 14px;
+}
+.ch-link:hover { text-decoration: underline; }
+.ch-hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+.ch-status { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+
+/* ---------- Thẻ (giống Friend Requests) ---------- */
+.ch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 210px));
+  gap: 16px;
+}
+.ch-card {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+.ch-card-cover {
+  height: 190px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #7f1d1d, #c2410c);
+}
+.ch-card-cover--member { background: linear-gradient(135deg, #1e3a8a, #6d28d9); }
+.ch-card-cover span {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 72px; font-weight: 700; color: rgba(255, 255, 255, .92);
+}
+.ch-card-body { display: flex; flex-direction: column; gap: 8px; padding: 12px; flex: 1; }
+.ch-card-title {
+  margin: 0; font-size: 15px; font-weight: 700; color: #fff;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  min-height: 2.8em;
+}
+.ch-card-meta { margin: 0 0 4px; font-size: 12.5px; color: var(--muted); }
+
+.ch-btn {
+  width: 100%; height: 36px; padding: 0 12px; cursor: pointer;
+  background: var(--surface-2); color: var(--text);
+  border: 0; border-radius: 8px; font-size: 14px; font-weight: 600;
+  transition: background .15s;
+}
+.ch-btn:hover { background: #2a1e1e; }
+.ch-btn--primary { background: var(--accent); color: var(--accent-ink); }
+.ch-btn--primary:hover { background: #fbbf24; }
+
+/* ---------- Ngôn ngữ ---------- */
+.ch-langs {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px;
+  max-width: 820px;
+}
+.ch-lang {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; cursor: pointer; text-align: left;
+  background: var(--surface); color: var(--soft);
+  border: 1px solid var(--line); border-radius: 10px; font-size: 14px;
+  transition: background .15s, border-color .15s;
+}
+.ch-lang:hover { background: var(--surface-2); }
+.ch-lang.is-on { border-color: rgba(245, 158, 11, .6); background: rgba(245, 158, 11, .1); color: var(--gold); }
+.ch-lang-flag { font-size: 22px; line-height: 1; }
+.ch-lang-name { flex: 1; font-weight: 600; }
+.ch-lang-tag {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink);
+}
+
+/* ---------- Màn hình nhỏ ---------- */
+@media (max-width: 860px) {
+  .ch-shell { grid-template-columns: minmax(0, 1fr); }
+  .ch-side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .ch-content { padding: 20px 16px 48px; }
+  .ch-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .ch-card-cover { height: 140px; }
+}
+</file>
+
+<file path="src/Components/CommunityHub.jsx">
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import { useLanguage } from '../context/LanguageContext';
+import TopNav from '../Components/TopNav.jsx';
+import './CommunityHub.css';
+
+/* Chữ của trang này. Chỉ có vi/en, ngôn ngữ khác tự rơi về tiếng Anh. */
+const TEXT = {
+  vi: {
+    brand: 'GitXplore',
+    title: 'Cộng đồng',
+    sub: 'Thảo luận, hỏi đáp và kết nối với các lập trình viên khác trên GitXplore.',
+    home: 'Trang chủ cộng đồng',
+    group_explore: 'Khám phá',
+    group_settings: 'Cài đặt',
+    forum: 'Diễn đàn thảo luận',
+    topics: 'Chủ đề mới',
+    members: 'Thành viên',
+    language: 'Ngôn ngữ',
+    topics_title: 'Chủ đề mới',
+    members_title: 'Thành viên bạn có thể biết',
+    see_all: 'Xem tất cả',
+    open: 'Xem chủ đề',
+    hide: 'Ẩn',
+    view_posts: 'Xem bài viết',
+    replies: 'phản hồi',
+    posts: 'bài viết',
+    loading: 'Đang tải…',
+    empty: 'Chưa có chủ đề nào.',
+    failed: 'Không tải được dữ liệu. Thử lại sau nhé.',
+    lang_title: 'Ngôn ngữ',
+    lang_sub: 'Chọn ngôn ngữ hiển thị của GitXplore. Lựa chọn được lưu trên trình duyệt này.',
+    current: 'Đang dùng',
+    open_forum: 'Mở diễn đàn',
+  },
+  en: {
+    brand: 'GitXplore',
+    title: 'Community',
+    sub: 'Discuss, ask questions and connect with other developers on GitXplore.',
+    home: 'Community home',
+    group_explore: 'Explore',
+    group_settings: 'Settings',
+    forum: 'Discussion forum',
+    topics: 'New topics',
+    members: 'Members',
+    language: 'Language',
+    topics_title: 'New topics',
+    members_title: 'People you may know',
+    see_all: 'See all',
+    open: 'View topic',
+    hide: 'Hide',
+    view_posts: 'View posts',
+    replies: 'replies',
+    posts: 'posts',
+    loading: 'Loading…',
+    empty: 'No topics yet.',
+    failed: "Couldn't load data. Please try again later.",
+    lang_title: 'Language',
+    lang_sub: 'Choose the display language for GitXplore. Saved on this browser.',
+    current: 'Current',
+    open_forum: 'Open forum',
+  },
+};
+
+const MENU = [
+  { id: 'topics', icon: '💬', key: 'topics' },
+  { id: 'members', icon: '👥', key: 'members' },
+];
+const SECTIONS = ['home', 'topics', 'members', 'language'];
+
+const initial = (name) => (name ? String(name).trim().charAt(0).toUpperCase() : '?');
+
+function TopicCard({ topic, label, onOpen, onHide }) {
+  const replies = topic.topic_messages?.[0]?.count || 0;
+  return (
+    <article className="ch-card">
+      <div className="ch-card-cover">
+        <span>{initial(topic.author_name)}</span>
+      </div>
+      <div className="ch-card-body">
+        <h3 className="ch-card-title">{topic.title}</h3>
+        <p className="ch-card-meta">
+          {topic.author_name || '—'} · {replies} {label.replies}
+        </p>
+        <button type="button" className="ch-btn ch-btn--primary" onClick={() => onOpen(topic)}>
+          {label.open}
+        </button>
+        <button type="button" className="ch-btn" onClick={() => onHide(topic.id)}>
+          {label.hide}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function MemberCard({ member, label, onOpen }) {
+  return (
+    <article className="ch-card">
+      <div className="ch-card-cover ch-card-cover--member">
+        <span>{initial(member.name)}</span>
+      </div>
+      <div className="ch-card-body">
+        <h3 className="ch-card-title">{member.name}</h3>
+        <p className="ch-card-meta">
+          {member.count} {label.posts}
+        </p>
+        <button type="button" className="ch-btn ch-btn--primary" onClick={() => onOpen(member)}>
+          {label.view_posts}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function LanguagePanel({ label }) {
+  const { lang, setLang, languages } = useLanguage();
+  return (
+    <section className="ch-section">
+      <h2 className="ch-h2">{label.lang_title}</h2>
+      <p className="ch-lead">{label.lang_sub}</p>
+      <ul className="ch-langs">
+        {languages.map((l) => {
+          const on = l.code === lang;
+          return (
+            <li key={l.code}>
+              <button
+                type="button"
+                className={`ch-lang ${on ? 'is-on' : ''}`}
+                aria-pressed={on}
+                onClick={() => setLang(l.code)}
+              >
+                <span className="ch-lang-flag" aria-hidden="true">{l.flag}</span>
+                <span className="ch-lang-name">{l.label}</span>
+                {on && <span className="ch-lang-tag">{label.current}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+export default function CommunityHub() {
+  const navigate = useNavigate();
+  const { section } = useParams();
+  const { lang } = useLanguage();
+  const label = TEXT[lang] || TEXT.en;
+
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [hidden, setHidden] = useState(() => new Set());
+
+  const active = section || 'home';
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('topics')
+          .select('*, topic_messages(count)')
+          .order('last_reply_time', { ascending: false })
+          .limit(60);
+        if (error) throw error;
+        if (alive) setTopics(data || []);
+      } catch (err) {
+        console.error(err);
+        if (alive) setFailed(true);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const visibleTopics = useMemo(() => topics.filter((t) => !hidden.has(t.id)), [topics, hidden]);
+
+  // Gom tác giả từ các chủ đề để làm danh sách "thành viên".
+  const members = useMemo(() => {
+    const map = new Map();
+    topics.forEach((t) => {
+      if (!t.author_name) return;
+      const m = map.get(t.author_name) || { name: t.author_name, count: 0, firstTopic: t };
+      m.count += 1;
+      map.set(t.author_name, m);
+    });
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [topics]);
+
+  if (!SECTIONS.includes(active)) return <Navigate to="/community" replace />;
+
+  const go = (id) => navigate(id === 'home' ? '/community' : `/community/${id}`);
+  const openTopic = (t) => navigate(`/community/forum?thread=${t.id}`);
+  const hideTopic = (id) => setHidden((prev) => new Set(prev).add(id));
+
+  const status = loading ? label.loading : failed ? label.failed : null;
+
+  const topicsBlock = (limit) => {
+    const list = limit ? visibleTopics.slice(0, limit) : visibleTopics;
+    return (
+      <section className="ch-section">
+        <div className="ch-section-head">
+          <h2 className="ch-h2">{label.topics_title}</h2>
+          {limit && (
+            <button type="button" className="ch-link" onClick={() => go('topics')}>{label.see_all}</button>
+          )}
+        </div>
+        {status && <p className="ch-status">{status}</p>}
+        {!status && list.length === 0 && <p className="ch-status">{label.empty}</p>}
+        <div className="ch-grid">
+          {list.map((t) => (
+            <TopicCard key={t.id} topic={t} label={label} onOpen={openTopic} onHide={hideTopic} />
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const membersBlock = (limit) => {
+    const list = limit ? members.slice(0, limit) : members;
+    return (
+      <section className="ch-section">
+        <div className="ch-section-head">
+          <h2 className="ch-h2">{label.members_title}</h2>
+          {limit && (
+            <button type="button" className="ch-link" onClick={() => go('members')}>{label.see_all}</button>
+          )}
+        </div>
+        {!status && list.length === 0 && <p className="ch-status">{label.empty}</p>}
+        <div className="ch-grid">
+          {list.map((m) => (
+            <MemberCard key={m.name} member={m} label={label} onOpen={(x) => openTopic(x.firstTopic)} />
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  return (
+    <div className="ch">
+      <TopNav />
+
+      <div className="ch-shell">
+        {/* ===== SIDEBAR (kiểu Accounts Center) ===== */}
+        <aside className="ch-side" aria-label={label.title}>
+          <div className="ch-side-head">
+            <div className="ch-brand"><span aria-hidden="true">♾️</span> {label.brand}</div>
+            <h1 className="ch-title">{label.title}</h1>
+            <p className="ch-sub">{label.sub}</p>
+          </div>
+
+          <button
+            type="button"
+            className={`ch-main-item ${active === 'home' ? 'is-on' : ''}`}
+            onClick={() => go('home')}
+          >
+            <span aria-hidden="true">🏠</span> {label.home}
+          </button>
+
+          <div>
+            <p className="ch-group">{label.group_explore}</p>
+            <nav className="ch-nav">
+              <button type="button" className="ch-item" onClick={() => navigate('/community/forum')}>
+                <span aria-hidden="true">🗂️</span> {label.forum}
+              </button>
+              {MENU.map((it) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  className={`ch-item ${active === it.id ? 'is-on' : ''}`}
+                  onClick={() => go(it.id)}
+                >
+                  <span aria-hidden="true">{it.icon}</span> {label[it.key]}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <p className="ch-group">{label.group_settings}</p>
+            <nav className="ch-nav">
+              <button
+                type="button"
+                className={`ch-item ${active === 'language' ? 'is-on' : ''}`}
+                onClick={() => go('language')}
+              >
+                <span aria-hidden="true">🌐</span> {label.language}
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        {/* ===== NỘI DUNG ===== */}
+        <main className="ch-content">
+          {active === 'home' && (
+            <>
+              {topicsBlock(4)}
+              <hr className="ch-hr" />
+              {membersBlock(5)}
+            </>
+          )}
+          {active === 'topics' && topicsBlock()}
+          {active === 'members' && membersBlock()}
+          {active === 'language' && <LanguagePanel label={label} />}
+        </main>
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -9284,6 +9771,7 @@ import { useAuth } from './context/AuthContext';
 import { useUI } from './context/UIContext';
 import HomePage from './pages/HomePage.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
+import CommunityHub from './pages/CommunityHub.jsx';
 import SavedDashboard from './Components/SavedDashboard.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import NewsPage from './pages/NewsPage.jsx';
@@ -9322,7 +9810,11 @@ export default function App() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/community" element={<CommunityForum />} />
+        {/* Trang Cộng đồng mới (sidebar + ngôn ngữ) */}
+        <Route path="/community" element={<CommunityHub />} />
+        {/* Diễn đàn cũ chuyển sang /community/forum (đặt TRƯỚC :section để không bị nuốt) */}
+        <Route path="/community/forum" element={<CommunityForum />} />
+        <Route path="/community/:section" element={<CommunityHub />} />
         <Route path="/news" element={<NewsPage />} />
 
         {/* /accountscenter/:section */}
@@ -9380,7 +9872,7 @@ const resolvePrefix = (prefix) => PREFIX_MAP[prefix] || PREFIX_MAP['Discussion']
 export default function CommunityForum() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const onBack = () => navigate('/');
+  const onBack = () => navigate('/community');
   const [topics, setTopics] = useState([]);
   // Bài viết đang mở nằm trên URL (?thread=ID) → link chia sẻ mở thẳng đúng bài, Back hoạt động đúng.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -10469,309 +10961,6 @@ export default function CommunityForum() {
       {showAdminModal && (
         <AdminDashboardModal onClose={() => setShowAdminModal(false)} />
       )}
-    </div>
-  );
-}
-</file>
-
-<file path="src/Components/HeroParallax.jsx">
-import { useLayoutEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { scrollToId } from '../lib/scroll';
-import TopNav from './TopNav.jsx';
-
-gsap.registerPlugin(ScrollTrigger);
-
-// Hằng số + hàm thuần đặt NGOÀI component: không bị tạo lại ở mỗi lần render.
-const FRAME_COUNT = 120;
-const frame1Src = (i) => `/frames/frame_${String(i + 1).padStart(4, '0')}.jpg`;
-const frame2Src = (i) => `/frames/frames2/frame_${String(i + 1).padStart(4, '0')}.jpg`;
-
-/** Tạo canvas sequence: nạp trước các frame và trả về hàm vẽ frame hiện tại. */
-function createSequence(canvas, srcOf) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = 1920;
-  canvas.height = 1080;
-
-  const images = Array.from({ length: FRAME_COUNT }, (_, i) => {
-    const img = new Image();
-    img.src = srcOf(i);
-    return img;
-  });
-  const state = { frame: 0 };
-
-  const render = () => {
-    const img = images[state.frame];
-    if (img?.complete) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    }
-  };
-
-  // Frame đầu có thể đã tải xong (cache) → vẽ ngay, nếu chưa thì chờ onload.
-  if (images[0].complete) render();
-  else images[0].onload = render;
-
-  return { state, render };
-}
-
-export default function HeroParallax() {
-  const containerRef = useRef(null);
-  const canvas1Ref = useRef(null);
-  const canvas2Ref = useRef(null);
-  const slide1Ref = useRef(null);
-  const slide2Ref = useRef(null);
-
-  useLayoutEffect(() => {
-    const c1 = canvas1Ref.current;
-    const c2 = canvas2Ref.current;
-    if (!c1 || !c2) return;
-
-    const seq1 = createSequence(c1, frame1Src);
-    const seq2 = createSequence(c2, frame2Src);
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=350%',
-          pin: true,
-          scrub: 0.5,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      tl.to(seq1.state, {
-        frame: FRAME_COUNT - 1,
-        snap: 'frame',
-        ease: 'none',
-        onUpdate: seq1.render,
-        duration: 2,
-      }, 0)
-      .to(slide1Ref.current, { opacity: 0, y: -60, scale: 0.92, duration: 0.8 }, 0.8)
-      .to(c1, { opacity: 0, duration: 1 }, 1.4)
-      .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
-      .fromTo(slide2Ref.current, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8 }, 1.8)
-      .to(seq2.state, {
-        frame: FRAME_COUNT - 1,
-        snap: 'frame',
-        ease: 'none',
-        onUpdate: seq2.render,
-        duration: 2,
-      }, 1.8);
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    // Lớp bọc do React sở hữu: GSAP chèn pin-spacer vào BÊN TRONG lớp này,
-    // nên khi chuyển trang React luôn gỡ được (không lỗi removeChild).
-    <div className="hero-pin-wrap">
-    <div
-      ref={containerRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100vh',
-        overflow: 'hidden',
-        background: '#0a0606',
-      }}
-    >
-      <canvas
-        ref={canvas1Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-          zIndex: 1,
-        }}
-      />
-
-      <canvas
-        ref={canvas2Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-          zIndex: 2,
-          opacity: 0,
-        }}
-      />
-
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(circle at 65% 45%, rgba(185, 28, 28, 0.16) 0%, rgba(217, 119, 6, 0.08) 40%, rgba(8, 5, 5, 0.85) 90%)',
-          zIndex: 3,
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Thanh điều hướng kiểu Facebook */}
-      <TopNav />
-
-      {/* SCENE 1: WELCOME */}
-      <div
-        ref={slide1Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 5,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '0 8vw',
-          maxWidth: '820px',
-          pointerEvents: 'none',
-        }}
-      >
-        <p
-          style={{
-            color: '#fbbf24',
-            fontSize: '12px',
-            letterSpacing: '3px',
-            textTransform: 'uppercase',
-            marginBottom: '14px',
-            fontWeight: 600,
-          }}
-        >
-          ▲ Journey to new frontiers, Journey to Noto Nature Park
-        </p>
-        <h1
-          style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: 'clamp(70px, 12vw, 140px)',
-            color: '#ffffff',
-            lineHeight: '0.88',
-            letterSpacing: '-2px',
-            textTransform: 'uppercase',
-            margin: '6px 0 22px',
-            textShadow: '0 4px 30px rgba(185, 28, 28, 0.35)',
-          }}
-        >
-          WELCOME
-        </h1>
-        <p
-          style={{
-            color: '#fef3c7',
-            fontSize: '15px',
-            lineHeight: 1.75,
-            maxWidth: '460px',
-            marginBottom: '28px',
-            opacity: 0.9,
-          }}
-        >
-          Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. 
-          Surprising and captivating in equal measure.
-        </p>
-        <div style={{ pointerEvents: 'auto' }}>
-          <button
-            type="button"
-            onClick={() => scrollToId('explore')}
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
-              color: '#ffffff',
-              border: 'none',
-              padding: '12px 28px',
-              borderRadius: '24px',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 18px rgba(220, 38, 38, 0.4)',
-              transition: 'transform 0.2s ease',
-            }}
-            onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
-            onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
-          >
-            Start the journey ▸
-          </button>
-        </div>
-      </div>
-
-      {/* SCENE 2: TRANQUILITY */}
-      <div
-        ref={slide2Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 6,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-end',
-          paddingRight: '7vw',
-          pointerEvents: 'none',
-          opacity: 0,
-        }}
-      >
-        <div style={{ maxWidth: '520px', pointerEvents: 'auto', textAlign: 'left' }}>
-          <p
-            style={{
-              color: '#fbbf24',
-              fontSize: '12px',
-              letterSpacing: '3.5px',
-              textTransform: 'uppercase',
-              marginBottom: '10px',
-              fontWeight: 600,
-            }}
-          >
-            3D Experience
-          </p>
-          <h2
-            style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: 'clamp(62px, 9.5vw, 110px)',
-              color: '#ffffff',
-              lineHeight: '0.95',
-              marginBottom: '20px',
-              letterSpacing: '-1px',
-              textShadow: '0 4px 28px rgba(245, 158, 11, 0.3)',
-            }}
-          >
-            Tranquility
-          </h2>
-          <p
-            style={{
-              color: '#fef3c7',
-              fontSize: '15.5px',
-              lineHeight: 1.8,
-              marginBottom: '26px',
-              opacity: 0.9,
-            }}
-          >
-            Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes 
-            harboring a vast realm of legendary open-source artifacts.
-          </p>
-          <button
-            type="button"
-            onClick={() => scrollToId('explore')}
-            style={{
-              background: 'transparent',
-              color: '#fcd34d',
-              border: 'none',
-              borderBottom: '1px solid #fcd34d',
-              paddingBottom: '4px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            — Learn more
-          </button>
-        </div>
-      </div>
-    </div>
     </div>
   );
 }
