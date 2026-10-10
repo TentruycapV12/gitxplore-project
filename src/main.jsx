@@ -5,16 +5,13 @@ import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { UIProvider } from './context/UIContext.jsx';
-import { LanguageProvider } from './context/LanguageContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <UIProvider>
-          <LanguageProvider>
-            <App />
-          </LanguageProvider>
+          <App />
         </UIProvider>
       </AuthProvider>
     </BrowserRouter>

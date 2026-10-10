@@ -7,7 +7,7 @@ import { scrollToId } from '../lib/scroll';
 
 export default function SubNavBar() {
   const { user, logout } = useAuth();
-  const { openModal } = useUI();
+  const { openModal: setModal } = useUI();
   const { setCategory } = useProjectFilters();
   const [activeTab, setActiveTab] = useState('explore');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -36,13 +36,13 @@ export default function SubNavBar() {
 
         <div className="av-menu">
           <button
-            type="button"
             className={`av-item ${activeTab === 'explore' ? 'active' : ''}`}
             onClick={scrollToExplore}
           >
             Repositories
           </button>
 
+          {/* NavLink tự biết link nào đang active, không cần state riêng */}
           <NavLink
             to="/community"
             className={({ isActive }) => `av-item ${isActive ? 'active' : ''}`}
@@ -50,19 +50,24 @@ export default function SubNavBar() {
             Discussions
           </NavLink>
 
+          <NavLink
+            to="/news"
+            className={({ isActive }) => `av-item ${isActive ? 'active' : ''}`}
+          >
+            News
+          </NavLink>
+
           <button
-            type="button"
             className={`av-item ${activeTab === 'support' ? 'active' : ''}`}
             onClick={() => {
               setActiveTab('support');
-              openModal('support');
+              setModal('support');
             }}
           >
             Support & FAQ
           </button>
 
           <button
-            type="button"
             className={`av-item ${activeTab === 'about' ? 'active' : ''}`}
             onClick={scrollToAboutSection}
           >
@@ -70,10 +75,9 @@ export default function SubNavBar() {
           </button>
 
           <button
-            type="button"
             className="av-item"
             style={{ color: '#f43f5e' }}
-            onClick={() => openModal('support')}
+            onClick={() => setModal('support')}
           >
             Sponsor ❤️
           </button>
@@ -117,7 +121,6 @@ export default function SubNavBar() {
                 </div>
                 <div className="dropdown-divider"></div>
                 <button
-                  type="button"
                   className="dropdown-item logout-item"
                   onClick={() => {
                     setShowDropdown(false);
@@ -131,16 +134,15 @@ export default function SubNavBar() {
           </div>
         ) : (
           <button
-            type="button"
             className="register-btn-main"
             style={{ marginLeft: '6px' }}
-            onClick={() => openModal('signin')}
+            onClick={() => setModal('signin')}
           >
             Sign in
           </button>
         )}
 
-        <button type="button" className="av-top-btn" onClick={scrollToTop} title="Scroll to top">
+        <button className="av-top-btn" onClick={scrollToTop} title="Scroll to top">
           ↑
         </button>
       </div>

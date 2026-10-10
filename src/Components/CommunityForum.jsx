@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import AdminDashboardModal from './AdminDashboardModal';
-import './CommunityForum.css';
 
 const PREFIX_MAP = {
   'General': { label: 'General', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
@@ -21,51 +20,12 @@ const PREFIX_MAP = {
 
 const resolvePrefix = (prefix) => PREFIX_MAP[prefix] || PREFIX_MAP['Discussion'];
 
-const TAG_COLORS = {
-  Discussion: '#f59e0b',
-  Showcase: '#60a5fa',
-  Question: '#34d399',
-  Warning: '#fbbf24',
-  'Source Code': '#a78bfa',
-};
-
-const IMAGE_RE = /\.(jpeg|jpg|gif|png|webp)/i;
-const isUrl = (text) => !!text && (text.startsWith('http://') || text.startsWith('https://'));
-
-const formatRelative = (iso) => {
-  if (!iso) return 'just now';
-  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const Icon = ({ children, size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {children}
-  </svg>
-);
-const IconBack = () => <Icon><path d="M19 12H5M12 19l-7-7 7-7" /></Icon>;
-const IconPin = ({ filled }) => (
-  <Icon size={16}><path d="M12 17v5M9 3h6l-1 7 3 3v2H7v-2l3-3-1-7z" fill={filled ? 'currentColor' : 'none'} /></Icon>
-);
-const IconTrash = () => <Icon size={16}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" /></Icon>;
-const IconClip = () => <Icon><path d="M21 12.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l8-8" /></Icon>;
-const IconThumb = ({ filled }) => (
-  <Icon><path d="M7 10v11H3V10h4zM7 10l4-8c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.3l-1.4 8a2 2 0 0 1-2 1.7H7" fill={filled ? 'currentColor' : 'none'} /></Icon>
-);
-const IconShare = () => <Icon><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v14" /></Icon>;
-const IconFile = () => <Icon size={32}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" /></Icon>;
-
 export default function CommunityForum() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const onBack = () => navigate('/');
   const [topics, setTopics] = useState([]);
+  // Bài viết đang mở nằm trên URL (?thread=ID) → link chia sẻ mở thẳng đúng bài, Back hoạt động đúng.
   const [searchParams, setSearchParams] = useSearchParams();
   const threadId = searchParams.get('thread');
   const [threadTab, setThreadTab] = useState('Discussion');
@@ -93,6 +53,7 @@ export default function CommunityForum() {
 
   // Bộ lọc
   const [filterMode, setFilterMode] = useState('newest');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
   // Quyền Admin
   const [isAdmin, setIsAdmin] = useState(false);
@@ -134,6 +95,7 @@ export default function CommunityForum() {
     }
   }, []);
 
+
   useEffect(() => {
     fetchTopics();
 
@@ -146,11 +108,13 @@ export default function CommunityForum() {
     return () => supabase.removeChannel(channel);
   }, [fetchTopics]);
 
+  // useMemo: chỉ tìm lại khi danh sách hoặc id trên URL đổi.
   const activeTopic = useMemo(
     () => topics.find((t) => String(t.id) === threadId) ?? null,
     [topics, threadId]
   );
 
+  // Đổi sang bài khác (hoặc về danh sách) thì reset phần state riêng của bài.
   useEffect(() => {
     setThreadTab('Discussion');
     setHasLiked(false);
@@ -218,6 +182,7 @@ export default function CommunityForum() {
     });
   };
 
+  // Chọn file đính kèm trong bình luận
   const handleSelectCommentFile = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -230,6 +195,7 @@ export default function CommunityForum() {
     }
   };
 
+  // Gửi bình luận (hỗ trợ kèm ảnh/tệp)
   const handleSendComment = async (e) => {
     e.preventDefault();
     const cleanComment = commentInput.trim();
@@ -374,6 +340,7 @@ export default function CommunityForum() {
     return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
   });
 
+  // Gom toàn bộ ảnh/file của bài viết và bình luận hiển thị trong tab Files[cite: 39]
   const mediaFiles = [];
   if (activeTopic?.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://'))) {
     mediaFiles.push({ url: activeTopic.description, author: activeTopic.author_name, date: activeTopic.created_at });
@@ -384,330 +351,664 @@ export default function CommunityForum() {
     }
   });
 
-  const tagStyle = (prefix) => ({ '--tag': TAG_COLORS[resolvePrefix(prefix).label] || TAG_COLORS.Discussion });
-
-  const FILTERS = [
-    { id: 'newest', label: 'Latest' },
-    { id: 'replies', label: 'Most active' },
-    { id: 'pinned', label: 'Pinned' },
-  ];
-
   return (
-    <div className={`cf ${isAdmin ? 'cf--admin' : ''}`}>
+    <div style={{ width: '100%', minHeight: '100vh', background: '#090505', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+      
       {/* HEADER */}
-      <header className="cf-header">
-        <div className="cf-header-left">
-          <button type="button" className="cf-btn" onClick={activeTopic ? handleBackToList : onBack}>
-            <IconBack /> {activeTopic ? 'All topics' : 'Home'}
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 5vw',
+          background: '#120909',
+          borderBottom: '1px solid #2b1414',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <button
+            type="button"
+            onClick={activeTopic ? handleBackToList : onBack}
+            className="link-btn btn-secondary"
+            style={{ padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}
+          >
+            ← {activeTopic ? 'All Topics' : 'Home'}
           </button>
-          <div className="cf-brand">GIT<span>XPLORE</span> FORUM</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#fef08a', letterSpacing: '1px' }}>
+            GIT<span style={{ color: '#ef4444' }}>XPLORE</span> FORUM
+          </div>
         </div>
 
-        <div className="cf-header-right">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           {isAdmin && (
-            <button type="button" className="cf-btn" onClick={() => setShowAdminModal(true)}>
-              Admin console
+            <button
+              onClick={() => setShowAdminModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
+                color: '#fff',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              👑 Admin Console
             </button>
           )}
-          <div className="cf-user">
+          <div style={{ fontSize: '13px', color: '#a8a29e' }}>
             {user ? (
-              <>
-                <span className="cf-avatar cf-avatar--sm">{user.name?.charAt(0).toUpperCase()}</span>
-                <strong className="cf-user-name">{user.name}</strong>
-                {isAdmin && <span className="cf-badge-admin">Admin</span>}
-              </>
-            ) : (
-              'Guest mode'
-            )}
+              <span>Welcome, <strong style={{ color: isAdmin ? '#ef4444' : '#fef08a' }}>{user.name}</strong></span>
+            ) : 'Guest Mode'}
           </div>
         </div>
       </header>
 
+      {/* TẦNG 1: BẢNG DANH SÁCH CHỦ ĐỀ */}
       {!activeTopic ? (
-        /* ===== DANH SÁCH CHỦ ĐỀ ===== */
-        <main className="cf-main">
-          <div className="cf-page-head">
-            <div>
-              <h1 className="cf-page-title">Community Discussions</h1>
-              <p className="cf-page-sub">
-                {topics.length} {topics.length === 1 ? 'discussion' : 'discussions'} across all open-source repositories
-              </p>
-            </div>
+        <div style={{ flex: 1, padding: '24px 5vw', maxWidth: '1400px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h1 style={{ margin: 0, fontSize: '24px', color: '#fef08a' }}>Community Discussions</h1>
+                <p style={{ margin: '4px 0 0', color: '#a8a29e', fontSize: '13.5px' }}>
+                  {topics.length} discussions across all open-source repositories
+                </p>
+              </div>
 
-            <div className="cf-toolbar">
-              <div className="cf-segment" role="group" aria-label="Sort topics">
-                {FILTERS.map((f) => (
-                  <button key={f.id} type="button" aria-pressed={filterMode === f.id} onClick={() => setFilterMode(f.id)}>
-                    {f.label}
+              <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                    style={{
+                      background: '#1c0f0f',
+                      color: '#fef08a',
+                      border: '1px solid #381a1a',
+                      padding: '9px 14px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    Filter ▾
                   </button>
-                ))}
-              </div>
-              <button type="button" className="cf-btn cf-btn--primary" onClick={() => setShowCreateModal(true)}>
-                + New topic
-              </button>
-            </div>
-          </div>
 
-          <div className="cf-list">
-            {sortedTopics.length > 0 && (
-              <div className="cf-list-head">
-                <span>Topic</span>
-                <span className="cf-right">Replies</span>
-                <span className="cf-right">Views</span>
-                <span>Last activity</span>
-                {isAdmin && <span />}
-              </div>
-            )}
-
-            {sortedTopics.map((t) => {
-              const prefixConfig = resolvePrefix(t.prefix);
-              const replyCount = t.topic_messages?.[0]?.count || 0;
-              const lastUser = t.last_reply_user || t.author_name;
-              const lastTime = t.last_reply_time || t.created_at;
-
-              return (
-                <div
-                  key={t.id}
-                  className={`cf-row ${t.is_pinned ? 'cf-row--pinned' : ''}`}
-                  role="link"
-                  tabIndex={0}
-                  onClick={() => handleOpenTopic(t)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleOpenTopic(t)}
-                >
-                  <div className="cf-row-main">
-                    <span className="cf-avatar">{t.author_name.charAt(0).toUpperCase()}</span>
-                    <div className="cf-row-text">
-                      <h2 className="cf-row-title">
-                        {t.is_pinned && <span className="cf-pin-mark" title="Pinned"><IconPin filled /></span>}
-                        <span>{t.title}</span>
-                      </h2>
-                      <div className="cf-row-meta">
-                        <span className="cf-tag" style={tagStyle(t.prefix)}>{prefixConfig.label}</span>
-                        <span><b>{t.author_name}</b></span>
-                        <span>{formatRelative(t.created_at)}</span>
-                        <span className="cf-mobile-only">· {replyCount} replies · {formatViewCount(t.views_count)} views</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="cf-stat"><strong>{replyCount}</strong><span>replies</span></div>
-                  <div className="cf-stat"><strong>{formatViewCount(t.views_count)}</strong><span>views</span></div>
-
-                  <div className="cf-last">
-                    <div className="cf-last-when" title={formatForumTime(lastTime)}>{formatRelative(lastTime)}</div>
-                    <div className="cf-last-who">by {lastUser}</div>
-                  </div>
-
-                  {isAdmin && (
-                    <div className="cf-actions">
+                  {showFilterDropdown && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: '42px',
+                        background: '#160b0b',
+                        border: '1px solid #3d1b1b',
+                        borderRadius: '8px',
+                        padding: '6px 0',
+                        width: '170px',
+                        zIndex: 10,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      }}
+                    >
                       <button
-                        type="button"
-                        className={`cf-icon-btn ${t.is_pinned ? 'cf-icon-btn--on' : ''}`}
-                        onClick={(e) => handleTogglePin(e, t)}
-                        title={t.is_pinned ? 'Unpin' : 'Pin'}
-                        aria-label={t.is_pinned ? 'Unpin topic' : 'Pin topic'}
+                        onClick={() => { setFilterMode('newest'); setShowFilterDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'newest' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
                       >
-                        <IconPin filled={t.is_pinned} />
+                        ● Latest Replies
                       </button>
                       <button
-                        type="button"
-                        className="cf-icon-btn cf-icon-btn--danger"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id, t.title); }}
-                        title="Delete"
-                        aria-label="Delete topic"
+                        onClick={() => { setFilterMode('replies'); setShowFilterDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'replies' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
                       >
-                        <IconTrash />
+                        ● Most Active
+                      </button>
+                      <button
+                        onClick={() => { setFilterMode('pinned'); setShowFilterDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'pinned' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
+                      >
+                        ● Pinned Threads
                       </button>
                     </div>
                   )}
                 </div>
-              );
-            })}
 
-            {sortedTopics.length === 0 && (
-              <div className="cf-empty">
-                <strong>No discussions yet</strong>
-                Be the first to start a thread.
-              </div>
-            )}
-          </div>
-        </main>
-      ) : (
-        /* ===== CHI TIẾT BÀI VIẾT ===== */
-        <div className="cf-thread">
-          <article>
-            <span className="cf-tag" style={tagStyle(activeTopic.prefix)}>{resolvePrefix(activeTopic.prefix).label}</span>
-            <h1 className="cf-thread-title">{activeTopic.title}</h1>
-
-            <div className="cf-byline">
-              <span className="cf-avatar cf-avatar--lg">{activeTopic.author_name.charAt(0).toUpperCase()}</span>
-              <div>
-                <strong>{activeTopic.author_name}</strong>
-                {formatForumTime(activeTopic.created_at)}
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="link-btn btn-primary"
+                  style={{ padding: '9px 18px', fontSize: '13.5px' }}
+                >
+                  + Post New Topic
+                </button>
               </div>
             </div>
 
-            {isUrl(activeTopic.description) ? (
-              <div className="cf-body-media">
-                <img src={activeTopic.description} alt="Post media" />
+            {/* BẢNG CHỦ ĐỀ */}
+            <div style={{ background: '#120909', border: '1px solid #2a1515', borderRadius: '10px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 140px 220px 40px',
+                  padding: '12px 20px',
+                  background: '#190d0d',
+                  borderBottom: '1px solid #2a1515',
+                  color: '#fbbf24',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                }}
+              >
+                <span>TITLE / STARTED BY</span>
+                <span style={{ textAlign: 'center' }}>STATS</span>
+                <span style={{ textAlign: 'left', paddingLeft: '12px' }}>LATEST REPLY</span>
+                <span></span>
               </div>
-            ) : (
-              activeTopic.description && <div className="cf-body">{activeTopic.description}</div>
-            )}
 
-            <div className="cf-actionbar">
-              <button type="button" className={`cf-btn ${hasLiked ? 'cf-btn--active' : ''}`} onClick={handleToggleLike} aria-pressed={hasLiked}>
-                <IconThumb filled={hasLiked} /> {hasLiked ? 'Liked' : 'Like'} · {likesCount}
-              </button>
-              <button type="button" className="cf-btn" onClick={handleShare}>
-                <IconShare /> Share
-              </button>
-            </div>
-          </article>
+              {sortedTopics.map((t) => {
+                const prefixConfig = resolvePrefix(t.prefix);
+                const replyCount = t.topic_messages?.[0]?.count || 0;
+                const lastUser = t.last_reply_user || t.author_name;
 
-          <div className="cf-tabs" role="tablist">
-            <button type="button" role="tab" className="cf-tab" aria-selected={threadTab === 'Discussion'} onClick={() => setThreadTab('Discussion')}>
-              Discussion <span className="cf-count">{comments.length}</span>
-            </button>
-            <button type="button" role="tab" className="cf-tab" aria-selected={threadTab === 'Files'} onClick={() => setThreadTab('Files')}>
-              Files <span className="cf-count">{mediaFiles.length}</span>
-            </button>
-          </div>
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => handleOpenTopic(t)}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 140px 220px 40px',
+                      padding: '14px 20px',
+                      borderBottom: '1px solid #1f1010',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      background: t.is_pinned ? '#1c0c0c' : 'transparent',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#1a0e0e')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = t.is_pinned ? '#1c0c0c' : 'transparent')}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #7f1d1d, #c2410c)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '15px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {t.author_name.charAt(0).toUpperCase()}
+                      </div>
 
-          {threadTab === 'Discussion' && (
-            <>
-              <div className="cf-comments">
-                {comments.length === 0 && (
-                  <div className="cf-empty">
-                    <strong>No comments yet</strong>
-                    Start the conversation below.
-                  </div>
-                )}
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {t.is_pinned && <span title="Pinned Topic" style={{ color: '#ef4444', fontSize: '13px' }}>📌</span>}
 
-                {/* LUỒNG BÌNH LUẬN TRÒ CHUYỆN: BÊN PHẢI (CHÍNH BẠN), BÊN TRÁI (NGƯỜI KHÁC) */}
-                {comments.map((c) => {
-                  const currentIdentifier = user?.name || user?.identifier;
-                  const isSelf = Boolean(
-                    user &&
-                    (c.user_name === user.name ||
-                     c.user_name === user.identifier ||
-                     c.user_name === currentIdentifier)
-                  );
+                          <span
+                            style={{
+                              background: prefixConfig.bg,
+                              color: prefixConfig.color,
+                              border: `1px solid ${prefixConfig.border}`,
+                              padding: '1px 7px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              lineHeight: 1.4,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {prefixConfig.label}
+                          </span>
 
-                  return (
-                    <div
-                      key={c.id}
-                      className={`cf-comment ${isSelf ? 'cf-comment--self' : 'cf-comment--other'}`}
-                    >
-                      <span className="cf-avatar cf-avatar--sm">
-                        {c.user_name?.charAt(0).toUpperCase()}
-                      </span>
+                          <span style={{ color: '#f3f4f6', fontSize: '14.5px', fontWeight: 600, wordBreak: 'break-word' }}>
+                            {t.title}
+                          </span>
+                        </div>
 
-                      <div className="cf-comment-body">
-                        <div className="cf-bubble">
-                          <div className="cf-comment-head">
-                            <strong>{isSelf ? 'You' : c.user_name}</strong>
-                            <time title={formatForumTime(c.created_at)}>
-                              {formatRelative(c.created_at)}
-                            </time>
-                          </div>
-
-                          {c.content && <p className="cf-comment-text">{c.content}</p>}
-
-                          {c.media_url &&
-                            (IMAGE_RE.test(c.media_url) ? (
-                              <a
-                                className="cf-attach"
-                                href={c.media_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ marginTop: '8px', display: 'block' }}
-                              >
-                                <img src={c.media_url} alt="Attachment" />
-                              </a>
-                            ) : (
-                              <a
-                                className="cf-attach-link"
-                                href={c.media_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ marginTop: '8px' }}
-                              >
-                                <IconClip /> View attachment
-                              </a>
-                            ))}
+                        <div style={{ fontSize: '12px', color: '#8c827a', marginTop: '4px' }}>
+                          <span style={{ color: '#fef08a' }}>{t.author_name}</span> • {new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-                <div ref={commentsEndRef} />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#9ca3af' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span>Replies:</span>
+                        <strong style={{ color: '#fff' }}>{replyCount}</strong>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
+                        <span>Views:</span>
+                        <strong style={{ color: '#fff' }}>{formatViewCount(t.views_count)}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '12px' }}>
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: '#2b1414',
+                          border: '1px solid #4a1d1d',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fbbf24',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {lastUser.charAt(0).toUpperCase()}
+                      </div>
+
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {formatForumTime(t.last_reply_time || t.created_at)}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#a8a29e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {lastUser}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      {isAdmin && (
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={(e) => handleTogglePin(e, t)}
+                            title={t.is_pinned ? 'Unpin' : 'Pin'}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                          >
+                            📌
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id, t.title); }}
+                            title="Delete"
+                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {sortedTopics.length === 0 && (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#78716c', fontSize: '14px' }}>
+                  No discussions found. Be the first to start a thread!
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* TẦNG 2: CHI TIẾT BÀI VIẾT */
+        <div style={{ flex: 1, background: '#0b0606' }}>
+          
+          {/* BANNER COVER */}
+          <div style={{ background: '#130a0a', borderBottom: '1px solid #261414' }}>
+            <div style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
+              <div
+                style={{
+                  height: '220px',
+                  width: '100%',
+                  borderRadius: '0 0 12px 12px',
+                  background: 'linear-gradient(135deg, #450a0a 0%, #1c0a0a 50%, #1e1b4b 100%)',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  padding: '24px',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(#f59e0b 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                  <span style={{ background: '#dc2626', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                    {resolvePrefix(activeTopic.prefix).label} Thread
+                  </span>
+                  
+                  <h1 style={{ margin: '8px 0 4px', fontSize: '26px', fontWeight: 800, color: '#fff' }}>
+                    {activeTopic.title}
+                  </h1>
+
+                  <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
+                    🌐 Thread created by <strong>{activeTopic.author_name}</strong> · {formatForumTime(activeTopic.created_at)}
+                  </div>
+                </div>
               </div>
 
-              <div className="cf-composer">
-                {commentFilePreview && (
-                  <div className="cf-file-chip">
-                    {commentFilePreview !== 'file' ? <img src={commentFilePreview} alt="Preview" /> : <IconClip />}
-                    <span className="name">{commentFile?.name}</span>
+              {/* TABS ĐIỀU HƯỚNG & NÚT SHARE */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setThreadTab('Discussion')}
+                    style={{
+                      background: threadTab === 'Discussion' ? '#2b1414' : 'transparent',
+                      color: threadTab === 'Discussion' ? '#f59e0b' : '#9ca3af',
+                      border: 'none',
+                      borderBottom: threadTab === 'Discussion' ? '3px solid #f59e0b' : '3px solid transparent',
+                      padding: '10px 16px',
+                      fontWeight: 600,
+                      fontSize: '13.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Discussion
+                  </button>
+
+                  <button
+                    onClick={() => setThreadTab('Files')}
+                    style={{
+                      background: threadTab === 'Files' ? '#2b1414' : 'transparent',
+                      color: threadTab === 'Files' ? '#f59e0b' : '#9ca3af',
+                      border: 'none',
+                      borderBottom: threadTab === 'Files' ? '3px solid #f59e0b' : '3px solid transparent',
+                      padding: '10px 16px',
+                      fontWeight: 600,
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    Files <span style={{ background: '#261212', padding: '2px 6px', borderRadius: '10px', fontSize: '11px', color: '#fef08a' }}>{mediaFiles.length}</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleBackToList}
+                    style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    ← Back to Topics
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    style={{ background: '#261414', color: '#fff', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    ↗ Share
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* VÙNG NỘI DUNG CHÍNH (THEO TAB) */}
+          <div style={{ maxWidth: '960px', margin: '20px auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* TAB 1: DISCUSSION */}
+            {threadTab === 'Discussion' && (
+              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
+                
+                {/* TÁC GIẢ BÀI VIẾT */}
+                <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
+                      {activeTopic.author_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
+                        {activeTopic.author_name}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
+                        {formatForumTime(activeTopic.created_at)} · 🌐
+                      </div>
+                    </div>
+                  </div>
+
+                  <span style={{ fontSize: '11px', background: '#291818', color: '#fef08a', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
+                    {resolvePrefix(activeTopic.prefix).label}
+                  </span>
+                </div>
+
+                {/* NỘI DUNG & HÌNH ẢNH CỦA BÀI VIẾT */}
+                <div style={{ padding: '0 16px 14px' }}>
+                  <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
+                    {activeTopic.title}
+                  </h2>
+
+                  {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
+                    <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
+                      <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
+                    </div>
+                  ) : activeTopic.description ? (
+                    <div style={{ fontSize: '14.5px', color: '#d1d5db', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {activeTopic.description}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* THỐNG KÊ LIKES VÀ COMMENTS */}
+                <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    👍 ❤️ <strong style={{ color: '#fff' }}>{likesCount}</strong>
+                  </span>
+                  <span>{comments.length} comments</span>
+                </div>
+
+                {/* THANH 2 NÚT HÀNH ĐỘNG (LIKE & SHARE) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
+                  <button
+                    onClick={handleToggleLike}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: hasLiked ? '#f59e0b' : '#d1d5db',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    👍 {hasLiked ? 'Liked' : 'Like'}
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#d1d5db',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ↗ Share
+                  </button>
+                </div>
+
+                {/* DANH SÁCH BÌNH LUẬN & FORM NHẬP KÈM NÚT GỬI FILE/ẢNH */}
+                <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {comments.map((c) => (
+                    <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
+                        {c.user_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
+                        <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
+                        
+                        {/* Nội dung chữ */}
+                        {c.content && (
+                          <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
+                        )}
+
+                        {/* Ảnh đính kèm trong bình luận */}
+                        {c.media_url && (
+                          <div style={{ marginTop: '8px', borderRadius: '8px', overflow: 'hidden', maxWidth: '300px' }}>
+                            {c.media_url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                              <a href={c.media_url} target="_blank" rel="noopener noreferrer">
+                                <img src={c.media_url} alt="Attached" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '6px' }} />
+                              </a>
+                            ) : (
+                              <a href={c.media_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '12px', textDecoration: 'underline' }}>
+                                📎 View Attachment
+                              </a>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={commentsEndRef} />
+
+                  {/* KHUNG PREVIEW FILE ĐANG CHỌN TRƯỚC KHI BÌNH LUẬN */}
+                  {commentFilePreview && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1a0d0d', border: '1px solid #381a1a', padding: '8px 12px', borderRadius: '10px', width: 'fit-content' }}>
+                      {commentFilePreview !== 'file' ? (
+                        <img src={commentFilePreview} alt="Preview" style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} />
+                      ) : (
+                        <span style={{ fontSize: '20px' }}>📎</span>
+                      )}
+                      <span style={{ fontSize: '12px', color: '#fef08a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {commentFile?.name}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => { setCommentFile(null); setCommentFilePreview(null); }}
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: '14px' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {/* KHUNG NHẬP BÌNH LUẬN KÈM NÚT ĐÍNH KÈM */}
+                  <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                    <input
+                      ref={commentInputRef}
+                      type="text"
+                      placeholder="Write a comment..."
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
+                    />
+
+                    {/* NÚT CHỌN ẢNH / TỆP ĐÍNH KÈM */}
+                    <input
+                      ref={commentFileInputRef}
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx,.zip,.rar"
+                      onChange={handleSelectCommentFile}
+                      style={{ display: 'none' }}
+                    />
+
                     <button
                       type="button"
-                      className="cf-icon-btn cf-icon-btn--danger"
-                      aria-label="Remove attachment"
-                      onClick={() => { setCommentFile(null); setCommentFilePreview(null); }}
+                      onClick={() => commentFileInputRef.current?.click()}
+                      title="Attach photo or file"
+                      style={{
+                        background: '#1e0e0e',
+                        border: '1px solid #3a1c1c',
+                        color: '#fef08a',
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                        flexShrink: 0
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#2e1414')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#1e0e0e')}
                     >
-                      ✕
+                      📎
                     </button>
+
+                    <button
+                      type="submit"
+                      disabled={isCommentUploading}
+                      style={{ 
+                        background: isCommentUploading ? '#78716c' : '#dc2626', 
+                        color: '#fff', 
+                        border: 'none', 
+                        padding: '9px 20px', 
+                        borderRadius: '20px', 
+                        fontSize: '12.5px', 
+                        fontWeight: 600, 
+                        cursor: isCommentUploading ? 'not-allowed' : 'pointer',
+                        flexShrink: 0
+                      }}
+                    >
+                      {isCommentUploading ? 'Uploading...' : 'Send'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: FILES (XEM TOÀN BỘ TỆP VÀ HÌNH ẢNH CỦA CHỦ ĐỀ) */}
+            {threadTab === 'Files' && (
+              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>Attached Files & Media</h3>
+                
+                {mediaFiles.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
+                    {mediaFiles.map((file, idx) => (
+                      <div key={idx} style={{ background: '#1c0f0f', border: '1px solid #331919', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ height: '140px', background: '#0a0505', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                          {file.url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                            <img src={file.url} alt={`File ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ fontSize: '32px' }}>📄</span>
+                          )}
+                        </div>
+                        <div style={{ padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#a8a29e' }}>By {file.author}</div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ background: '#2b1414', color: '#fef08a', padding: '4px 10px', borderRadius: '4px', textDecoration: 'none', fontSize: '11.5px', fontWeight: 600 }}
+                          >
+                            View ↗
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', color: '#78716c', padding: '40px 0', fontSize: '14px' }}>
+                    No files or media attachments uploaded in this thread yet.
                   </div>
                 )}
+              </div>
+            )}
 
-                <form className="cf-composer-form" onSubmit={handleSendComment}>
-                  <input
-                    ref={commentInputRef}
-                    type="text"
-                    placeholder="Write a comment..."
-                    aria-label="Write a comment"
-                    value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
-                  />
-                  <input
-                    ref={commentFileInputRef}
-                    type="file"
-                    accept="image/*,.pdf,.doc,.docx,.zip,.rar"
-                    onChange={handleSelectCommentFile}
-                    style={{ display: 'none' }}
-                  />
-                  <button type="button" className="cf-icon-btn" title="Attach photo or file" aria-label="Attach photo or file" onClick={() => commentFileInputRef.current?.click()}>
-                    <IconClip />
-                  </button>
-                  <button type="submit" className="cf-btn cf-btn--primary" disabled={isCommentUploading}>
-                    {isCommentUploading ? 'Sending…' : 'Send'}
-                  </button>
-                </form>
-              </div>
-            </>
-          )}
-
-          {threadTab === 'Files' &&
-            (mediaFiles.length > 0 ? (
-              <div className="cf-files">
-                {mediaFiles.map((file, idx) => (
-                  <div key={idx} className="cf-file-card">
-                    <div className="cf-file-thumb">
-                      {IMAGE_RE.test(file.url) ? <img src={file.url} alt={`File ${idx + 1}`} /> : <IconFile />}
-                    </div>
-                    <div className="cf-file-foot">
-                      <span>by {file.author}</span>
-                      <a href={file.url} target="_blank" rel="noopener noreferrer">View ↗</a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="cf-empty">
-                <strong>No files yet</strong>
-                Images and attachments shared in this thread will show up here.
-              </div>
-            ))}
+          </div>
         </div>
       )}
 
@@ -778,7 +1079,7 @@ export default function CommunityForum() {
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                <label style={{ cursor: 'pointer', color: '#f59e0b', fontSize: '13px', fontWeight: 600 }}>
+                <label style={{ cursor: 'pointer', color: '#4ade80', fontSize: '13px', fontWeight: 600 }}>
                   📷 Attach Image
                   <input type="file" accept="image/*" onChange={handleSelectFile} style={{ display: 'none' }} />
                 </label>

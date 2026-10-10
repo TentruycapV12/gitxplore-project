@@ -286,6 +286,22 @@ export const TRANSLATIONS = {
   },
 };
 
+const NEWS_LABEL = { 
+  vi: 'Tin tức', 
+  en: 'News', 
+  ja: 'ニュース', 
+  zh: '新闻', 
+  ko: '뉴스', 
+  fr: 'Actualités', 
+  de: 'News', 
+  es: 'Noticias', 
+  ru: 'Новости', 
+  pt: 'Notícias' 
+};
+Object.entries(NEWS_LABEL).forEach(([code, v]) => { 
+  if (TRANSLATIONS[code]) TRANSLATIONS[code].news = v; 
+});
+
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {

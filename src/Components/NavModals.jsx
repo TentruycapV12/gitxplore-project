@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
@@ -13,13 +13,7 @@ export default function NavModals() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    if (modalType === 'signin') setAuthMode('signin');
-    if (modalType === 'signup' || modalType === 'register') setAuthMode('signup');
-  }, [modalType]);
-
-  // Không hiển thị form authentication nếu không có modalType hoặc khi đang mở Support
-  if (!modalType || modalType === 'support') return null;
+  if (!modalType) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -41,7 +35,7 @@ export default function NavModals() {
       provider: 'Local',
     };
 
-    setUser(userData);
+    setUser(userData); // AuthContext tự lưu localStorage
     closeModal();
   };
 
@@ -63,7 +57,7 @@ export default function NavModals() {
   return (
     <div className="modal-overlay" onClick={closeModal}>
       <div className="modal-card nav-modal-box" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="modal-close" onClick={closeModal}>✕</button>
+        <button className="modal-close" onClick={closeModal}>✕</button>
 
         <div className="modal-body">
           <span className="modal-category">Authentication</span>

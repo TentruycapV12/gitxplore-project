@@ -1,0 +1,81 @@
+/* News page — cùng hệ màu amber với CommunityForum. Mọi class bắt đầu bằng nw- */
+.nw {
+  --bg: #0d0909; --surface: #161010; --surface-2: #1e1616; --line: #2d2121;
+  --text: #f6f2ef; --muted: #b9ada7; --faint: #8d817b;
+  --accent: #f59e0b; --accent-ink: #1a1006; --accent-soft: rgba(245,158,11,.14);
+  min-height: 100vh; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
+  position: relative; z-index: 1;
+}
+.nw *, .nw *::before, .nw *::after { box-sizing: border-box; }
+.nw :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.nw-top {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 5vw; background: rgba(13,9,9,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.nw-brand { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 19px; letter-spacing: 1.5px; color: #fef08a; margin-right: auto; }
+.nw-brand span { color: var(--accent); }
+.nw-back, .nw-btn {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-back:hover, .nw-btn:hover:not(:disabled) { border-color: var(--accent); }
+.nw-btn:disabled { opacity: .5; cursor: default; }
+.nw-live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.nw-dot.is-live { background: #34d399; animation: nw-pulse 2s infinite; }
+.nw-dot.is-loading { background: var(--accent); animation: nw-pulse .8s infinite; }
+@keyframes nw-pulse { 50% { opacity: .3; transform: scale(1.4); } }
+.nw-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-select select, .nw-input {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font: inherit; font-size: 13px;
+}
+
+.nw-main { max-width: 1240px; margin: 0 auto; padding: 32px 5vw 80px; }
+.nw-head h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
+.nw-head p { color: var(--muted); margin: 0 0 22px; }
+
+.nw-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.nw-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
+.nw-chips button {
+  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-chips button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.nw-search { min-width: 200px; }
+
+.nw-new {
+  display: block; margin: 0 auto 18px; background: var(--accent); color: var(--accent-ink); border: 0;
+  border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.nw-warn { font-size: 13px; color: var(--faint); margin-bottom: 16px; }
+.nw-empty { color: var(--muted); text-align: center; padding: 60px 0; }
+
+.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.nw-card {
+  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color .2s, transform .2s;
+}
+.nw-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.nw-skel { min-height: 170px; background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: nw-shimmer 1.4s infinite; }
+@keyframes nw-shimmer { to { background-position: -200% 0; } }
+.nw-img { width: 100%; height: 150px; object-fit: cover; background: var(--surface-2); }
+.nw-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; flex: 1; }
+.nw-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-time { margin-left: auto; }
+.nw-tag { border-radius: 4px; padding: 1px 7px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.nw-tag--repo { background: rgba(167,139,250,.15); color: #a78bfa; }
+.nw-tag--article { background: rgba(96,165,250,.15); color: #60a5fa; }
+.nw-tag--social { background: rgba(52,211,153,.15); color: #34d399; }
+.nw-body h3 { margin: 0; font-size: 16px; line-height: 1.35; display: flex; align-items: flex-start; gap: 8px; word-break: break-word; }
+.nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+.nw-body p {
+  margin: 0; color: var(--muted); font-size: 13.5px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 640px) { .nw-head h1 { font-size: 30px; } .nw-search { width: 100%; } }
