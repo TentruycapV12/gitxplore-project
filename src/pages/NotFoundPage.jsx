@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function NotFoundPage() {
+  const { t } = useLanguage();
   return (
     <div
       style={{
@@ -17,9 +19,9 @@ export default function NotFoundPage() {
       }}
     >
       <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '64px', margin: 0 }}>404</h1>
-      <p style={{ opacity: 0.8 }}>Trang bạn tìm không tồn tại.</p>
+      <p style={{ opacity: 0.8 }}>{t('nf_text')}</p>
       <Link to="/" className="link-btn btn-primary">
-        ⬅️ Về trang chủ
+        {t('nf_home')}
       </Link>
     </div>
   );

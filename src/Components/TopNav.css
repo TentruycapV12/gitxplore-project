@@ -98,6 +98,7 @@
 /* ---------- Phải ---------- */
 .tn-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .tn-wrap { position: relative; }
+.tn-dock { display: flex; align-items: center; }
 
 .tn-circle {
   position: relative; width: 40px; height: 40px; display: grid; place-items: center;
@@ -180,7 +181,7 @@
 /* ---------- Responsive ---------- */
 @media (max-width: 1100px) {
   .tn-logo-text { display: none; }
-  .tn-tab { width: 68px; }
+  .tn-tab { width: 60px; }
 }
 @media (max-width: 860px) {
   .tn { grid-template-columns: auto 1fr auto; padding: 0 10px; gap: 4px; }
@@ -195,7 +196,8 @@
   .tn-search.is-open input { display: block; }
 }
 @media (max-width: 560px) {
-  .tn-tab:nth-child(4) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
+  .tn-tab:nth-child(5) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
+  .tn-dock { display: none; }
   .tn-btn--ghost { display: none; }
   .tn-logo-mark { width: 36px; height: 36px; font-size: 22px; }
 }

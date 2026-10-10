@@ -1,34 +1,21 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const About = () => {
+  const { t } = useLanguage();
+
   const features = [
-    {
-      icon: '🔍',
-      title: 'Curated & Audited',
-      desc: 'Aggregating high-caliber GitHub repositories, rigorously categorized by tech stack, production-readiness, and real-world utility.'
-    },
-    {
-      icon: '⚡',
-      title: 'Accelerate Workflow',
-      desc: 'Empowering engineers and developers to instantly discover templates, architectural boilerplates, and modular codebases within minutes.'
-    },
-    {
-      icon: '🌐',
-      title: 'Cross-Platform Ecosystem',
-      desc: 'Spanning Web Development, Mobile Frameworks, AI & Machine Learning, to enterprise-grade Cloud Infrastructure and DevOps tooling.'
-    },
-    {
-      icon: '🤝',
-      title: 'Community-Driven',
-      desc: 'An open hub uniting open-source developers worldwide to exchange architectural knowledge, collaborate on code, and expand free software.'
-    }
+    { icon: '🔍', title: t('ab_f1_t'), desc: t('ab_f1_d') },
+    { icon: '⚡', title: t('ab_f2_t'), desc: t('ab_f2_d') },
+    { icon: '🌐', title: t('ab_f3_t'), desc: t('ab_f3_d') },
+    { icon: '🤝', title: t('ab_f4_t'), desc: t('ab_f4_d') },
   ];
 
   const stats = [
-    { value: '500+', label: 'Selected Repositories' },
-    { value: '30+', label: 'Tech Domains' },
-    { value: '100%', label: 'Free & Open Source' },
-    { value: '24/7', label: 'Trending Updates' }
+    { value: '500+', label: t('stat_repos') },
+    { value: '30+', label: t('stat_domains') },
+    { value: '100%', label: t('stat_foss') },
+    { value: '24/7', label: t('stat_updates') },
   ];
 
   return (
@@ -36,14 +23,13 @@ const About = () => {
       <div style={styles.container}>
         {/* Header */}
         <div style={styles.header}>
-          <span style={styles.badge}>ABOUT THE INITIATIVE</span>
+          <span style={styles.badge}>{t('about_badge')}</span>
           <h2 style={styles.title}>
-            A Curated Portal for High-Performance <br />
-            <span style={styles.gradientText}>Open-Source Artifacts</span>
+            {t('ab_title_a')} <br />
+            <span style={styles.gradientText}>{t('ab_title_b')}</span>
           </h2>
           <p style={styles.subtitle}>
-            Born to streamline technical discovery, GitXplore serves as an immersive visual library 
-            guiding developers directly to exceptional code without hours of manual research.
+            {t('about_sub')}
           </p>
         </div>
 
@@ -70,9 +56,9 @@ const About = () => {
 
         {/* Call to Action Footer */}
         <div style={styles.ctaBox}>
-          <h3 style={styles.ctaTitle}>Have an open-source project to feature?</h3>
+          <h3 style={styles.ctaTitle}>{t('cta_title')}</h3>
           <p style={styles.ctaText}>
-            Contribute your repository or share innovative discoveries to strengthen the global open-source landscape.
+            {t('cta_sub')}
           </p>
           <a
             href="https://github.com/TentruycapV12/gitxplore-project"
@@ -80,7 +66,7 @@ const About = () => {
             rel="noopener noreferrer"
             style={styles.ctaButton}
           >
-            Contribute on GitHub ↗
+            {t('cta_btn')}
           </a>
         </div>
       </div>

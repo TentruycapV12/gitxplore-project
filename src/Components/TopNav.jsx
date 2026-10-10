@@ -22,16 +22,18 @@ const ICONS = {
   search: <Svg><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></Svg>,
   grid: <Svg><circle cx="6" cy="6" r="1.4" /><circle cx="12" cy="6" r="1.4" /><circle cx="18" cy="6" r="1.4" /><circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" /><circle cx="6" cy="18" r="1.4" /><circle cx="12" cy="18" r="1.4" /><circle cx="18" cy="18" r="1.4" /></Svg>,
   bell: <Svg><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15zM10 21h4" /></Svg>,
+  forum: <Svg><path d="M5 4h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-4.5 4v-4H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" /></Svg>,
   bookmark: <Svg><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></Svg>,
 };
 
 // Các tab giữa. `to` = chuyển trang, `scroll` = cuộn tới mục, `modal` = mở popup.
 const TABS = [
-  { id: 'home', label: 'Trang chủ', to: '/' },
-  { id: 'news', label: 'Tin tức', to: '/news' },
-  { id: 'community', label: 'Cộng đồng', to: '/community' },
-  { id: 'about', label: 'Giới thiệu', scroll: 'about' },
-  { id: 'support', label: 'Hỗ trợ', modal: 'support' },
+  { id: 'home', to: '/' },
+  { id: 'news', to: '/news' },
+  { id: 'community', to: '/community' },
+  { id: 'forum', to: '/community/forum' },
+  { id: 'about', scroll: 'about' },
+  { id: 'support', modal: 'support' },
 ];
 
 export default function TopNav() {
@@ -61,11 +63,12 @@ export default function TopNav() {
 
   const activeId =
     pathname.startsWith('/news') ? 'news' :
+    pathname.startsWith('/community/forum') ? 'forum' :
     pathname.startsWith('/community') ? 'community' :
     pathname === '/' ? 'home' : null;
 
   const tabLabel = {
-    home: t('ui_home'), news: t('news'), community: t('community'), about: t('about'), support: t('support'),
+    home: t('ui_home'), news: t('news'), community: t('community'), forum: t('ui_forum'), about: t('about'), support: t('support'),
   };
 
   const onTab = (tab) => {
@@ -133,6 +136,9 @@ export default function TopNav() {
 
       {/* ===== PHẢI: nút tròn + avatar ===== */}
       <div className="tn-right">
+        {/* Thanh tiện ích (lối tắt / đã lưu / ghi chú) được QuickDock vẽ vào đây */}
+        <div className="tn-dock" id="qd-slot" />
+
         <div className="tn-wrap">
           <button
             type="button"
@@ -150,6 +156,7 @@ export default function TopNav() {
               <div className="tn-apps-grid">
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
                 <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>{t('community')}</span></button>
+                <button type="button" onClick={() => go('/community/forum')}>{ICONS.forum}<span>{t('ui_forum')}</span></button>
                 <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>{t('saved_repos')}</span></button>
                 <button type="button" onClick={() => { setMenu(null); openModal('support'); }}>{ICONS.support}<span>{t('support')}</span></button>
               </div>

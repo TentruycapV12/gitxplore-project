@@ -1,9 +1,12 @@
 import { memo, useCallback, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 // Ảnh nền công nghệ dự phòng khi link gốc bị lỗi
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
 
 function Component2({ project, onSelect }) {
+  const { t } = useLanguage();
+  const catLabel = t(`cat_${project.category}`) === `cat_${project.category}` ? project.categoryName : t(`cat_${project.category}`);
   const cardRef = useRef(null);
   const handleSelect = useCallback(() => onSelect(project), [onSelect, project]);
 
@@ -64,7 +67,7 @@ function Component2({ project, onSelect }) {
 
       <div className="project-info">
         <div className="info-top">
-          <span className="category-text">{project.categoryName}</span>
+          <span className="category-text">{catLabel}</span>
           <div className="stats-group">
             <span>★ {project.stars}</span>
             <span>⑂ {project.forks}</span>
@@ -82,7 +85,7 @@ function Component2({ project, onSelect }) {
             className="link-btn btn-secondary"
             style={{ cursor: 'pointer' }}
           >
-            Quick View 👁
+            {t('quick_view')}
           </button>
           <a
             href={project.githubUrl}

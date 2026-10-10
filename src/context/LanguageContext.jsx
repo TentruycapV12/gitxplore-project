@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { UI_STRINGS } from './uiStrings';
+import { EXTRA_STRINGS } from './extraStrings';
 
 export const LANGUAGES = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
@@ -265,7 +266,7 @@ export const TRANSLATIONS = {
     welcome_desc: 'Longe da energia agitada das metrópoles japonesas, repousa o vilarejo de Noto.',
     start_journey: 'Iniciar jornada ▸',
     experience_3d: 'EXPERIÊNCIA 3D',
-    tranquilidade: 'Tranquilidade',
+    tranquility: 'Tranquilidade',
     tranquility_desc: 'Explore cachoeiras etéreas e lagos místicos repletos de artefatos open-source.',
     learn_more: '— Saiba mais',
     profile_details: 'Detalhes do perfil', saved_repos: 'Repositórios salvos', history: 'Histórico',
@@ -303,22 +304,36 @@ Object.entries(NEWS_LABEL).forEach(([code, v]) => {
   if (TRANSLATIONS[code]) TRANSLATIONS[code].news = v; 
 });
 
+const LOCALES = {
+  vi: 'vi-VN', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN', ko: 'ko-KR',
+  fr: 'fr-FR', de: 'de-DE', es: 'es-ES', ru: 'ru-RU', pt: 'pt-BR',
+};
+
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => localStorage.getItem('gxp_lang') || 'en');
+
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   const changeLanguage = (code) => {
     setLang(code);
     localStorage.setItem('gxp_lang', code);
   };
 
-  const t = (key) =>
-    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] ||
-    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || key;
+  // Tra theo thứ tự: bảng gốc → uiStrings → extraStrings → tiếng Anh. Có thể truyền {n}, {q}... để thay chỗ trống.
+  const t = (key, vars) => {
+    const raw =
+      TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] || EXTRA_STRINGS[lang]?.[key] ||
+      TRANSLATIONS.en?.[key] || UI_STRINGS.en?.[key] || EXTRA_STRINGS.en?.[key] || key;
+    return vars ? String(raw).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '') : raw;
+  };
+
+  // Mã locale để định dạng ngày giờ theo ngôn ngữ đang chọn.
+  const locale = LOCALES[lang] || 'en-US';
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
+    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, locale, languages: LANGUAGES }}>
       {children}
     </LanguageContext.Provider>
   );

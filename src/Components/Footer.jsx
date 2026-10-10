@@ -1,6 +1,10 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Footer() {
+  const { t } = useLanguage();
+  // Giữ chữ HKA in đậm trong câu giới thiệu, bất kể ngôn ngữ nào.
+  const brandParts = t('ft_brand').split('HKA');
   return (
     <footer className="custom-footer">
       <div className="footer-inner">
@@ -12,18 +16,23 @@ export default function Footer() {
           </div>
           
           <p className="footer-text">
-            The <strong>HKA</strong> brand, co-founded and operated by a collaborative team of three members.
+            {brandParts.map((part, i) => (
+              <span key={i}>
+                {i > 0 && <strong>HKA</strong>}
+                {part}
+              </span>
+            ))}
           </p>
           
           <p className="footer-text">
-            The web platform is designed to specialize in surveying, discovering, and exploring high-potential open-source repositories. We provide resource integration, risk management, and strategic project deployments that deliver exceptional value to developers and partners worldwide.
+            {t('ft_desc')}
           </p>
         </div>
 
         {/* Cột phải: Bản quyền */}
         <div className="footer-right">
           <p className="footer-copyright">
-            © 2026 HKA. All Rights Reserved.
+            {t('ft_rights')}
           </p>
         </div>
       </div>

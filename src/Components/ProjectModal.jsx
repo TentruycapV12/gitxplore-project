@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ProjectModal() {
   const { selectedProject: project, closeProject: closeProjectModal } = useUI();
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const timerRef = useRef(null);
 
@@ -43,12 +45,12 @@ export default function ProjectModal() {
         <div className="modal-body">
           <div className="modal-header">
             <div>
-              <span className="modal-category">{project.categoryName}</span>
+              <span className="modal-category">{t(`cat_${project.category}`) === `cat_${project.category}` ? project.categoryName : t(`cat_${project.category}`)}</span>
               <h2 className="modal-title">{project.name}</h2>
             </div>
             <div className="modal-stats">
-              <span>⭐ {project.stars} Stars</span>
-              <span>🍴 {project.forks} Forks</span>
+              <span>⭐ {project.stars} {t('pm_stars')}</span>
+              <span>🍴 {project.forks} {t('pm_forks')}</span>
             </div>
           </div>
 
@@ -57,18 +59,18 @@ export default function ProjectModal() {
           <div className="clone-box">
             <code>{cloneCommand}</code>
             <button onClick={handleCopy} className="btn-copy">
-              {copied ? '✓ Copied!' : 'Copy'}
+              {copied ? t('pm_copied') : t('pm_copy')}
             </button>
           </div>
 
           <div className="modal-footer-btns">
             {project.demoUrl && (
               <a href={project.demoUrl} target="_blank" rel="noreferrer" className="link-btn btn-secondary">
-                Live Demonstration ↗
+                {t('pm_demo')}
               </a>
             )}
             <a href={project.githubUrl} target="_blank" rel="noreferrer" className="link-btn btn-primary">
-              Open on GitHub ↗
+              {t('pm_open')}
             </a>
           </div>
         </div>

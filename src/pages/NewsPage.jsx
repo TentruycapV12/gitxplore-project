@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import { useNewsFeed } from '../hooks/useNewsFeed';
 import { useProjectSearch } from '../hooks/useProjectSearch';
 import { KINDS, SEARCH_SOURCES, SOURCES } from '../lib/newsSources';
@@ -7,31 +8,19 @@ import './NewsPage.css';
 
 const PAGE = 24; // chỉ vẽ 24 thẻ mỗi lượt -> không lag, bấm "Show more" mới vẽ thêm
 
-const INTERVALS = [
-  { ms: 60_000, label: '1 min' },
-  { ms: 300_000, label: '5 min' },
-  { ms: 900_000, label: '15 min' },
-  { ms: 0, label: 'Off' },
-];
+const INTERVALS = [{ ms: 60_000 }, { ms: 300_000 }, { ms: 900_000 }, { ms: 0 }];
 
-const relTime = (ts, now) => {
+// Thời gian tương đối theo ngôn ngữ đang chọn.
+const relTime = (ts, now, t, locale) => {
   if (!ts) return '';
   const m = Math.max(0, Math.floor((now - ts) / 60000));
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return t('nw_now');
+  if (m < 60) return t('nw_ago_m', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return t('nw_ago_h', { n: h });
   const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const KIND_LABEL = {
-  repo: 'Repo',
-  package: 'Package',
-  article: 'Article',
-  discussion: 'Discussion',
-  social: 'Social',
+  if (d < 30) return t('nw_ago_d', { n: d });
+  return new Date(ts).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const readInterval = () => {
@@ -60,6 +49,7 @@ function Hl({ text, q }) {
 
 export default function NewsPage() {
   const navigate = useNavigate();
+  const { t, locale } = useLanguage();
   const [intervalMs, setIntervalMs] = useState(readInterval);
   const [kind, setKind] = useState('all');
   const [source, setSource] = useState('all');
@@ -123,50 +113,50 @@ export default function NewsPage() {
     <div className="nw">
       <header className="nw-top">
         <button type="button" className="nw-back" onClick={() => navigate('/')}>
-          ← Back
+          {t('nw_back')}
         </button>
         <span className="nw-brand">
-          GIT<span>XPLORE</span> News
+          GIT<span>XPLORE</span> {t('news')}
         </span>
-        <div className="nw-live" title={feed.lastUpdated ? new Date(feed.lastUpdated).toLocaleString() : ''}>
+        <div className="nw-live" title={feed.lastUpdated ? new Date(feed.lastUpdated).toLocaleString(locale) : ''}>
           {mode === 'search' ? (
             <>
               <i className={`nw-dot ${search.searching ? 'is-loading' : 'is-live'}`} />
-              {search.searching ? 'Searching…' : `${list.length} results`}
+              {search.searching ? t('nw_searching') : t('nw_results', { n: list.length })}
             </>
           ) : (
             <>
               <i className={`nw-dot ${feed.loading ? 'is-loading' : intervalMs ? 'is-live' : ''}`} />
               {feed.loading
-                ? 'Updating…'
+                ? t('nw_updating')
                 : feed.lastUpdated
-                  ? `Updated ${relTime(feed.lastUpdated, now)}`
-                  : 'Waiting…'}
+                  ? t('nw_updated', { t: relTime(feed.lastUpdated, now, t, locale) })
+                  : t('nw_waiting')}
             </>
           )}
         </div>
         <label className="nw-select">
-          Auto-refresh
+          {t('nw_auto')}
           <select value={intervalMs} onChange={(e) => changeInterval(Number(e.target.value))}>
             {INTERVALS.map((i) => (
               <option key={i.ms} value={i.ms}>
-                {i.label}
+                {i.ms ? t('nw_min', { n: i.ms / 60000 }) : t('nw_off')}
               </option>
             ))}
           </select>
         </label>
         <button type="button" className="nw-btn" onClick={feed.refresh} disabled={feed.loading || mode === 'search'}>
-          ↻ Refresh
+          {t('nw_refresh')}
         </button>
       </header>
 
       <main className="nw-main">
         <div className="nw-head">
-          <h1>{mode === 'search' ? `Results for “${search.query}”` : 'Open-source News'}</h1>
+          <h1>{mode === 'search' ? t('nw_results_for', { q: search.query }) : t('nw_title')}</h1>
           <p>
             {mode === 'search'
-              ? 'Searching GitHub, GitLab, npm, crates.io, Hugging Face, Hacker News and Stack Overflow.'
-              : 'Latest repositories, articles, discussions and posts. Type a keyword to search any project.'}
+              ? t('nw_head_search')
+              : t('nw_head_feed')}
           </p>
         </div>
 
@@ -174,12 +164,12 @@ export default function NewsPage() {
           <input
             className="nw-input nw-search nw-search--main"
             type="search"
-            placeholder="Search any project, package or topic… (e.g. react, ollama, redis)"
+            placeholder={t('nw_search_ph')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search projects"
+            aria-label={t('nw_search_aria')}
           />
-          <div className="nw-chips" role="group" aria-label="Type">
+          <div className="nw-chips" role="group" aria-label={t('nw_type')}>
             {KINDS.map((k) => (
               <button
                 key={k.id}
@@ -190,12 +180,12 @@ export default function NewsPage() {
                   setSource('all');
                 }}
               >
-                {k.label}
+                {t(`nw_k_${k.id}`)}
               </button>
             ))}
           </div>
-          <select className="nw-input" value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source">
-            <option value="all">All sources</option>
+          <select className="nw-input" value={source} onChange={(e) => setSource(e.target.value)} aria-label={t('nw_source')}>
+            <option value="all">{t('nw_all_sources')}</option>
             {sourceOptions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
@@ -203,23 +193,23 @@ export default function NewsPage() {
             ))}
           </select>
           {mode === 'search' && (
-            <select className="nw-input" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
-              <option value="best">Best match</option>
-              <option value="new">Newest activity</option>
+            <select className="nw-input" value={sort} onChange={(e) => setSort(e.target.value)} aria-label={t('nw_sort')}>
+              <option value="best">{t('nw_best')}</option>
+              <option value="new">{t('nw_newest')}</option>
             </select>
           )}
         </div>
 
         {mode === 'feed' && feed.newCount > 0 && (
           <button type="button" className="nw-new" onClick={feed.applyPending}>
-            ↑ Show {feed.newCount} new {feed.newCount === 1 ? 'item' : 'items'}
+            {t('nw_show_new', { n: feed.newCount })}
           </button>
         )}
 
         {failed.length > 0 && (
           <p className="nw-warn">
-            Couldn’t load: {failed.map((id) => labelPool.find((s) => s.id === id)?.label || id).join(', ')}
-            {mode === 'feed' ? ' (will retry on next refresh).' : '.'}
+            {t('nw_load_fail', { list: failed.map((id) => labelPool.find((s) => s.id === id)?.label || id).join(', ') })}
+            {mode === 'feed' ? t('nw_retry') : '.'}
           </p>
         )}
 
@@ -231,7 +221,7 @@ export default function NewsPage() {
           </div>
         ) : list.length === 0 ? (
           <p className="nw-empty">
-            {mode === 'search' ? `No results for “${search.query}”. Try another keyword.` : 'No news matches your filters.'}
+            {mode === 'search' ? t('nw_no_results', { q: search.query }) : t('nw_no_match')}
           </p>
         ) : (
           <div className="nw-grid">
@@ -249,9 +239,9 @@ export default function NewsPage() {
                 )}
                 <div className="nw-body">
                   <div className="nw-meta">
-                    <span className={`nw-tag nw-tag--${it.kind}`}>{KIND_LABEL[it.kind]}</span>
+                    <span className={`nw-tag nw-tag--${it.kind}`}>{t(`nw_t_${it.kind}`)}</span>
                     <span>{it.sourceLabel}</span>
-                    <span className="nw-time">{relTime(it.date, now)}</span>
+                    <span className="nw-time">{relTime(it.date, now, t, locale)}</span>
                   </div>
                   <h3>
                     {it.kind === 'repo' && it.image && (
@@ -278,7 +268,7 @@ export default function NewsPage() {
 
         {!waiting && (canShowLocal || canFetchMore) && (
           <button type="button" className="nw-more" onClick={onShowMore} disabled={search.loadingMore}>
-            {search.loadingMore ? 'Loading…' : canShowLocal ? `Show more (${list.length - n} left)` : 'Load more results'}
+            {search.loadingMore ? t('nw_loading') : canShowLocal ? t('nw_show_more', { n: list.length - n }) : t('nw_load_more')}
           </button>
         )}
       </main>

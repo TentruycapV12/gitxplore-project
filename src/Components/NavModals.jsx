@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function NavModals() {
   const { modalType, closeModal } = useUI();
   const { setUser } = useAuth();
+  const { t } = useLanguage();
 
   const [authMode, setAuthMode] = useState('signup');
   const [identifier, setIdentifier] = useState('');
@@ -20,7 +22,7 @@ export default function NavModals() {
     setErrorMessage('');
 
     if (authMode === 'signup' && password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+      setErrorMessage(t('auth_mismatch'));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function NavModals() {
 
       if (error) throw error;
     } catch (err) {
-      setErrorMessage(err.message || 'OAuth authentication failed.');
+      setErrorMessage(err.message || t('auth_oauth_fail'));
     }
   };
 
@@ -60,14 +62,14 @@ export default function NavModals() {
         <button className="modal-close" onClick={closeModal}>✕</button>
 
         <div className="modal-body">
-          <span className="modal-category">Authentication</span>
+          <span className="modal-category">{t('auth_category')}</span>
           <h2 className="modal-title">
-            {authMode === 'signup' ? 'Create an account' : 'Welcome back'}
+            {authMode === 'signup' ? t('auth_create') : t('auth_welcome')}
           </h2>
           <p className="modal-desc">
             {authMode === 'signup'
-              ? 'Sign up to bookmark repositories and access dev features.'
-              : 'Sign in to access your personal dashboard.'}
+              ? t('auth_signup_sub')
+              : t('auth_signin_sub')}
           </p>
 
           <form onSubmit={handleSubmit} className="auth-form">
@@ -79,7 +81,7 @@ export default function NavModals() {
 
             <input
               type="text"
-              placeholder="Email or phone number"
+              placeholder={t('auth_id_ph')}
               required
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
@@ -89,7 +91,7 @@ export default function NavModals() {
 
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t('auth_pw_ph')}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -100,7 +102,7 @@ export default function NavModals() {
             {authMode === 'signup' && (
               <input
                 type="password"
-                placeholder="Confirm password"
+                placeholder={t('auth_confirm_ph')}
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -114,11 +116,11 @@ export default function NavModals() {
               className="link-btn btn-primary"
               style={{ width: '100%', justifyContent: 'center', marginBottom: '16px' }}
             >
-              {authMode === 'signup' ? 'Sign up' : 'Sign in'}
+              {authMode === 'signup' ? t('register') : t('signin')}
             </button>
 
             <div style={{ textAlign: 'center', fontSize: '13px', color: '#a8a29e', marginBottom: '18px' }}>
-              {authMode === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
+              {authMode === 'signup' ? t('auth_have') : t('auth_no_have')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -135,14 +137,14 @@ export default function NavModals() {
                   padding: 0,
                 }}
               >
-                {authMode === 'signup' ? 'Sign in' : 'Sign up'}
+                {authMode === 'signup' ? t('signin') : t('register')}
               </button>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{ flex: 1, height: '1px', background: 'rgba(251, 191, 36, 0.15)' }} />
               <span style={{ fontSize: '11px', color: '#78716c', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Or continue with
+                {t('auth_or')}
               </span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(251, 191, 36, 0.15)' }} />
             </div>

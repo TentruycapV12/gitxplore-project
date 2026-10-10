@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProjectFilters } from '../hooks/useProjectFilters';
+import { useLanguage } from '../context/LanguageContext';
 
 const categories = [
-  { id: 'all', label: 'All Repositories' },
-  { id: 'ai', label: 'AI & Machine Learning' },
-  { id: 'gamedev', label: 'Game Dev' },
-  { id: 'agents', label: 'Virtual Avatars & Agents' },
-  { id: 'web', label: 'Web Development' },
-  { id: 'devtools', label: 'DevTools & Runtimes' },
-  { id: 'cloud', label: 'Cloud & DevOps' },
-  { id: 'security', label: 'Security & Network' },
-  { id: 'databases', label: 'Databases & Big Data' },
+  { id: 'all', key: 'all_repos' },
+  { id: 'ai', key: 'cat_ai' },
+  { id: 'gamedev', key: 'cat_gamedev' },
+  { id: 'agents', key: 'cat_agents' },
+  { id: 'web', key: 'cat_web' },
+  { id: 'devtools', key: 'cat_devtools' },
+  { id: 'cloud', key: 'cat_cloud' },
+  { id: 'security', key: 'cat_security' },
+  { id: 'databases', key: 'cat_databases' },
 ];
 
 export default function Component1() {
   const { category, search, setCategory, setSearch } = useProjectFilters();
+  const { t } = useLanguage();
 
   // Ô nhập giữ state cục bộ để gõ mượt; URL chỉ cập nhật sau khi ngừng gõ 250ms.
   const [input, setInput] = useState(search);
@@ -47,7 +49,7 @@ export default function Component1() {
               className={`tag-btn ${category === cat.id ? 'active' : ''}`}
               onClick={() => setCategory(cat.id)}
             >
-              {cat.label}
+              {t(cat.key)}
             </button>
           ))}
         </div>
@@ -56,7 +58,7 @@ export default function Component1() {
           <input
             type="text"
             className="lusion-search"
-            placeholder="Search repositories, frameworks..."
+            placeholder={t('search_placeholder')}
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />

@@ -1,4 +1,4 @@
-.qd-root {
+.qd-root, .qd-rail {
   --qd-surface: #161010;
   --qd-surface-2: #1e1616;
   --qd-line: #2d2121;
@@ -6,13 +6,15 @@
   --qd-muted: #b9ada7;
   --qd-accent: #f59e0b;
   --qd-accent-soft: rgba(245, 158, 11, 0.14);
+}
+.qd-root {
   position: fixed;
   inset: 0;
   z-index: 900;
   pointer-events: none;
   font-family: inherit;
 }
-.qd-root *, .qd-root *::before, .qd-root *::after { box-sizing: border-box; }
+.qd-root *, .qd-root *::before, .qd-root *::after, .qd-rail *, .qd-rail *::before, .qd-rail *::after { box-sizing: border-box; }
 
 .qd-rail {
   pointer-events: auto;
@@ -138,7 +140,24 @@
 .qd-textarea:focus { outline: 2px solid var(--qd-accent); outline-offset: 1px; }
 .qd-hint { margin: 0; font-size: 12px; color: #8d817b; }
 
+/* Dạng nằm ngang trong thanh trên cùng, cao đúng bằng các nút tròn 40px bên cạnh */
+.qd-rail--inline {
+  position: static;
+  transform: none;
+  flex-direction: row;
+  gap: 2px;
+  padding: 3px;
+  margin-right: 6px;
+  background: rgba(18, 11, 11, 0.78);
+  backdrop-filter: blur(12px);
+  box-shadow: none;
+}
+.qd-rail--inline .qd-tab { width: 32px; height: 32px; }
+.qd-rail--inline .qd-tab svg { width: 18px; height: 18px; }
+.qd-panel--top { top: 70px; right: 16px; }
+
 @media (max-width: 640px) {
+  .qd-panel--top { top: 64px; right: 8px; width: calc(100vw - 16px); }
   .qd-rail { right: 6px; padding: 6px; }
   .qd-tab { width: 36px; height: 36px; }
   .qd-panel { top: 70px; right: 58px; bottom: 16px; width: calc(100vw - 70px); }

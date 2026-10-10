@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -123,10 +124,17 @@ function NotesPane() {
 
 export default function QuickDock() {
   const navigate = useNavigate();
+  useLocation(); // đổi trang thì tìm lại chỗ gắn thanh tiện ích
   const { t: tr } = useLanguage();
   const { openModal, modalType, selectedProject } = useUI();
   const [active, setActive] = useState(null); // null = đóng
+  const [slot, setSlot] = useState(null); // ô #qd-slot trong thanh trên cùng (nếu trang có)
   const panelRef = useRef(null);
+
+  // Trang có TopNav thì đưa thanh tiện ích lên cùng hàng với thanh đó; trang khác giữ thanh nổi bên phải.
+  useLayoutEffect(() => {
+    setSlot(document.getElementById('qd-slot'));
+  });
 
   const current = TABS.find((t) => t.id === active);
 
@@ -140,7 +148,7 @@ export default function QuickDock() {
   useEffect(() => {
     if (!active) return;
     const onDown = (e) => {
-      if (!e.target.closest?.('.qd-root')) setActive(null);
+      if (!e.target.closest?.('.qd-root, .qd-rail')) setActive(null);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
@@ -157,39 +165,45 @@ export default function QuickDock() {
     openModal('support');
   };
 
-  return (
-    <div className="qd-root">
-      {current && (
-        <aside className="qd-panel" ref={panelRef} role="dialog" aria-label={tr(current.labelKey)}>
-          <header className="qd-head">
-            <h2 className="qd-title">{tr(current.labelKey)}</h2>
-            <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label={tr('ui_close')}>
-              <Icon><path d="M6 6l12 12M18 6L6 18" /></Icon>
-            </button>
-          </header>
-          <div className="qd-body">
-            {active === 'links' && <LinksPane go={go} openSupport={openSupport} />}
-            {active === 'saved' && <SavedPane go={go} />}
-            {active === 'notes' && <NotesPane />}
-          </div>
-        </aside>
-      )}
+  const rail = (
+    <nav className={`qd-rail ${slot ? 'qd-rail--inline' : ''}`} aria-label={tr('ui_dock_rail')}>
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          className="qd-tab"
+          aria-pressed={active === t.id}
+          aria-label={tr(t.labelKey)}
+          title={tr(t.labelKey)}
+          onClick={() => setActive((a) => (a === t.id ? null : t.id))}
+        >
+          {t.icon}
+        </button>
+      ))}
+    </nav>
+  );
 
-      <nav className="qd-rail" aria-label={tr('ui_dock_rail')}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className="qd-tab"
-            aria-pressed={active === t.id}
-            aria-label={tr(t.labelKey)}
-            title={tr(t.labelKey)}
-            onClick={() => setActive((a) => (a === t.id ? null : t.id))}
-          >
-            {t.icon}
-          </button>
-        ))}
-      </nav>
-    </div>
+  return (
+    <>
+      <div className="qd-root">
+        {current && (
+          <aside className={`qd-panel ${slot ? 'qd-panel--top' : ''}`} ref={panelRef} role="dialog" aria-label={tr(current.labelKey)}>
+            <header className="qd-head">
+              <h2 className="qd-title">{tr(current.labelKey)}</h2>
+              <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label={tr('ui_close')}>
+                <Icon><path d="M6 6l12 12M18 6L6 18" /></Icon>
+              </button>
+            </header>
+            <div className="qd-body">
+              {active === 'links' && <LinksPane go={go} openSupport={openSupport} />}
+              {active === 'saved' && <SavedPane go={go} />}
+              {active === 'notes' && <NotesPane />}
+            </div>
+          </aside>
+        )}
+        {!slot && rail}
+      </div>
+      {slot && createPortal(rail, slot)}
+    </>
   );
 }

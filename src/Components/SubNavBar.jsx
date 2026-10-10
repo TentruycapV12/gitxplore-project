@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useProjectFilters } from '../hooks/useProjectFilters';
 import { scrollToId } from '../lib/scroll';
 
 export default function SubNavBar() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const { openModal: setModal } = useUI();
   const { setCategory } = useProjectFilters();
   const [activeTab, setActiveTab] = useState('explore');
@@ -39,7 +41,7 @@ export default function SubNavBar() {
             className={`av-item ${activeTab === 'explore' ? 'active' : ''}`}
             onClick={scrollToExplore}
           >
-            Repositories
+            {t('sn_repos')}
           </button>
 
           {/* NavLink tự biết link nào đang active, không cần state riêng */}
@@ -47,14 +49,14 @@ export default function SubNavBar() {
             to="/community"
             className={({ isActive }) => `av-item ${isActive ? 'active' : ''}`}
           >
-            Discussions
+            {t('sn_discussions')}
           </NavLink>
 
           <NavLink
             to="/news"
             className={({ isActive }) => `av-item ${isActive ? 'active' : ''}`}
           >
-            News
+            {t('news')}
           </NavLink>
 
           <button
@@ -64,14 +66,14 @@ export default function SubNavBar() {
               setModal('support');
             }}
           >
-            Support & FAQ
+            {t('sn_support')}
           </button>
 
           <button
             className={`av-item ${activeTab === 'about' ? 'active' : ''}`}
             onClick={scrollToAboutSection}
           >
-            About Us
+            {t('about')}
           </button>
 
           <button
@@ -79,7 +81,7 @@ export default function SubNavBar() {
             style={{ color: '#f43f5e' }}
             onClick={() => setModal('support')}
           >
-            Sponsor ❤️
+            {t('sn_sponsor')} ❤️
           </button>
         </div>
       </div>
@@ -99,7 +101,7 @@ export default function SubNavBar() {
           𝕏
         </a>
 
-        <Link to="/community" className="av-social-btn" title="Notifications">
+        <Link to="/community" className="av-social-btn" title={t('ui_notifications')}>
           🔔
         </Link>
 
@@ -127,7 +129,7 @@ export default function SubNavBar() {
                     logout();
                   }}
                 >
-                  🚪 Sign out
+                  🚪 {t('signout')}
                 </button>
               </div>
             )}
@@ -138,11 +140,11 @@ export default function SubNavBar() {
             style={{ marginLeft: '6px' }}
             onClick={() => setModal('signin')}
           >
-            Sign in
+            {t('signin')}
           </button>
         )}
 
-        <button className="av-top-btn" onClick={scrollToTop} title="Scroll to top">
+        <button className="av-top-btn" onClick={scrollToTop} title={t('sn_top')}>
           ↑
         </button>
       </div>
