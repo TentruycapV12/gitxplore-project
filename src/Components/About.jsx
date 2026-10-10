@@ -1,35 +1,55 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext';
 
 const About = () => {
-  const { t } = useLanguage();
-
   const features = [
-    { icon: '🔍', title: t('ab_f1_t'), desc: t('ab_f1_d') },
-    { icon: '⚡', title: t('ab_f2_t'), desc: t('ab_f2_d') },
-    { icon: '🌐', title: t('ab_f3_t'), desc: t('ab_f3_d') },
-    { icon: '🤝', title: t('ab_f4_t'), desc: t('ab_f4_d') },
+    {
+      icon: '🔍',
+      title: 'Curated & Audited',
+      desc: 'Aggregating high-caliber GitHub repositories, rigorously categorized by tech stack, production-readiness, and real-world utility.'
+    },
+    {
+      icon: '⚡',
+      title: 'Accelerate Workflow',
+      desc: 'Empowering engineers and developers to instantly discover templates, architectural boilerplates, and modular codebases within minutes.'
+    },
+    {
+      icon: '🌐',
+      title: 'Cross-Platform Ecosystem',
+      desc: 'Spanning Web Development, Mobile Frameworks, AI & Machine Learning, to enterprise-grade Cloud Infrastructure and DevOps tooling.'
+    },
+    {
+      icon: '🤝',
+      title: 'Community-Driven',
+      desc: 'An open hub uniting open-source developers worldwide to exchange architectural knowledge, collaborate on code, and expand free software.'
+    }
   ];
 
   const stats = [
-    { value: '500+', label: t('stat_repos') },
-    { value: '30+', label: t('stat_domains') },
-    { value: '100%', label: t('stat_foss') },
-    { value: '24/7', label: t('stat_updates') },
+    { value: '500+', label: 'Selected Repositories' },
+    { value: '30+', label: 'Tech Domains' },
+    { value: '100%', label: 'Free & Open Source' },
+    { value: '24/7', label: 'Trending Updates' }
   ];
 
   return (
     <section className="about-section" id="about" style={styles.section}>
+      <style>{`
+        .about-feature { transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
+        .about-feature:hover { transform: translateY(-4px); border-color: rgba(251,191,36,.45); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+        .about-cta-btn { transition: transform .2s ease, background-color .2s ease; }
+        .about-cta-btn:hover { transform: translateY(-2px); background-color: #fbbf24; }
+      `}</style>
       <div style={styles.container}>
         {/* Header */}
         <div style={styles.header}>
-          <span style={styles.badge}>{t('about_badge')}</span>
+          <span style={styles.badge}>ABOUT THE INITIATIVE</span>
           <h2 style={styles.title}>
-            {t('ab_title_a')} <br />
-            <span style={styles.gradientText}>{t('ab_title_b')}</span>
+            A Curated Portal for High-Performance <br />
+            <span style={styles.gradientText}>Open-Source Artifacts</span>
           </h2>
           <p style={styles.subtitle}>
-            {t('about_sub')}
+            Born to streamline technical discovery, GitXplore serves as an immersive visual library 
+            guiding developers directly to exceptional code without hours of manual research.
           </p>
         </div>
 
@@ -46,7 +66,7 @@ const About = () => {
         {/* Features */}
         <div style={styles.featuresGrid}>
           {features.map((item, idx) => (
-            <div key={idx} style={styles.featureCard}>
+            <div key={idx} className="about-feature" style={styles.featureCard}>
               <div style={styles.iconWrapper}>{item.icon}</div>
               <h4 style={styles.featureTitle}>{item.title}</h4>
               <p style={styles.featureDesc}>{item.desc}</p>
@@ -56,17 +76,17 @@ const About = () => {
 
         {/* Call to Action Footer */}
         <div style={styles.ctaBox}>
-          <h3 style={styles.ctaTitle}>{t('cta_title')}</h3>
+          <h3 style={styles.ctaTitle}>Have an open-source project to feature?</h3>
           <p style={styles.ctaText}>
-            {t('cta_sub')}
+            Contribute your repository or share innovative discoveries to strengthen the global open-source landscape.
           </p>
           <a
             href="https://github.com/TentruycapV12/gitxplore-project"
             target="_blank"
             rel="noopener noreferrer"
-            style={styles.ctaButton}
+            className="about-cta-btn" style={styles.ctaButton}
           >
-            {t('cta_btn')}
+            Contribute on GitHub ↗
           </a>
         </div>
       </div>
@@ -76,7 +96,7 @@ const About = () => {
 
 const styles = {
   section: {
-    padding: '90px 6vw',
+    padding: '120px 6vw 110px',
     backgroundColor: '#090506',
     borderTop: '1px solid rgba(251, 191, 36, 0.15)',
     color: '#fef3c7',
@@ -89,27 +109,27 @@ const styles = {
   },
   header: {
     textAlign: 'center',
-    marginBottom: '50px',
+    marginBottom: '80px',
   },
   badge: {
     display: 'inline-block',
-    fontSize: '11px',
+    fontSize: '12px',
     fontWeight: '700',
     letterSpacing: '2px',
-    padding: '6px 16px',
+    padding: '7px 18px',
     borderRadius: '20px',
     backgroundColor: 'rgba(217, 119, 6, 0.12)',
     color: '#fbbf24',
-    marginBottom: '16px',
+    marginBottom: '24px',
     border: '1px solid rgba(251, 191, 36, 0.3)',
     textTransform: 'uppercase',
   },
   title: {
     fontFamily: 'Cormorant Garamond, serif',
-    fontSize: 'clamp(32px, 5vw, 54px)',
+    fontSize: 'clamp(36px, 5.5vw, 64px)',
     fontWeight: '700',
-    lineHeight: '1.15',
-    marginBottom: '16px',
+    lineHeight: '1.12',
+    marginBottom: '24px',
     color: '#ffffff',
   },
   gradientText: {
@@ -120,101 +140,115 @@ const styles = {
     fontStyle: 'italic',
   },
   subtitle: {
-    maxWidth: '720px',
+    maxWidth: '760px',
     margin: '0 auto',
-    fontSize: '14.5px',
-    lineHeight: '1.7',
+    fontSize: '18px',
+    lineHeight: '1.75',
     color: '#d6d3d1',
-    opacity: 0.88,
+    opacity: 0.9,
   },
+
+  /* Stats: bỏ thẻ, chỉ còn số lớn + nhãn, kẹp giữa 2 đường kẻ mảnh */
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '20px',
-    marginBottom: '50px',
+    gap: '32px 24px',
+    padding: '44px 0',
+    marginBottom: '96px',
+    borderTop: '1px solid rgba(251, 191, 36, 0.18)',
+    borderBottom: '1px solid rgba(251, 191, 36, 0.18)',
   },
   statCard: {
-    background: 'linear-gradient(180deg, #180d0e 0%, #0d0607 100%)',
-    border: '1px solid rgba(251, 191, 36, 0.2)',
-    borderRadius: '18px',
-    padding: '24px 18px',
     textAlign: 'center',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
   },
   statValue: {
     fontFamily: 'Cormorant Garamond, serif',
-    fontSize: '38px',
+    fontSize: 'clamp(44px, 5vw, 60px)',
     fontWeight: '700',
+    lineHeight: '1',
     color: '#fbbf24',
-    marginBottom: '4px',
+    margin: '0 0 10px',
   },
   statLabel: {
     fontSize: '13px',
     color: '#a8a29e',
     margin: 0,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: '1.2px',
+    textTransform: 'uppercase',
   },
+
   featuresGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-    gap: '20px',
-    marginBottom: '50px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '24px',
+    marginBottom: '96px',
   },
   featureCard: {
     background: 'linear-gradient(180deg, #160c0d 0%, #0d0607 100%)',
     border: '1px solid rgba(251, 191, 36, 0.18)',
     borderRadius: '18px',
-    padding: '28px 22px',
+    padding: '36px 28px',
   },
   iconWrapper: {
-    fontSize: '28px',
-    marginBottom: '14px',
+    width: '52px',
+    height: '52px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '26px',
+    borderRadius: '14px',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    border: '1px solid rgba(251, 191, 36, 0.2)',
+    marginBottom: '22px',
   },
   featureTitle: {
     fontFamily: 'Cormorant Garamond, serif',
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: '700',
+    lineHeight: '1.25',
     color: '#fef08a',
-    marginBottom: '8px',
+    margin: '0 0 12px',
   },
   featureDesc: {
-    fontSize: '13px',
-    lineHeight: '1.6',
+    fontSize: '15px',
+    lineHeight: '1.7',
     color: '#d6d3d1',
-    opacity: 0.85,
+    opacity: 0.9,
     margin: 0,
   },
+
+  /* CTA: viền liền thay cho nét đứt, nút đặc 1 màu thay cho gradient cam-đỏ */
   ctaBox: {
     textAlign: 'center',
-    padding: '40px 24px',
+    padding: '64px 28px',
     background: 'linear-gradient(135deg, rgba(38, 14, 16, 0.7) 0%, rgba(13, 6, 7, 0.9) 100%)',
-    border: '1px dashed rgba(251, 191, 36, 0.35)',
-    borderRadius: '20px',
+    border: '1px solid rgba(251, 191, 36, 0.25)',
+    borderRadius: '24px',
   },
   ctaTitle: {
     fontFamily: 'Cormorant Garamond, serif',
-    fontSize: '26px',
+    fontSize: 'clamp(28px, 3.5vw, 38px)',
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: '10px',
+    margin: '0 0 14px',
   },
   ctaText: {
     color: '#d6d3d1',
-    maxWidth: '560px',
-    margin: '0 auto 20px',
-    fontSize: '14px',
-    lineHeight: '1.6',
+    maxWidth: '620px',
+    margin: '0 auto 32px',
+    fontSize: '16px',
+    lineHeight: '1.7',
   },
   ctaButton: {
     display: 'inline-block',
-    padding: '10px 28px',
-    background: 'linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)',
-    color: '#ffffff',
+    padding: '14px 34px',
+    backgroundColor: '#f59e0b',
+    color: '#1a0e05',
     textDecoration: 'none',
     fontWeight: '700',
-    fontSize: '13px',
-    borderRadius: '10px',
-    boxShadow: '0 0 16px rgba(220, 38, 38, 0.35)',
+    fontSize: '15px',
+    borderRadius: '12px',
   },
 };
 
