@@ -15,7 +15,7 @@ const loadCache = () => {
 
 /**
  * Tự động cập nhật theo chu kỳ (intervalMs).
- * - Hiện cache ngay rồi tải mới.
+ * - Hiện cache ngay (stale-while-revalidate) rồi tải mới.
  * - Tab ẩn thì tạm dừng; quay lại tab thì cập nhật nếu đã quá hạn.
  * - Có bài mới -> không làm nhảy danh sách, mà hiện nút "N bài mới".
  */

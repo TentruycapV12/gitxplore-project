@@ -2,15 +2,19 @@
  * Nguồn tin cho mục NEWS.
  * Mỗi nguồn là 1 "adapter": fetch -> trả về mảng item chuẩn hoá:
  * { id, source, sourceLabel, kind, title, summary, url, image, author, date, meta }
- * kind: 'repo' | 'article' | 'social' | 'discussion'
+ * kind: 'repo' | 'package' | 'article' | 'social' | 'discussion'
  *
  * Muốn thêm nguồn mới: thêm 1 object vào SOURCES (hoặc 1 dòng vào EXTRA_FEEDS).
  */
 
-// Thêm RSS tuỳ ý ở đây (blog, YouTube, và X / Instagram / TikTok / Facebook
-// nếu bạn có RSSHub). Ví dụ:
+// ---------------------------------------------------------------
+// THÊM RSS TUỲ Ý Ở ĐÂY (blog, YouTube, và cả X / Instagram / TikTok / Facebook
+// nếu bạn có RSSHub – xem INTEGRATION.md). Ví dụ:
 //   { id: 'x-vercel', label: 'X · @vercel', kind: 'social',
 //     url: 'https://YOUR-RSSHUB.example.com/twitter/user/vercel' },
+//   { id: 'yt-fireship', label: 'YouTube · Fireship', kind: 'social',
+//     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCsBjURrPoezykLs9EqgamOA' },
+// ---------------------------------------------------------------
 export const EXTRA_FEEDS = [];
 
 const DEFAULT_FEEDS = [
@@ -188,6 +192,7 @@ export const SOURCES = [
 export const KINDS = [
   { id: 'all', label: 'All' },
   { id: 'repo', label: 'Repositories' },
+  { id: 'package', label: 'Packages' },
   { id: 'article', label: 'Articles' },
   { id: 'discussion', label: 'Discussions' },
   { id: 'social', label: 'Social' },
@@ -228,6 +233,232 @@ export async function fetchAllNews(signal) {
       return true;
     })
     .sort((a, b) => b.date - a.date);
+
+  return { items, errors };
+}
+
+
+/* =====================================================================
+ * TÌM KIẾM THEO TỪ KHOÁ (chỉ chạy khi người dùng gõ – không tải sẵn)
+ * Mỗi nguồn gọi API tìm kiếm CỦA CHÍNH NÓ, nên kết quả khớp từ khoá thật sự
+ * và chỉ tải ~10-15 mục/nguồn/trang => nhẹ, không lag.
+ * ===================================================================== */
+
+const PER = 10;
+
+const githubSearch = {
+  id: 'github',
+  label: 'GitHub',
+  kind: 'repo',
+  async search(q, { signal, page }) {
+    const qs = new URLSearchParams({
+      q: `${q} in:name,description,topics`,
+      per_page: String(PER + 5),
+      page: String(page),
+    });
+    const data = await getJson(`https://api.github.com/search/repositories?${qs}`, signal);
+    return data.items.map((r) => ({
+      id: `github:${r.id}`,
+      title: r.full_name,
+      summary: clip(r.description || 'No description'),
+      url: r.html_url,
+      image: r.owner?.avatar_url,
+      author: r.owner?.login,
+      date: Date.parse(r.pushed_at || r.created_at),
+      meta: `★ ${r.stargazers_count.toLocaleString()}${r.language ? ` · ${r.language}` : ''}${
+        r.license?.spdx_id && r.license.spdx_id !== 'NOASSERTION' ? ` · ${r.license.spdx_id}` : ''
+      }`,
+    }));
+  },
+};
+
+const gitlabSearch = {
+  id: 'gitlab',
+  label: 'GitLab',
+  kind: 'repo',
+  async search(q, { signal, page }) {
+    const qs = new URLSearchParams({
+      search: q,
+      order_by: 'star_count',
+      sort: 'desc',
+      simple: 'true',
+      per_page: String(PER),
+      page: String(page),
+    });
+    const data = await getJson(`https://gitlab.com/api/v4/projects?${qs}`, signal);
+    return data.map((r) => ({
+      id: `gitlab:${r.id}`,
+      title: r.path_with_namespace,
+      summary: clip(r.description || 'No description'),
+      url: r.web_url,
+      image: r.avatar_url || undefined,
+      author: r.namespace?.name,
+      date: Date.parse(r.last_activity_at),
+      meta: `★ ${r.star_count ?? 0}`,
+    }));
+  },
+};
+
+const npmSearch = {
+  id: 'npm',
+  label: 'npm',
+  kind: 'package',
+  async search(q, { signal, page }) {
+    const qs = new URLSearchParams({ text: q, size: String(PER), from: String((page - 1) * PER) });
+    const data = await getJson(`https://registry.npmjs.org/-/v1/search?${qs}`, signal);
+    return data.objects.map(({ package: p }) => ({
+      id: `npm:${p.name}`,
+      title: p.name,
+      summary: clip(p.description || ''),
+      url: p.links?.npm || `https://www.npmjs.com/package/${p.name}`,
+      author: p.publisher?.username,
+      date: Date.parse(p.date),
+      meta: `v${p.version}`,
+    }));
+  },
+};
+
+const cratesSearch = {
+  id: 'crates',
+  label: 'crates.io',
+  kind: 'package',
+  async search(q, { signal, page }) {
+    const qs = new URLSearchParams({ q, per_page: String(PER), page: String(page) });
+    const data = await getJson(`https://crates.io/api/v1/crates?${qs}`, signal);
+    return data.crates.map((c) => ({
+      id: `crates:${c.id}`,
+      title: c.name,
+      summary: clip(c.description || ''),
+      url: `https://crates.io/crates/${c.id}`,
+      author: 'Rust crate',
+      date: Date.parse(c.updated_at),
+      meta: `v${c.max_version} · ↓ ${c.downloads.toLocaleString()}`,
+    }));
+  },
+};
+
+const huggingFaceSearch = {
+  id: 'hf',
+  label: 'Hugging Face',
+  kind: 'package',
+  async search(q, { signal, page }) {
+    if (page > 1) return [];
+    const qs = new URLSearchParams({ search: q, limit: String(PER), sort: 'downloads', direction: '-1' });
+    const data = await getJson(`https://huggingface.co/api/models?${qs}`, signal);
+    return data.map((m) => ({
+      id: `hf:${m.id}`,
+      title: m.id,
+      summary: m.pipeline_tag ? `AI model · ${m.pipeline_tag}` : 'AI model',
+      url: `https://huggingface.co/${m.id}`,
+      author: m.id.split('/')[0],
+      date: Date.parse(m.lastModified || m.createdAt),
+      meta: `↓ ${(m.downloads || 0).toLocaleString()} · ♥ ${m.likes || 0}`,
+    }));
+  },
+};
+
+const hnSearch = {
+  id: 'hn',
+  label: 'Hacker News',
+  kind: 'discussion',
+  async search(q, { signal, page }) {
+    const qs = new URLSearchParams({ query: q, tags: 'story', hitsPerPage: String(PER), page: String(page - 1) });
+    const data = await getJson(`https://hn.algolia.com/api/v1/search?${qs}`, signal);
+    return data.hits
+      .filter((h) => h.title)
+      .map((h) => ({
+        id: `hn:${h.objectID}`,
+        title: h.title,
+        summary: '',
+        url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+        author: h.author,
+        date: h.created_at_i * 1000,
+        meta: `▲ ${h.points || 0} · ${h.num_comments || 0} comments`,
+      }));
+  },
+};
+
+const stackSearch = {
+  id: 'so',
+  label: 'Stack Overflow',
+  kind: 'discussion',
+  async search(q, { signal, page }) {
+    const qs = new URLSearchParams({
+      order: 'desc',
+      sort: 'relevance',
+      q,
+      site: 'stackoverflow',
+      pagesize: String(PER),
+      page: String(page),
+    });
+    const data = await getJson(`https://api.stackexchange.com/2.3/search/advanced?${qs}`, signal);
+    return (data.items || []).map((i) => ({
+      id: `so:${i.question_id}`,
+      title: htmlToText(i.title),
+      summary: '',
+      url: i.link,
+      author: htmlToText(i.owner?.display_name || ''),
+      date: i.creation_date * 1000,
+      meta: `▲ ${i.score} · ${i.answer_count} answers${i.is_answered ? ' ✓' : ''}`,
+    }));
+  },
+};
+
+export const SEARCH_SOURCES = [
+  githubSearch,
+  gitlabSearch,
+  npmSearch,
+  cratesSearch,
+  huggingFaceSearch,
+  hnSearch,
+  stackSearch,
+];
+
+/** Xen kẽ kết quả giữa các nguồn để không nguồn nào "nuốt" hết trang đầu. */
+const interleave = (lists) => {
+  const out = [];
+  const max = Math.max(0, ...lists.map((l) => l.length));
+  for (let i = 0; i < max; i += 1) lists.forEach((l) => l[i] && out.push(l[i]));
+  return out;
+};
+
+/** Điểm khớp: tên trùng hẳn từ khoá > tên chứa từ khoá > còn lại. */
+const matchScore = (it, q) => {
+  const ql = q.toLowerCase();
+  const title = it.title.toLowerCase();
+  if (title.split('/').pop() === ql) return 3;
+  if (title.includes(ql)) return 2;
+  return 1;
+};
+
+export async function searchProjects(query, { signal, page = 1 } = {}) {
+  const q = query.trim();
+  const results = await Promise.allSettled(SEARCH_SOURCES.map((s) => s.search(q, { signal, page })));
+  const errors = {};
+  const lists = [];
+
+  results.forEach((r, i) => {
+    const s = SEARCH_SOURCES[i];
+    if (r.status === 'fulfilled') {
+      lists.push(r.value.map((it) => ({ ...it, source: s.id, sourceLabel: s.label, kind: s.kind })));
+    } else {
+      errors[s.id] = r.reason?.message || 'failed';
+    }
+  });
+
+  const seen = new Set();
+  const items = interleave(lists)
+    .filter((it) => it.title && it.url)
+    .map((it) => ({ ...it, date: Number.isFinite(it.date) ? it.date : 0 }))
+    .filter((it) => {
+      const key = normUrl(it.url);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((it, idx) => ({ it, idx, score: matchScore(it, q) }))
+    .sort((a, b) => b.score - a.score || a.idx - b.idx)
+    .map((x) => x.it);
 
   return { items, errors };
 }
