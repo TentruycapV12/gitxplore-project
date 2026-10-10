@@ -9,18 +9,15 @@ import Component2 from '../Components/Component2.jsx';
 import SubNavBar from '../Components/SubNavBar.jsx';
 import About from '../Components/About.jsx';
 import Footer from '../Components/Footer.jsx';
-import ProjectModal from '../Components/ProjectModal.jsx';
-import NavModals from '../Components/NavModals.jsx';
 
 export default function HomePage() {
   useLenis();
 
   const { projects } = useProjectFilters();
-  const { selectedProject, modalType, selectProject, openModal } = useUI();
+  const { selectProject, openModal } = useUI();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Bị RequireAuth đẩy về đây → mở form đăng nhập rồi xoá state để reload không mở lại.
   useEffect(() => {
     if (location.state?.requireLogin) {
       openModal('signin');
@@ -45,9 +42,6 @@ export default function HomePage() {
       <About />
       <SubNavBar />
       <Footer />
-
-      {selectedProject && <ProjectModal />}
-      {modalType && <NavModals />}
     </>
   );
 }

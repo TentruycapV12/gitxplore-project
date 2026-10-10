@@ -3,16 +3,20 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAuth } from './context/AuthContext';
+import { useUI } from './context/UIContext';
 import HomePage from './pages/HomePage.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
 import SavedDashboard from './Components/SavedDashboard.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import NewsPage from './pages/NewsPage.jsx';
+import ProjectModal from './Components/ProjectModal.jsx';
+import NavModals from './Components/NavModals.jsx';
+import SupportModal from './Components/SupportModal.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Mỗi lần đổi trang (pathname) thì cuộn về đầu. Đổi query (?q=...) thì không. */
+/** Mỗi lần đổi trang (pathname) thì cuộn về đầu. */
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -24,7 +28,7 @@ function ScrollToTop() {
   return null;
 }
 
-/** Protected route (slide 14): chưa đăng nhập thì <Navigate> về trang chủ và mở form đăng nhập. */
+/** Protected route: chưa đăng nhập thì đẩy về trang chủ và mở form đăng nhập. */
 function RequireAuth({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/" replace state={{ requireLogin: true }} />;
@@ -32,6 +36,8 @@ function RequireAuth({ children }) {
 }
 
 export default function App() {
+  const { modalType, closeModal, selectedProject } = useUI();
+
   return (
     <>
       <ScrollToTop />
@@ -40,7 +46,7 @@ export default function App() {
         <Route path="/community" element={<CommunityForum />} />
         <Route path="/news" element={<NewsPage />} />
 
-        {/* /accountscenter/:section — mục menu nằm trên URL, không cần tự pushState */}
+        {/* /accountscenter/:section */}
         <Route
           path="/accountscenter/:section?"
           element={
@@ -50,14 +56,17 @@ export default function App() {
           }
         />
 
-        {/* Các URL cũ vẫn dùng được nhờ <Navigate> */}
         <Route path="/profiles" element={<Navigate to="/accountscenter/profiles" replace />} />
         <Route path="/saved" element={<Navigate to="/accountscenter/saved" replace />} />
         <Route path="/history" element={<Navigate to="/accountscenter/history" replace />} />
 
-        {/* Catch-all (slide 10-11) */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+
+      {/* TẤT CẢ CÁC MODAL ĐƯỢC QUẢN LÝ Ở ĐÂY */}
+      {selectedProject && <ProjectModal />}
+      {modalType === 'support' && <SupportModal onClose={closeModal} />}
+      {modalType && modalType !== 'support' && <NavModals />}
     </>
   );
 }
