@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+import { UI_STRINGS } from './uiStrings';
 
 export const LANGUAGES = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
@@ -312,7 +313,9 @@ export function LanguageProvider({ children }) {
     localStorage.setItem('gxp_lang', code);
   };
 
-  const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en']?.[key] || key;
+  const t = (key) =>
+    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] ||
+    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || key;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>

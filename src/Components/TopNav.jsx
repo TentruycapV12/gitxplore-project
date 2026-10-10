@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 import { scrollToId } from '../lib/scroll';
 import './TopNav.css';
 
@@ -36,6 +37,7 @@ const TABS = [
 export default function TopNav() {
   const { user, logout } = useAuth();
   const { openModal } = useUI();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -62,6 +64,10 @@ export default function TopNav() {
     pathname.startsWith('/community') ? 'community' :
     pathname === '/' ? 'home' : null;
 
+  const tabLabel = {
+    home: t('ui_home'), news: t('news'), community: t('community'), about: t('about'), support: t('support'),
+  };
+
   const onTab = (tab) => {
     setMenu(null);
     if (tab.to) navigate(tab.to);
@@ -84,7 +90,7 @@ export default function TopNav() {
     <header className="tn" ref={rootRef}>
       {/* ===== TRÁI: logo + tìm kiếm ===== */}
       <div className="tn-left">
-        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label="NOTOSAN - Trang chủ">
+        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label={`NOTOSAN - ${t('ui_home')}`}>
           <span className="tn-logo-mark">N</span>
           <span className="tn-logo-text">NOTOSAN</span>
         </button>
@@ -93,7 +99,7 @@ export default function TopNav() {
           <button
             type="button"
             className="tn-search-icon"
-            aria-label="Tìm kiếm"
+            aria-label={t('search_placeholder')}
             onClick={() => setSearchOpen((v) => !v)}
           >
             {ICONS.search}
@@ -102,25 +108,25 @@ export default function TopNav() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm repo, framework..."
-            aria-label="Tìm kiếm repository"
+            placeholder={t('search_placeholder')}
+            aria-label={t('search_placeholder')}
           />
         </form>
       </div>
 
       {/* ===== GIỮA: tab icon ===== */}
-      <nav className="tn-tabs" aria-label="Điều hướng chính">
+      <nav className="tn-tabs" aria-label={t('ui_main_nav')}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
             onClick={() => onTab(tab)}
-            aria-label={tab.label}
+            aria-label={tabLabel[tab.id]}
             aria-current={activeId === tab.id ? 'page' : undefined}
           >
             {ICONS[tab.id]}
-            <span className="tn-tip">{tab.label}</span>
+            <span className="tn-tip">{tabLabel[tab.id]}</span>
           </button>
         ))}
       </nav>
@@ -132,7 +138,7 @@ export default function TopNav() {
             type="button"
             className={`tn-circle ${menu === 'apps' ? 'is-on' : ''}`}
             onClick={() => setMenu(menu === 'apps' ? null : 'apps')}
-            aria-label="Lối tắt"
+            aria-label={t('ui_shortcuts')}
             aria-expanded={menu === 'apps'}
           >
             {ICONS.grid}
@@ -140,19 +146,19 @@ export default function TopNav() {
 
           {menu === 'apps' && (
             <div className="tn-pop tn-apps" role="menu">
-              <p className="tn-pop-title">Lối tắt</p>
+              <p className="tn-pop-title">{t('ui_shortcuts')}</p>
               <div className="tn-apps-grid">
-                <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>Tin tức</span></button>
-                <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>Cộng đồng</span></button>
-                <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>Repo đã lưu</span></button>
-                <button type="button" onClick={() => { setMenu(null); openModal('support'); }}>{ICONS.support}<span>Hỗ trợ</span></button>
+                <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
+                <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>{t('community')}</span></button>
+                <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>{t('saved_repos')}</span></button>
+                <button type="button" onClick={() => { setMenu(null); openModal('support'); }}>{ICONS.support}<span>{t('support')}</span></button>
               </div>
             </div>
           )}
         </div>
 
         {user && (
-          <button type="button" className="tn-circle tn-bell" onClick={() => go('/community')} aria-label="Thông báo">
+          <button type="button" className="tn-circle tn-bell" onClick={() => go('/community')} aria-label={t('ui_notifications')}>
             {ICONS.bell}
             <i className="tn-badge" />
           </button>
@@ -160,8 +166,8 @@ export default function TopNav() {
 
         {!user ? (
           <>
-            <button type="button" className="tn-btn tn-btn--ghost" onClick={() => openModal('signin')}>Đăng nhập</button>
-            <button type="button" className="tn-btn tn-btn--solid" onClick={() => openModal('register')}>Đăng ký</button>
+            <button type="button" className="tn-btn tn-btn--ghost" onClick={() => openModal('signin')}>{t('signin')}</button>
+            <button type="button" className="tn-btn tn-btn--solid" onClick={() => openModal('register')}>{t('register')}</button>
           </>
         ) : (
           <div className="tn-wrap">
@@ -169,7 +175,7 @@ export default function TopNav() {
               type="button"
               className="tn-avatar"
               onClick={() => setMenu(menu === 'user' ? null : 'user')}
-              aria-label="Tài khoản"
+              aria-label={t('ui_account')}
               aria-expanded={menu === 'user'}
             >
               {user.avatarUrl
@@ -192,11 +198,12 @@ export default function TopNav() {
                   </span>
                 </button>
                 <hr />
-                <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>Hồ sơ cá nhân</button>
-                <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>Repo đã lưu</button>
-                <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>Lịch sử hoạt động</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>{t('profile_details')}</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>{t('saved_repos')}</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>{t('history')}</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/language')}>{t('language')}</button>
                 <hr />
-                <button type="button" className="tn-item tn-item--danger" onClick={() => { setMenu(null); logout(); }}>Đăng xuất</button>
+                <button type="button" className="tn-item tn-item--danger" onClick={() => { setMenu(null); logout(); }}>{t('signout')}</button>
               </div>
             )}
           </div>

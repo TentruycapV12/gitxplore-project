@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { openSourceProjects } from '../data/projectsData';
 
 const SECTIONS = [
   'profiles', 'security', 'connected', 'permissions', 'activity',
-  'billing', 'subscriptions', 'manage', 'saved', 'history',
+  'billing', 'subscriptions', 'manage', 'saved', 'history', 'language',
 ];
 
 export default function SavedDashboard() {
   const { user, updateUser, logout } = useAuth();
+  const { t: tr, lang, setLang, languages } = useLanguage();
   const navigate = useNavigate();
   const onBack = () => navigate('/');
 
@@ -181,23 +183,23 @@ export default function SavedDashboard() {
             className="link-btn btn-secondary"
             style={{ padding: '7px 14px', fontSize: '12.5px', cursor: 'pointer' }}
           >
-            ← Return to GitXplore
+            {tr('acc_return')}
           </button>
           <div style={{ fontSize: '17px', fontWeight: 700, color: '#fef08a', letterSpacing: '0.5px' }}>
-            GIT<span style={{ color: '#ef4444' }}>XPLORE</span> ACCOUNTS CENTER
+            GIT<span style={{ color: '#ef4444' }}>XPLORE</span> {tr('acc_title').toUpperCase()}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '12.5px', color: '#a8a29e' }}>
-            Active: <strong style={{ color: '#fef08a' }}>{user?.name || user?.identifier}</strong>
+            {tr('ui_active')} <strong style={{ color: '#fef08a' }}>{user?.name || user?.identifier}</strong>
           </span>
           <button
             type="button"
             onClick={() => { logout(); onBack(); }}
             style={{ background: '#241010', color: '#f87171', border: '1px solid #4a1d1d', padding: '6px 14px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}
           >
-            Sign out
+            {tr('signout')}
           </button>
         </div>
       </header>
@@ -243,9 +245,9 @@ export default function SavedDashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontSize: '13px', fontWeight: 700 }}>
                 <span>♾️</span> GitXplore
               </div>
-              <h2 style={{ margin: '6px 0 4px', fontSize: '22px', fontWeight: 700, color: '#fff' }}>Accounts Center</h2>
+              <h2 style={{ margin: '6px 0 4px', fontSize: '22px', fontWeight: 700, color: '#fff' }}>{tr('acc_title')}</h2>
               <p style={{ margin: 0, fontSize: '12px', color: '#8c827a', lineHeight: 1.5 }}>
-                Manage your connected experiences and developer profile settings across GitXplore technologies.
+                {tr('acc_sub')}
               </p>
             </div>
 
@@ -266,24 +268,25 @@ export default function SavedDashboard() {
                 border: activeMenu === 'profiles' ? '1px solid #4a1d1d' : '1px solid transparent'
               }}
             >
-              <span>👤</span> Profiles and personal details
+              <span>👤</span> {tr('acc_profiles_title')}
             </div>
 
             {/* Danh mục Account Settings */}
             <div>
               <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Account settings
+                {tr('acc_settings')}
               </span>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
                 {[
-                  { id: 'security', icon: '🛡️', label: 'Password and security' },
-                  { id: 'connected', icon: '🔗', label: 'Connected experiences' },
-                  { id: 'permissions', icon: '📄', label: 'Your information and permissions' },
-                  { id: 'activity', icon: '🚀', label: 'Project activity & tracking' },
-                  { id: 'billing', icon: '💳', label: 'Billing & Payments' },
-                  { id: 'subscriptions', icon: '⭐', label: 'Sponsorships & Subscriptions' },
-                  { id: 'manage', icon: '👥', label: 'Manage accounts' },
+                  { id: 'security', icon: '🛡️', label: tr('acc_sec') },
+                  { id: 'connected', icon: '🔗', label: tr('acc_conn') },
+                  { id: 'permissions', icon: '📄', label: tr('acc_perm') },
+                  { id: 'activity', icon: '🚀', label: tr('acc_act') },
+                  { id: 'billing', icon: '💳', label: tr('acc_bill') },
+                  { id: 'subscriptions', icon: '⭐', label: tr('acc_sub_menu') },
+                  { id: 'manage', icon: '👥', label: tr('acc_manage') },
+                  { id: 'language', icon: '🌐', label: tr('ui_acc_language') },
                 ].map((item) => (
                   <div
                     key={item.id}
@@ -312,7 +315,7 @@ export default function SavedDashboard() {
             {/* Mục bổ sung: Repositories & History */}
             <div style={{ marginTop: 'auto', borderTop: '1px solid #201010', paddingTop: '16px' }}>
               <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Quick Vault
+                {tr('ui_quick_vault')}
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
                 <div
@@ -326,7 +329,7 @@ export default function SavedDashboard() {
                     cursor: 'pointer'
                   }}
                 >
-                  ⭐ Saved Repositories ({savedList.length})
+                  ⭐ {tr('saved_repos')} ({savedList.length})
                 </div>
                 <div
                   onClick={() => handleSelectMenu('history')}
@@ -339,7 +342,7 @@ export default function SavedDashboard() {
                     cursor: 'pointer'
                   }}
                 >
-                  🕒 Activity History
+                  🕒 {tr('history')}
                 </div>
               </div>
             </div>
@@ -350,6 +353,46 @@ export default function SavedDashboard() {
           {/* ======================================================== */}
           <section style={{ padding: '36px 44px', background: '#120909', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', maxHeight: '82vh' }}>
             
+            {/* 0. LANGUAGE */}
+            {activeMenu === 'language' && (
+              <div>
+                <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>🌐 {tr('ui_acc_language')}</h1>
+                <p style={{ margin: '0 0 18px', fontSize: '13px', color: '#9ca3af' }}>{tr('ui_acc_language_sub')}</p>
+                <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
+                  {languages.map((l, i) => {
+                    const on = l.code === lang;
+                    return (
+                      <div
+                        key={l.code}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={on}
+                        onClick={() => setLang(l.code)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLang(l.code); } }}
+                        style={{
+                          padding: '14px 20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '14px',
+                          cursor: 'pointer',
+                          background: on ? '#261414' : 'transparent',
+                          borderBottom: i === languages.length - 1 ? 'none' : '1px solid #1f1212',
+                        }}
+                      >
+                        <span style={{ fontSize: '22px' }}>{l.flag}</span>
+                        <span style={{ flex: 1, fontSize: '14px', fontWeight: 600, color: on ? '#fef08a' : '#f3f4f6' }}>{l.label}</span>
+                        {on && (
+                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: '#f59e0b', color: '#1a1006' }}>
+                            {tr('ui_current')}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 1. PROFILES AND PERSONAL DETAILS */}
             {activeMenu === 'profiles' && (
               <>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useBookmarks } from '../hooks/useBookmarks';
 import { openSourceProjects } from '../data/projectsData';
 import './QuickDock.css';
@@ -18,32 +19,33 @@ const Icon = ({ children }) => (
 const TABS = [
   {
     id: 'links',
-    label: 'Lối tắt',
+    labelKey: 'ui_shortcuts',
     icon: <Icon><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></Icon>,
   },
   {
     id: 'saved',
-    label: 'Repo đã lưu',
+    labelKey: 'saved_repos',
     icon: <Icon><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z" /></Icon>,
   },
   {
     id: 'notes',
-    label: 'Ghi chú nhanh',
+    labelKey: 'ui_dock_notes',
     icon: <Icon><path d="M4 4h16v12l-4 4H4V4z" /><path d="M16 20v-4h4M8 9h8M8 13h5" /></Icon>,
   },
 ];
 
 function LinksPane({ go, openSupport }) {
   const { user } = useAuth();
+  const { t: tr } = useLanguage();
   const items = [
-    { label: 'Tin tức', desc: 'Tin mới về mã nguồn mở', onClick: () => go('/news') },
-    { label: 'Cộng đồng', desc: 'Thảo luận, hỏi đáp, chia sẻ', onClick: () => go('/community') },
+    { label: tr('news'), desc: tr('ui_dock_news_desc'), onClick: () => go('/news') },
+    { label: tr('community'), desc: tr('ui_dock_comm_desc'), onClick: () => go('/community') },
     {
-      label: 'Trung tâm tài khoản',
-      desc: user ? 'Repo đã lưu, hồ sơ, lịch sử' : 'Đăng nhập để sử dụng',
+      label: tr('acc_title'),
+      desc: user ? tr('ui_dock_acc_in') : tr('ui_dock_acc_out'),
       onClick: () => go('/accountscenter/saved'),
     },
-    { label: 'Hỗ trợ', desc: 'Câu hỏi thường gặp, gửi yêu cầu', onClick: openSupport },
+    { label: tr('support'), desc: tr('ui_dock_support_desc'), onClick: openSupport },
   ];
   return (
     <ul className="qd-list">
@@ -61,14 +63,15 @@ function LinksPane({ go, openSupport }) {
 
 function SavedPane({ go }) {
   const { user } = useAuth();
+  const { t: tr } = useLanguage();
   const { selectProject } = useUI();
   const { bookmarks } = useBookmarks();
 
   if (!user) {
-    return <p className="qd-empty">Đăng nhập để xem các repo bạn đã lưu.</p>;
+    return <p className="qd-empty">{tr('ui_dock_saved_login')}</p>;
   }
   if (!bookmarks.length) {
-    return <p className="qd-empty">Bạn chưa lưu repo nào. Mở một dự án và bấm “Lưu Repo”.</p>;
+    return <p className="qd-empty">{tr('ui_dock_saved_empty')}</p>;
   }
 
   const open = (b) => {
@@ -92,6 +95,7 @@ function SavedPane({ go }) {
 }
 
 function NotesPane() {
+  const { t: tr } = useLanguage();
   const [text, setText] = useState(() => {
     try { return localStorage.getItem(NOTES_KEY) || ''; } catch { return ''; }
   });
@@ -109,16 +113,17 @@ function NotesPane() {
         value={text}
         onChange={onChange}
         maxLength={5000}
-        placeholder="Ghi lại ý tưởng, tên repo muốn xem sau…"
-        aria-label="Ghi chú nhanh"
+        placeholder={tr('ui_dock_notes_ph')}
+        aria-label={tr('ui_dock_notes')}
       />
-      <p className="qd-hint">Tự động lưu trên trình duyệt này.</p>
+      <p className="qd-hint">{tr('ui_dock_notes_hint')}</p>
     </div>
   );
 }
 
 export default function QuickDock() {
   const navigate = useNavigate();
+  const { t: tr } = useLanguage();
   const { openModal, modalType, selectedProject } = useUI();
   const [active, setActive] = useState(null); // null = đóng
   const panelRef = useRef(null);
@@ -155,10 +160,10 @@ export default function QuickDock() {
   return (
     <div className="qd-root">
       {current && (
-        <aside className="qd-panel" ref={panelRef} role="dialog" aria-label={current.label}>
+        <aside className="qd-panel" ref={panelRef} role="dialog" aria-label={tr(current.labelKey)}>
           <header className="qd-head">
-            <h2 className="qd-title">{current.label}</h2>
-            <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label="Đóng">
+            <h2 className="qd-title">{tr(current.labelKey)}</h2>
+            <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label={tr('ui_close')}>
               <Icon><path d="M6 6l12 12M18 6L6 18" /></Icon>
             </button>
           </header>
@@ -170,15 +175,15 @@ export default function QuickDock() {
         </aside>
       )}
 
-      <nav className="qd-rail" aria-label="Thanh tiện ích">
+      <nav className="qd-rail" aria-label={tr('ui_dock_rail')}>
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             className="qd-tab"
             aria-pressed={active === t.id}
-            aria-label={t.label}
-            title={t.label}
+            aria-label={tr(t.labelKey)}
+            title={tr(t.labelKey)}
             onClick={() => setActive((a) => (a === t.id ? null : t.id))}
           >
             {t.icon}
