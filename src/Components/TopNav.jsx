@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useLanguage } from '../context/LanguageContext';
-import { scrollToId } from '../lib/scroll';
 import './TopNav.css';
 
 const Svg = ({ children }) => (
@@ -17,7 +16,7 @@ const ICONS = {
   home: <Svg><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Svg>,
   news: <Svg><rect x="3" y="4" width="14" height="16" rx="2" /><path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M7 8h6M7 12h6M7 16h4" /></Svg>,
   community: <Svg><circle cx="9" cy="8" r="3.2" /><path d="M2.8 20c.4-3.4 3-5.5 6.2-5.5s5.8 2.1 6.2 5.5" /><circle cx="17" cy="9" r="2.4" /><path d="M16.5 14.6c2.6.1 4.4 1.8 4.7 4.4" /></Svg>,
-  about: <Svg><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.8v.1" /></Svg>,
+  forum: <Svg><path d="M4 5h16v11H9l-5 4z" /></Svg>,
   support: <Svg><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9" /></Svg>,
   search: <Svg><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></Svg>,
   grid: <Svg><circle cx="6" cy="6" r="1.4" /><circle cx="12" cy="6" r="1.4" /><circle cx="18" cy="6" r="1.4" /><circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" /><circle cx="6" cy="18" r="1.4" /><circle cx="12" cy="18" r="1.4" /><circle cx="18" cy="18" r="1.4" /></Svg>,
@@ -25,19 +24,24 @@ const ICONS = {
   bookmark: <Svg><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></Svg>,
 };
 
-// Các tab giữa. `to` = chuyển trang, `scroll` = cuộn tới mục, `modal` = mở popup.
+// Các tab giữa. `to` = chuyển trang, `modal` = mở popup.
 const TABS = [
   { id: 'home', label: 'Trang chủ', to: '/' },
   { id: 'news', label: 'Tin tức', to: '/news' },
   { id: 'community', label: 'Cộng đồng', to: '/community' },
-  { id: 'about', label: 'Giới thiệu', scroll: 'about' },
+  { id: 'forum', label: 'Diễn đàn', to: '/community/forum' },
   { id: 'support', label: 'Hỗ trợ', modal: 'support' },
 ];
+
+const FORUM_LABEL = {
+  vi: 'Diễn đàn', en: 'Forum', ja: 'フォーラム', zh: '论坛', ko: '포럼',
+  fr: 'Forum', de: 'Forum', es: 'Foro', ru: 'Форум', pt: 'Fórum',
+};
 
 export default function TopNav() {
   const { user, logout } = useAuth();
   const { openModal } = useUI();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
 
@@ -66,17 +70,18 @@ export default function TopNav() {
 
   const activeId =
     pathname.startsWith('/news') ? 'news' :
+    pathname.startsWith('/community/forum') ? 'forum' :
     pathname.startsWith('/community') ? 'community' :
     pathname === '/' ? 'home' : null;
 
   const tabLabel = {
-    home: t('ui_home'), news: t('news'), community: t('community'), about: t('about'), support: t('support'),
+    home: t('ui_home'), news: t('news'), community: t('community'),
+    forum: FORUM_LABEL[lang] || FORUM_LABEL.en, support: t('support'),
   };
 
   const onTab = (tab) => {
     setMenu(null);
     if (tab.to) navigate(tab.to);
-    else if (tab.scroll) scrollToId(tab.scroll);
     else if (tab.modal) openModal(tab.modal);
   };
 

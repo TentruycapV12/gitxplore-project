@@ -195,7 +195,6 @@
   .tn-search.is-open input { display: block; }
 }
 @media (max-width: 560px) {
-  .tn-tab:nth-child(4) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
   .tn-btn--ghost { display: none; }
   .tn-logo-mark { width: 36px; height: 36px; font-size: 22px; }
 }
