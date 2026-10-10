@@ -115,6 +115,13 @@ const SeeAll = ({ onClick, children }) => (
   <button type="button" className="sr-seeall" onClick={onClick}>{children}</button>
 );
 
+const idScore = (qn, id) => {
+  const m = /^(?:id )?(\d{4,8})$/.exec(qn);
+  if (!m || !id) return 0;
+  if (id === m[1]) return 100;
+  return id.startsWith(m[1]) ? 85 : 0;
+};
+
 export default function SearchPage() {
   const [params, setParams] = useSearchParams();
   const { lang } = useLanguage();
@@ -168,7 +175,7 @@ export default function SearchPage() {
     return profiles
       .filter((p) => p.email !== c.me)
       .map((p) => {
-        const raw = Math.max(scoreText(qn, p.name), Math.round(scoreText(qn, p.bio, { fuzzy: false }) * 0.4));
+        const raw = Math.max(scoreText(qn, p.name), Math.round(scoreText(qn, p.bio, { fuzzy: false }) * 0.4), idScore(qn, p.public_id));
         const friendBonus = raw > 0 && c.rel.get(p.email)?.state === 'friend' ? 8 : 0;
         return { item: p, score: raw + friendBonus };
       })
@@ -280,7 +287,8 @@ export default function SearchPage() {
           {rows.map(({ item: p }) => {
             const m = mutualMap.get(p.email);
             const isFriend = c.rel.get(p.email)?.state === 'friend';
-            const sub = !isFriend && m > 0 ? fmt(L.mutual, { n: m }) : clip(p.bio, 90);
+            const base = !isFriend && m > 0 ? fmt(L.mutual, { n: m }) : clip(p.bio, 90);
+            const sub = [p.public_id && `ID ${p.public_id}`, base].filter(Boolean).join(' · ');
             return (
               <li key={p.email} className="sr-row">
                 <Avatar p={p} />

@@ -386,13 +386,14 @@ function ListsSection({ c, label, params, setParams }) {
 
 function SearchSection({ c, label, q }) {
   const term = q.trim().toLowerCase();
+  const idq = (/^(?:id\s*)?#?(\d{4,8})$/.exec(term) || [])[1];
   const results = useMemo(() => {
     if (!term) return [];
     return [...c.byEmail.values()]
-      .filter((p) => p.email !== c.me && (p.name?.toLowerCase().includes(term) || p.email.includes(term)))
+      .filter((p) => p.email !== c.me && (p.name?.toLowerCase().includes(term) || p.email.includes(term) || (idq && p.public_id?.startsWith(idq))))
       .map((p) => ({ ...p, mutual: 0 }))
       .slice(0, 60);
-  }, [c.byEmail, c.me, term]);
+  }, [c.byEmail, c.me, term, idq]);
   return (
     <section className="ch-section">
       <SectionHead title={fmt(label.search_title, { q })} />
@@ -435,6 +436,14 @@ function LanguagePanel({ label }) {
 function ProfileForm({ c, label }) {
   const [form, setForm] = useState({ name: '', birthday: '', bio: '' });
   const p = c.myProfile;
+  const [copied, setCopied] = useState(false);
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(p.public_id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard blocked */ }
+  };
   useEffect(() => {
     setForm({ name: p?.name || '', birthday: p?.birthday || '', bio: p?.bio || '' });
   }, [p?.name, p?.birthday, p?.bio]);
@@ -443,6 +452,16 @@ function ProfileForm({ c, label }) {
   return (
     <form className="ch-panel ch-form" onSubmit={submit}>
       <h3 className="ch-h3 ch-h3--flat">{label.profile}</h3>
+      {p?.public_id && (
+        <div className="ch-uid">
+          <span className="ch-uid-label">{label.uid_label}</span>
+          <div className="ch-inline ch-inline--tight">
+            <code className="ch-uid-code">{p.public_id}</code>
+            <button type="button" className="ch-btn ch-btn--auto" onClick={copyId}>{copied ? label.uid_copied : label.uid_copy}</button>
+          </div>
+          <small className="ch-uid-hint">{label.uid_hint}</small>
+        </div>
+      )}
       <label>{label.display_name}
         <input className="ch-input" value={form.name} maxLength={60} onChange={set('name')} />
       </label>

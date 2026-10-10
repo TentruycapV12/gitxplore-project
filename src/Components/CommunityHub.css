@@ -294,3 +294,8 @@ input[type='date'].ch-input { color-scheme: dark; }
   .ch-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .ch-card-cover { height: 140px; }
 }
+
+.ch-uid { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+.ch-uid-label { font-size: 13px; font-weight: 600; color: var(--soft); }
+.ch-uid-code { flex: 1; font-size: 22px; font-weight: 800; letter-spacing: 4px; color: var(--gold); }
+.ch-uid-hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; }

@@ -93,6 +93,10 @@ const E = {
   n_list_created: ['Đã tạo danh sách', 'List created', 'リストを作成しました', '列表已创建', '목록을 만들었습니다', 'Liste créée', 'Liste erstellt', 'Lista creada', 'Список создан', 'Lista criada'],
   n_list_deleted: ['Đã xóa danh sách', 'List deleted', 'リストを削除しました', '列表已删除', '목록을 삭제했습니다', 'Liste supprimée', 'Liste gelöscht', 'Lista eliminada', 'Список удалён', 'Lista excluída'],
   n_list_updated: ['Đã cập nhật danh sách', 'List updated', 'リストを更新しました', '列表已更新', '목록을 업데이트했습니다', 'Liste mise à jour', 'Liste aktualisiert', 'Lista actualizada', 'Список обновлён', 'Lista atualizada'],
+  uid_label: ['Mã định danh (ID)', 'Account ID', 'アカウントID', '账户 ID', '계정 ID', 'Identifiant du compte', 'Konto-ID', 'ID de cuenta', 'ID аккаунта', 'ID da conta'],
+  uid_hint: ['Dãy 8 số riêng của bạn. Người khác nhập mã này vào ô tìm kiếm để tìm đúng bạn.', 'Your unique 8-digit number. Others can enter it in search to find you.', 'あなた専用の8桁の番号です。検索欄に入力すると、あなたを見つけられます。', '您专属的 8 位数字。他人在搜索框输入即可找到您。', '나만의 8자리 번호입니다. 검색창에 입력하면 나를 찾을 수 있어요.', 'Votre numéro unique à 8 chiffres. Les autres peuvent le saisir dans la recherche pour vous trouver.', 'Deine eigene 8-stellige Nummer. Andere können sie in die Suche eingeben, um dich zu finden.', 'Tu número único de 8 dígitos. Otros pueden escribirlo en la búsqueda para encontrarte.', 'Ваш уникальный 8-значный номер. Введите его в поиске, чтобы найти вас.', 'Seu número único de 8 dígitos. Outros podem digitá-lo na busca para encontrar você.'],
+  uid_copy: ['Sao chép', 'Copy', 'コピー', '复制', '복사', 'Copier', 'Kopieren', 'Copiar', 'Копировать', 'Copiar'],
+  uid_copied: ['Đã sao chép', 'Copied', 'コピーしました', '已复制', '복사됨', 'Copié', 'Kopiert', 'Copiado', 'Скопировано', 'Copiado'],
   n_saved: ['Đã lưu hồ sơ', 'Profile saved', 'プロフィールを保存しました', '资料已保存', '프로필을 저장했습니다', 'Profil enregistré', 'Profil gespeichert', 'Perfil guardado', 'Профиль сохранён', 'Perfil salvo'],
 };
 
