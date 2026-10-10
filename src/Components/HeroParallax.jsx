@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -55,7 +55,7 @@ export default function HeroParallax() {
   const slide2Ref = useRef(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const c1 = canvas1Ref.current;
     const c2 = canvas2Ref.current;
     if (!c1 || !c2) return;
