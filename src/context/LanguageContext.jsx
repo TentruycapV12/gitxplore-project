@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { UI_STRINGS } from './uiStrings';
-import { EXTRA_STRINGS } from './extraStrings';
 
 export const LANGUAGES = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
@@ -27,7 +26,7 @@ export const TRANSLATIONS = {
     tranquility_desc: 'Tách biệt khỏi nhịp sống hối hả, đắm mình vào những dòng thác lung linh và hồ nước huyền bí nơi lưu giữ kho tàng mã nguồn mở huyền thoại.',
     learn_more: '— Tìm hiểu thêm',
     profile_details: 'Chi tiết hồ sơ', saved_repos: 'Kho lưu trữ đã lưu', history: 'Lịch sử hoạt động',
-    all_repos: 'Tất cả kho lưu trữ', search_placeholder: 'Tìm kiếm kho lưu trữ, framework...',
+    all_repos: 'Tất cả kho lưu trữ', search_placeholder: 'Tìm kiếm',
     quick_view: 'Xem nhanh 👁',
     about_badge: 'VỀ DỰ ÁN NÀY',
     about_title: 'Cổng Khám Phá Mã Nguồn Mở Hiệu Năng Cao',
@@ -54,7 +53,7 @@ export const TRANSLATIONS = {
     tranquility_desc: "Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes harboring a vast realm of legendary open-source artifacts.",
     learn_more: '— Learn more',
     profile_details: 'Profile details', saved_repos: 'Saved Repositories', history: 'History',
-    all_repos: 'All Repositories', search_placeholder: 'Search repositories, frameworks...',
+    all_repos: 'All Repositories', search_placeholder: 'Search',
     quick_view: 'Quick View 👁',
     about_badge: 'ABOUT THE INITIATIVE',
     about_title: 'A Curated Portal for High-Performance Open-Source Artifacts',
@@ -81,7 +80,7 @@ export const TRANSLATIONS = {
     tranquility_desc: '神秘的な滝と静かな湖に囲まれた、オープンソースの宝庫を探索しましょう。',
     learn_more: '— 詳細を見る',
     profile_details: 'プロフィール詳細', saved_repos: '保存したリポジトリ', history: 'アクティビティ履歴',
-    all_repos: 'すべてのリポジトリ', search_placeholder: 'リポジトリ、フレームワークを検索...',
+    all_repos: 'すべてのリポジトリ', search_placeholder: '検索',
     quick_view: 'クイックビュー 👁',
     about_badge: 'プロジェクトについて',
     about_title: '高性能オープンソースの厳選ポータル',
@@ -108,7 +107,7 @@ export const TRANSLATIONS = {
     tranquility_desc: '沉浸于清澈瀑布与神秘湖泊之间，探索浩瀚的开源传奇代码库。',
     learn_more: '— 了解更多',
     profile_details: '个人资料详情', saved_repos: '已收藏的仓库', history: '活动历史',
-    all_repos: '所有开源仓库', search_placeholder: '搜索仓库、框架...',
+    all_repos: '所有开源仓库', search_placeholder: '搜索',
     quick_view: '快速预览 👁',
     about_badge: '关于此项目',
     about_title: '高性能开源宝藏精选平台',
@@ -135,7 +134,7 @@ export const TRANSLATIONS = {
     tranquility_desc: '신비로운 폭포와 호수 속에 펼쳐진 오픈소스 유물의 세계를 경험하세요.',
     learn_more: '— 더 알아보기',
     profile_details: '프로필 상세', saved_repos: '저장된 저장소', history: '활동 기록',
-    all_repos: '모든 저장소', search_placeholder: '저장소 및 프레임워크 검색...',
+    all_repos: '모든 저장소', search_placeholder: '검색',
     quick_view: '빠른 보기 👁',
     about_badge: '프로젝트 정보',
     about_title: '고성능 오픈소스 큐레이션 포털',
@@ -162,7 +161,7 @@ export const TRANSLATIONS = {
     tranquility_desc: 'Plongez au cœur des cascades éthérées et découvrez un univers open-source légendaire.',
     learn_more: '— En savoir plus',
     profile_details: 'Détails du profil', saved_repos: 'Dépôts enregistrés', history: 'Historique',
-    all_repos: 'Tous les dépôts', search_placeholder: 'Rechercher des dépôts, frameworks...',
+    all_repos: 'Tous les dépôts', search_placeholder: 'Rechercher',
     quick_view: 'Aperçu 👁',
     about_badge: "À PROPOS DE L'INITIATIVE",
     about_title: 'Portail Sélectif pour Projets Open-Source',
@@ -189,7 +188,7 @@ export const TRANSLATIONS = {
     tranquility_desc: 'Tauchen Sie ein in geheimnisvolle Wasserfälle und legendäre Open-Source-Schätze.',
     learn_more: '— Mehr erfahren',
     profile_details: 'Profildetails', saved_repos: 'Gespeicherte Repositories', history: 'Aktivitätsverlauf',
-    all_repos: 'Alle Repositories', search_placeholder: 'Repositories, Frameworks suchen...',
+    all_repos: 'Alle Repositories', search_placeholder: 'Suchen',
     quick_view: 'Schnellansicht 👁',
     about_badge: 'ÜBER DIE INITIATIVE',
     about_title: 'Kuratierte Plattform für Open-Source-Artefakte',
@@ -216,7 +215,7 @@ export const TRANSLATIONS = {
     tranquility_desc: 'Sumérjase en cascadas místicas que albergan un vasto reino de código abierto.',
     learn_more: '— Más información',
     profile_details: 'Detalles del perfil', saved_repos: 'Repositorios guardados', history: 'Historial',
-    all_repos: 'Todos los repositorios', search_placeholder: 'Buscar repositorios, frameworks...',
+    all_repos: 'Todos los repositorios', search_placeholder: 'Buscar',
     quick_view: 'Vista previa 👁',
     about_badge: 'ACERCA DE LA INICIATIVA',
     about_title: 'Portal Curado para Artefactos de Código Abierto',
@@ -243,7 +242,7 @@ export const TRANSLATIONS = {
     tranquility_desc: 'Погрузитесь в мистическую атмосферу водопадов и легендарных проектов с открытым кодом.',
     learn_more: '— Узнать больше',
     profile_details: 'Данные профиля', saved_repos: 'Сохраненные репозитории', history: 'История активности',
-    all_repos: 'Все репозитории', search_placeholder: 'Поиск репозиториев, фреймворков...',
+    all_repos: 'Все репозитории', search_placeholder: 'Поиск',
     quick_view: 'Просмотр 👁',
     about_badge: 'ОБ ИНИЦИАТИВЕ',
     about_title: 'Кураторский портал решений с открытым кодом',
@@ -266,11 +265,11 @@ export const TRANSLATIONS = {
     welcome_desc: 'Longe da energia agitada das metrópoles japonesas, repousa o vilarejo de Noto.',
     start_journey: 'Iniciar jornada ▸',
     experience_3d: 'EXPERIÊNCIA 3D',
-    tranquility: 'Tranquilidade',
+    tranquilidade: 'Tranquilidade',
     tranquility_desc: 'Explore cachoeiras etéreas e lagos místicos repletos de artefatos open-source.',
     learn_more: '— Saiba mais',
     profile_details: 'Detalhes do perfil', saved_repos: 'Repositórios salvos', history: 'Histórico',
-    all_repos: 'Todos os repositórios', search_placeholder: 'Buscar repositórios, frameworks...',
+    all_repos: 'Todos os repositórios', search_placeholder: 'Pesquisar',
     quick_view: 'Ver detalhes 👁',
     about_badge: 'SOBRE A INICIATIVA',
     about_title: 'Portal Curado para Projetos de Código Aberto',
@@ -304,36 +303,22 @@ Object.entries(NEWS_LABEL).forEach(([code, v]) => {
   if (TRANSLATIONS[code]) TRANSLATIONS[code].news = v; 
 });
 
-const LOCALES = {
-  vi: 'vi-VN', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN', ko: 'ko-KR',
-  fr: 'fr-FR', de: 'de-DE', es: 'es-ES', ru: 'ru-RU', pt: 'pt-BR',
-};
-
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => localStorage.getItem('gxp_lang') || 'en');
-
-  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   const changeLanguage = (code) => {
     setLang(code);
     localStorage.setItem('gxp_lang', code);
   };
 
-  // Tra theo thứ tự: bảng gốc → uiStrings → extraStrings → tiếng Anh. Có thể truyền {n}, {q}... để thay chỗ trống.
-  const t = (key, vars) => {
-    const raw =
-      TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] || EXTRA_STRINGS[lang]?.[key] ||
-      TRANSLATIONS.en?.[key] || UI_STRINGS.en?.[key] || EXTRA_STRINGS.en?.[key] || key;
-    return vars ? String(raw).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '') : raw;
-  };
-
-  // Mã locale để định dạng ngày giờ theo ngôn ngữ đang chọn.
-  const locale = LOCALES[lang] || 'en-US';
+  const t = (key) =>
+    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] ||
+    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || key;
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, locale, languages: LANGUAGES }}>
+    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
       {children}
     </LanguageContext.Provider>
   );
