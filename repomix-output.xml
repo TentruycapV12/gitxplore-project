@@ -4278,90 +4278,6 @@ export async function fetchAllNews(signal) {
 }
 </file>
 
-<file path="src/pages/NewsPage.css">
-/* News page — cùng hệ màu amber với CommunityForum. Mọi class bắt đầu bằng nw- */
-.nw {
-  --bg: #0d0909; --surface: #161010; --surface-2: #1e1616; --line: #2d2121;
-  --text: #f6f2ef; --muted: #b9ada7; --faint: #8d817b;
-  --accent: #f59e0b; --accent-ink: #1a1006; --accent-soft: rgba(245,158,11,.14);
-  min-height: 100vh; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
-  position: relative; z-index: 1;
-}
-.nw *, .nw *::before, .nw *::after { box-sizing: border-box; }
-.nw :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.nw-top {
-  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 12px 5vw; background: rgba(13,9,9,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
-}
-.nw-brand { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 19px; letter-spacing: 1.5px; color: #fef08a; margin-right: auto; }
-.nw-brand span { color: var(--accent); }
-.nw-back, .nw-btn {
-  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
-  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
-}
-.nw-back:hover, .nw-btn:hover:not(:disabled) { border-color: var(--accent); }
-.nw-btn:disabled { opacity: .5; cursor: default; }
-.nw-live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-.nw-dot.is-live { background: #34d399; animation: nw-pulse 2s infinite; }
-.nw-dot.is-loading { background: var(--accent); animation: nw-pulse .8s infinite; }
-@keyframes nw-pulse { 50% { opacity: .3; transform: scale(1.4); } }
-.nw-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.nw-select select, .nw-input {
-  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
-  padding: 7px 10px; font: inherit; font-size: 13px;
-}
-
-.nw-main { max-width: 1240px; margin: 0 auto; padding: 32px 5vw 80px; }
-.nw-head h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
-.nw-head p { color: var(--muted); margin: 0 0 22px; }
-
-.nw-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
-.nw-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
-.nw-chips button {
-  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
-  padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
-}
-.nw-chips button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-.nw-search { min-width: 200px; }
-
-.nw-new {
-  display: block; margin: 0 auto 18px; background: var(--accent); color: var(--accent-ink); border: 0;
-  border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
-}
-.nw-warn { font-size: 13px; color: var(--faint); margin-bottom: 16px; }
-.nw-empty { color: var(--muted); text-align: center; padding: 60px 0; }
-
-.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
-.nw-card {
-  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-  transition: border-color .2s, transform .2s;
-}
-.nw-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.nw-skel { min-height: 170px; background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: nw-shimmer 1.4s infinite; }
-@keyframes nw-shimmer { to { background-position: -200% 0; } }
-.nw-img { width: 100%; height: 150px; object-fit: cover; background: var(--surface-2); }
-.nw-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; flex: 1; }
-.nw-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
-.nw-time { margin-left: auto; }
-.nw-tag { border-radius: 4px; padding: 1px 7px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
-.nw-tag--repo { background: rgba(167,139,250,.15); color: #a78bfa; }
-.nw-tag--article { background: rgba(96,165,250,.15); color: #60a5fa; }
-.nw-tag--social { background: rgba(52,211,153,.15); color: #34d399; }
-.nw-body h3 { margin: 0; font-size: 16px; line-height: 1.35; display: flex; align-items: flex-start; gap: 8px; word-break: break-word; }
-.nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
-.nw-body p {
-  margin: 0; color: var(--muted); font-size: 13.5px;
-  display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-}
-.nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
-.nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-@media (max-width: 640px) { .nw-head h1 { font-size: 30px; } .nw-search { width: 100%; } }
-</file>
-
 <file path="src/pages/NewsPage.jsx">
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -6447,6 +6363,90 @@ export function useLenis() {
 }
 </file>
 
+<file path="src/pages/NewsPage.css">
+/* News page — cùng hệ màu amber với CommunityForum. Mọi class bắt đầu bằng nw- */
+.nw {
+  --bg: #0d0909; --surface: #161010; --surface-2: #1e1616; --line: #2d2121;
+  --text: #f6f2ef; --muted: #b9ada7; --faint: #8d817b;
+  --accent: #f59e0b; --accent-ink: #1a1006; --accent-soft: rgba(245,158,11,.14);
+  min-height: 100vh; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
+  position: relative; z-index: 1;
+}
+.nw *, .nw *::before, .nw *::after { box-sizing: border-box; }
+.nw :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.nw-top {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 5vw; background: rgba(13,9,9,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.nw-brand { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 19px; letter-spacing: 1.5px; color: #fef08a; margin-right: auto; }
+.nw-brand span { color: var(--accent); }
+.nw-back, .nw-btn {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-back:hover, .nw-btn:hover:not(:disabled) { border-color: var(--accent); }
+.nw-btn:disabled { opacity: .5; cursor: default; }
+.nw-live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.nw-dot.is-live { background: #34d399; animation: nw-pulse 2s infinite; }
+.nw-dot.is-loading { background: var(--accent); animation: nw-pulse .8s infinite; }
+@keyframes nw-pulse { 50% { opacity: .3; transform: scale(1.4); } }
+.nw-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-select select, .nw-input {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font: inherit; font-size: 13px;
+}
+
+.nw-main { max-width: 1240px; margin: 0 auto; padding: 32px 5vw 80px; }
+.nw-head h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
+.nw-head p { color: var(--muted); margin: 0 0 22px; }
+
+.nw-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.nw-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
+.nw-chips button {
+  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-chips button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.nw-search { min-width: 200px; }
+
+.nw-new {
+  display: block; margin: 0 auto 18px; background: var(--accent); color: var(--accent-ink); border: 0;
+  border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.nw-warn { font-size: 13px; color: var(--faint); margin-bottom: 16px; }
+.nw-empty { color: var(--muted); text-align: center; padding: 60px 0; }
+
+.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.nw-card {
+  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color .2s, transform .2s;
+}
+.nw-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.nw-skel { min-height: 170px; background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: nw-shimmer 1.4s infinite; }
+@keyframes nw-shimmer { to { background-position: -200% 0; } }
+.nw-img { width: 100%; height: 150px; object-fit: cover; background: var(--surface-2); }
+.nw-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; flex: 1; }
+.nw-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-time { margin-left: auto; }
+.nw-tag { border-radius: 4px; padding: 1px 7px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.nw-tag--repo { background: rgba(167,139,250,.15); color: #a78bfa; }
+.nw-tag--article { background: rgba(96,165,250,.15); color: #60a5fa; }
+.nw-tag--social { background: rgba(52,211,153,.15); color: #34d399; }
+.nw-body h3 { margin: 0; font-size: 16px; line-height: 1.35; display: flex; align-items: flex-start; gap: 8px; word-break: break-word; }
+.nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+.nw-body p {
+  margin: 0; color: var(--muted); font-size: 13.5px;
+  display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 640px) { .nw-head h1 { font-size: 30px; } .nw-search { width: 100%; } }
+</file>
+
 <file path="src/Components/NavModals.jsx">
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
@@ -8094,6 +8094,7 @@ function ScrollToTop() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    ScrollTrigger.refresh();
   }, [pathname]);
 
   return null;
@@ -8134,461 +8135,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
-  );
-}
-</file>
-
-<file path="src/Components/HeroParallax.jsx">
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
-import { useLanguage } from '../context/LanguageContext';
-import { scrollToId } from '../lib/scroll';
-
-gsap.registerPlugin(ScrollTrigger);
-
-// Hằng số + hàm thuần đặt NGOÀI component: không bị tạo lại ở mỗi lần render.
-const FRAME_COUNT = 120;
-const frame1Src = (i) => `/frames/frame_${String(i + 1).padStart(4, '0')}.jpg`;
-const frame2Src = (i) => `/frames/frames2/frame_${String(i + 1).padStart(4, '0')}.jpg`;
-
-/** Tạo canvas sequence: nạp trước các frame và trả về hàm vẽ frame hiện tại. */
-function createSequence(canvas, srcOf) {
-  const ctx = canvas.getContext('2d');
-  canvas.width = 1920;
-  canvas.height = 1080;
-
-  const images = Array.from({ length: FRAME_COUNT }, (_, i) => {
-    const img = new Image();
-    img.src = srcOf(i);
-    return img;
-  });
-  const state = { frame: 0 };
-
-  const render = () => {
-    const img = images[state.frame];
-    if (img?.complete) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    }
-  };
-
-  // Frame đầu có thể đã tải xong (cache) → vẽ ngay, nếu chưa thì chờ onload.
-  if (images[0].complete) render();
-  else images[0].onload = render;
-
-  return { state, render };
-}
-
-export default function HeroParallax() {
-  const { user, logout } = useAuth();
-  const { openModal: setModal } = useUI();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-
-  const containerRef = useRef(null);
-  const canvas1Ref = useRef(null);
-  const canvas2Ref = useRef(null);
-  const slide1Ref = useRef(null);
-  const slide2Ref = useRef(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  useEffect(() => {
-    const c1 = canvas1Ref.current;
-    const c2 = canvas2Ref.current;
-    if (!c1 || !c2) return;
-
-    const seq1 = createSequence(c1, frame1Src);
-    const seq2 = createSequence(c2, frame2Src);
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=350%',
-          pin: true,
-          scrub: 0.5,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      tl.to(seq1.state, {
-        frame: FRAME_COUNT - 1,
-        snap: 'frame',
-        ease: 'none',
-        onUpdate: seq1.render,
-        duration: 2,
-      }, 0)
-      .to(slide1Ref.current, { opacity: 0, y: -60, scale: 0.92, duration: 0.8 }, 0.8)
-      .to(c1, { opacity: 0, duration: 1 }, 1.4)
-      .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
-      .fromTo(slide2Ref.current, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8 }, 1.8)
-      .to(seq2.state, {
-        frame: FRAME_COUNT - 1,
-        snap: 'frame',
-        ease: 'none',
-        onUpdate: seq2.render,
-        duration: 2,
-      }, 1.8);
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100vh',
-        overflow: 'hidden',
-        background: '#0a0606',
-      }}
-    >
-      <canvas
-        ref={canvas1Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-          zIndex: 1,
-        }}
-      />
-
-      <canvas
-        ref={canvas2Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-          zIndex: 2,
-          opacity: 0,
-        }}
-      />
-
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(circle at 65% 45%, rgba(185, 28, 28, 0.16) 0%, rgba(217, 119, 6, 0.08) 40%, rgba(8, 5, 5, 0.85) 90%)',
-          zIndex: 3,
-          pointerEvents: 'none',
-        }}
-      />
-
-      <nav
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          padding: '30px 6vw',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 20,
-        }}
-      >
-        <span
-          onClick={() => scrollToId('explore')}
-          style={{
-            fontSize: '19px',
-            fontWeight: 700,
-            letterSpacing: '1.5px',
-            color: '#fef08a',
-            fontFamily: 'Cormorant Garamond, serif',
-            cursor: 'pointer',
-          }}
-        >
-          NOTOSAN
-        </span>
-
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/news')}
-            className="nav-link-btn"
-          >
-            {t('news')}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/community')}
-            className="nav-link-btn"
-          >
-            Community
-          </button>
-
-          <button
-            type="button"
-            onClick={() => scrollToId('about')}
-            className="nav-link-btn"
-          >
-            About
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => setModal('support')} 
-            className="nav-link-btn"
-          >
-            Support
-          </button>
-
-          {!user ? (
-            <button
-              type="button"
-              onClick={() => setModal('register')}
-              className="register-btn-main"
-            >
-              Register
-            </button>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
-              <button type="button" className="bell-btn" title="Notifications">
-                🔔
-              </button>
-
-              <div
-                className="user-avatar-badge"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt="Avatar"
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <span>{user.avatarChar}</span>
-                )}
-                <span style={{ fontSize: '10px', marginLeft: '2px' }}>▾</span>
-              </div>
-
-              {dropdownOpen && (
-                <div className="user-dropdown-menu">
-                  <div className="dropdown-user-header">
-                    <strong>{user.name}</strong>
-                    <span className="dropdown-user-sub">{user.identifier}</span>
-                  </div>
-                  <div className="dropdown-divider" />
-                  
-                  {/* Điều hướng trực tiếp sang các tab Accounts Center chuẩn URL */}
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/profiles');
-                    }}
-                  >
-                    👤 Profile details
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/saved');
-                    }}
-                  >
-                    ⭐ Saved Repositories
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/history');
-                    }}
-                  >
-                    🕒 History
-                  </button>
-
-                  <div className="dropdown-divider" />
-                  <button
-                    type="button"
-                    className="dropdown-item logout-item"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      logout();
-                    }}
-                  >
-                    ⏻ Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* SCENE 1: WELCOME */}
-      <div
-        ref={slide1Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 5,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '0 8vw',
-          maxWidth: '820px',
-          pointerEvents: 'none',
-        }}
-      >
-        <p
-          style={{
-            color: '#fbbf24',
-            fontSize: '12px',
-            letterSpacing: '3px',
-            textTransform: 'uppercase',
-            marginBottom: '14px',
-            fontWeight: 600,
-          }}
-        >
-          ▲ Journey to new frontiers, Journey to Noto Nature Park
-        </p>
-        <h1
-          style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: 'clamp(70px, 12vw, 140px)',
-            color: '#ffffff',
-            lineHeight: '0.88',
-            letterSpacing: '-2px',
-            textTransform: 'uppercase',
-            margin: '6px 0 22px',
-            textShadow: '0 4px 30px rgba(185, 28, 28, 0.35)',
-          }}
-        >
-          WELCOME
-        </h1>
-        <p
-          style={{
-            color: '#fef3c7',
-            fontSize: '15px',
-            lineHeight: 1.75,
-            maxWidth: '460px',
-            marginBottom: '28px',
-            opacity: 0.9,
-          }}
-        >
-          Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. 
-          Surprising and captivating in equal measure.
-        </p>
-        <div style={{ pointerEvents: 'auto' }}>
-          <button
-            type="button"
-            onClick={() => scrollToId('explore')}
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
-              color: '#ffffff',
-              border: 'none',
-              padding: '12px 28px',
-              borderRadius: '24px',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 18px rgba(220, 38, 38, 0.4)',
-              transition: 'transform 0.2s ease',
-            }}
-            onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
-            onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
-          >
-            Start the journey ▸
-          </button>
-        </div>
-      </div>
-
-      {/* SCENE 2: TRANQUILITY */}
-      <div
-        ref={slide2Ref}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 6,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-end',
-          paddingRight: '7vw',
-          pointerEvents: 'none',
-          opacity: 0,
-        }}
-      >
-        <div style={{ maxWidth: '520px', pointerEvents: 'auto', textAlign: 'left' }}>
-          <p
-            style={{
-              color: '#fbbf24',
-              fontSize: '12px',
-              letterSpacing: '3.5px',
-              textTransform: 'uppercase',
-              marginBottom: '10px',
-              fontWeight: 600,
-            }}
-          >
-            3D Experience
-          </p>
-          <h2
-            style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: 'clamp(62px, 9.5vw, 110px)',
-              color: '#ffffff',
-              lineHeight: '0.95',
-              marginBottom: '20px',
-              letterSpacing: '-1px',
-              textShadow: '0 4px 28px rgba(245, 158, 11, 0.3)',
-            }}
-          >
-            Tranquility
-          </h2>
-          <p
-            style={{
-              color: '#fef3c7',
-              fontSize: '15.5px',
-              lineHeight: 1.8,
-              marginBottom: '26px',
-              opacity: 0.9,
-            }}
-          >
-            Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes 
-            harboring a vast realm of legendary open-source artifacts.
-          </p>
-          <button
-            type="button"
-            onClick={() => scrollToId('explore')}
-            style={{
-              background: 'transparent',
-              color: '#fcd34d',
-              border: 'none',
-              borderBottom: '1px solid #fcd34d',
-              paddingBottom: '4px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            — Learn more
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 </file>
@@ -9708,6 +9254,465 @@ export default function CommunityForum() {
       {showAdminModal && (
         <AdminDashboardModal onClose={() => setShowAdminModal(false)} />
       )}
+    </div>
+  );
+}
+</file>
+
+<file path="src/Components/HeroParallax.jsx">
+import { useLayoutEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
+import { scrollToId } from '../lib/scroll';
+
+gsap.registerPlugin(ScrollTrigger);
+
+// Hằng số + hàm thuần đặt NGOÀI component: không bị tạo lại ở mỗi lần render.
+const FRAME_COUNT = 120;
+const frame1Src = (i) => `/frames/frame_${String(i + 1).padStart(4, '0')}.jpg`;
+const frame2Src = (i) => `/frames/frames2/frame_${String(i + 1).padStart(4, '0')}.jpg`;
+
+/** Tạo canvas sequence: nạp trước các frame và trả về hàm vẽ frame hiện tại. */
+function createSequence(canvas, srcOf) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = 1920;
+  canvas.height = 1080;
+
+  const images = Array.from({ length: FRAME_COUNT }, (_, i) => {
+    const img = new Image();
+    img.src = srcOf(i);
+    return img;
+  });
+  const state = { frame: 0 };
+
+  const render = () => {
+    const img = images[state.frame];
+    if (img?.complete) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  // Frame đầu có thể đã tải xong (cache) → vẽ ngay, nếu chưa thì chờ onload.
+  if (images[0].complete) render();
+  else images[0].onload = render;
+
+  return { state, render };
+}
+
+export default function HeroParallax() {
+  const { user, logout } = useAuth();
+  const { openModal: setModal } = useUI();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const containerRef = useRef(null);
+  const canvas1Ref = useRef(null);
+  const canvas2Ref = useRef(null);
+  const slide1Ref = useRef(null);
+  const slide2Ref = useRef(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    const c1 = canvas1Ref.current;
+    const c2 = canvas2Ref.current;
+    if (!c1 || !c2) return;
+
+    const seq1 = createSequence(c1, frame1Src);
+    const seq2 = createSequence(c2, frame2Src);
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=350%',
+          pin: true,
+          scrub: 0.5,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      tl.to(seq1.state, {
+        frame: FRAME_COUNT - 1,
+        snap: 'frame',
+        ease: 'none',
+        onUpdate: seq1.render,
+        duration: 2,
+      }, 0)
+      .to(slide1Ref.current, { opacity: 0, y: -60, scale: 0.92, duration: 0.8 }, 0.8)
+      .to(c1, { opacity: 0, duration: 1 }, 1.4)
+      .fromTo(c2, { opacity: 0 }, { opacity: 1, duration: 1 }, 1.4)
+      .fromTo(slide2Ref.current, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.8 }, 1.8)
+      .to(seq2.state, {
+        frame: FRAME_COUNT - 1,
+        snap: 'frame',
+        ease: 'none',
+        onUpdate: seq2.render,
+        duration: 2,
+      }, 1.8);
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    // Lớp bọc do React sở hữu: GSAP chèn pin-spacer vào BÊN TRONG lớp này,
+    // nên khi chuyển trang React luôn gỡ được (không lỗi removeChild).
+    <div className="hero-pin-wrap">
+    <div
+      ref={containerRef}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100vh',
+        overflow: 'hidden',
+        background: '#0a0606',
+      }}
+    >
+      <canvas
+        ref={canvas1Ref}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+          zIndex: 1,
+        }}
+      />
+
+      <canvas
+        ref={canvas2Ref}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+          zIndex: 2,
+          opacity: 0,
+        }}
+      />
+
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(circle at 65% 45%, rgba(185, 28, 28, 0.16) 0%, rgba(217, 119, 6, 0.08) 40%, rgba(8, 5, 5, 0.85) 90%)',
+          zIndex: 3,
+          pointerEvents: 'none',
+        }}
+      />
+
+      <nav
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          padding: '30px 6vw',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 20,
+        }}
+      >
+        <span
+          onClick={() => scrollToId('explore')}
+          style={{
+            fontSize: '19px',
+            fontWeight: 700,
+            letterSpacing: '1.5px',
+            color: '#fef08a',
+            fontFamily: 'Cormorant Garamond, serif',
+            cursor: 'pointer',
+          }}
+        >
+          NOTOSAN
+        </span>
+
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/news')}
+            className="nav-link-btn"
+          >
+            {t('news')}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/community')}
+            className="nav-link-btn"
+          >
+            Community
+          </button>
+
+          <button
+            type="button"
+            onClick={() => scrollToId('about')}
+            className="nav-link-btn"
+          >
+            About
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => setModal('support')} 
+            className="nav-link-btn"
+          >
+            Support
+          </button>
+
+          {!user ? (
+            <button
+              type="button"
+              onClick={() => setModal('register')}
+              className="register-btn-main"
+            >
+              Register
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
+              <button type="button" className="bell-btn" title="Notifications">
+                🔔
+              </button>
+
+              <div
+                className="user-avatar-badge"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt="Avatar"
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span>{user.avatarChar}</span>
+                )}
+                <span style={{ fontSize: '10px', marginLeft: '2px' }}>▾</span>
+              </div>
+
+              {dropdownOpen && (
+                <div className="user-dropdown-menu">
+                  <div className="dropdown-user-header">
+                    <strong>{user.name}</strong>
+                    <span className="dropdown-user-sub">{user.identifier}</span>
+                  </div>
+                  <div className="dropdown-divider" />
+                  
+                  {/* Điều hướng trực tiếp sang các tab Accounts Center chuẩn URL */}
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/accountscenter/profiles');
+                    }}
+                  >
+                    👤 Profile details
+                  </button>
+
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/accountscenter/saved');
+                    }}
+                  >
+                    ⭐ Saved Repositories
+                  </button>
+
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/accountscenter/history');
+                    }}
+                  >
+                    🕒 History
+                  </button>
+
+                  <div className="dropdown-divider" />
+                  <button
+                    type="button"
+                    className="dropdown-item logout-item"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      logout();
+                    }}
+                  >
+                    ⏻ Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* SCENE 1: WELCOME */}
+      <div
+        ref={slide1Ref}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 5,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 8vw',
+          maxWidth: '820px',
+          pointerEvents: 'none',
+        }}
+      >
+        <p
+          style={{
+            color: '#fbbf24',
+            fontSize: '12px',
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            marginBottom: '14px',
+            fontWeight: 600,
+          }}
+        >
+          ▲ Journey to new frontiers, Journey to Noto Nature Park
+        </p>
+        <h1
+          style={{
+            fontFamily: 'Cormorant Garamond, serif',
+            fontSize: 'clamp(70px, 12vw, 140px)',
+            color: '#ffffff',
+            lineHeight: '0.88',
+            letterSpacing: '-2px',
+            textTransform: 'uppercase',
+            margin: '6px 0 22px',
+            textShadow: '0 4px 30px rgba(185, 28, 28, 0.35)',
+          }}
+        >
+          WELCOME
+        </h1>
+        <p
+          style={{
+            color: '#fef3c7',
+            fontSize: '15px',
+            lineHeight: 1.75,
+            maxWidth: '460px',
+            marginBottom: '28px',
+            opacity: 0.9,
+          }}
+        >
+          Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. 
+          Surprising and captivating in equal measure.
+        </p>
+        <div style={{ pointerEvents: 'auto' }}>
+          <button
+            type="button"
+            onClick={() => scrollToId('explore')}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
+              color: '#ffffff',
+              border: 'none',
+              padding: '12px 28px',
+              borderRadius: '24px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 18px rgba(220, 38, 38, 0.4)',
+              transition: 'transform 0.2s ease',
+            }}
+            onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
+          >
+            Start the journey ▸
+          </button>
+        </div>
+      </div>
+
+      {/* SCENE 2: TRANQUILITY */}
+      <div
+        ref={slide2Ref}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 6,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          paddingRight: '7vw',
+          pointerEvents: 'none',
+          opacity: 0,
+        }}
+      >
+        <div style={{ maxWidth: '520px', pointerEvents: 'auto', textAlign: 'left' }}>
+          <p
+            style={{
+              color: '#fbbf24',
+              fontSize: '12px',
+              letterSpacing: '3.5px',
+              textTransform: 'uppercase',
+              marginBottom: '10px',
+              fontWeight: 600,
+            }}
+          >
+            3D Experience
+          </p>
+          <h2
+            style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: 'clamp(62px, 9.5vw, 110px)',
+              color: '#ffffff',
+              lineHeight: '0.95',
+              marginBottom: '20px',
+              letterSpacing: '-1px',
+              textShadow: '0 4px 28px rgba(245, 158, 11, 0.3)',
+            }}
+          >
+            Tranquility
+          </h2>
+          <p
+            style={{
+              color: '#fef3c7',
+              fontSize: '15.5px',
+              lineHeight: 1.8,
+              marginBottom: '26px',
+              opacity: 0.9,
+            }}
+          >
+            Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes 
+            harboring a vast realm of legendary open-source artifacts.
+          </p>
+          <button
+            type="button"
+            onClick={() => scrollToId('explore')}
+            style={{
+              background: 'transparent',
+              color: '#fcd34d',
+              border: 'none',
+              borderBottom: '1px solid #fcd34d',
+              paddingBottom: '4px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            — Learn more
+          </button>
+        </div>
+      </div>
+    </div>
     </div>
   );
 }

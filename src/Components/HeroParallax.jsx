@@ -99,6 +99,9 @@ export default function HeroParallax() {
   }, []);
 
   return (
+    // Lớp bọc do React sở hữu: GSAP chèn pin-spacer vào BÊN TRONG lớp này,
+    // nên khi chuyển trang React luôn gỡ được (không lỗi removeChild).
+    <div className="hero-pin-wrap">
     <div
       ref={containerRef}
       style={{
@@ -447,6 +450,7 @@ export default function HeroParallax() {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }
