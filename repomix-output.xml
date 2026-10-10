@@ -74,6 +74,7 @@ src/
     AuthContext.jsx
     LanguageContext.jsx
     UIContext.jsx
+    uiStrings.js
   data/
     projectsData.js
   hooks/
@@ -1409,199 +1410,6 @@ export default function FeatureModal(props) {
 }
 </file>
 
-<file path="src/Components/QuickDock.jsx">
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
-import { useBookmarks } from '../hooks/useBookmarks';
-import { openSourceProjects } from '../data/projectsData';
-import './QuickDock.css';
-
-const NOTES_KEY = 'gx_quick_notes';
-
-const Icon = ({ children }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {children}
-  </svg>
-);
-
-const TABS = [
-  {
-    id: 'links',
-    label: 'Lối tắt',
-    icon: <Icon><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></Icon>,
-  },
-  {
-    id: 'saved',
-    label: 'Repo đã lưu',
-    icon: <Icon><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z" /></Icon>,
-  },
-  {
-    id: 'notes',
-    label: 'Ghi chú nhanh',
-    icon: <Icon><path d="M4 4h16v12l-4 4H4V4z" /><path d="M16 20v-4h4M8 9h8M8 13h5" /></Icon>,
-  },
-];
-
-function LinksPane({ go, openSupport }) {
-  const { user } = useAuth();
-  const items = [
-    { label: 'Tin tức', desc: 'Tin mới về mã nguồn mở', onClick: () => go('/news') },
-    { label: 'Cộng đồng', desc: 'Thảo luận, hỏi đáp, chia sẻ', onClick: () => go('/community') },
-    {
-      label: 'Trung tâm tài khoản',
-      desc: user ? 'Repo đã lưu, hồ sơ, lịch sử' : 'Đăng nhập để sử dụng',
-      onClick: () => go('/accountscenter/saved'),
-    },
-    { label: 'Hỗ trợ', desc: 'Câu hỏi thường gặp, gửi yêu cầu', onClick: openSupport },
-  ];
-  return (
-    <ul className="qd-list">
-      {items.map((it) => (
-        <li key={it.label}>
-          <button type="button" className="qd-row" onClick={it.onClick}>
-            <span className="qd-row-title">{it.label}</span>
-            <span className="qd-row-desc">{it.desc}</span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function SavedPane({ go }) {
-  const { user } = useAuth();
-  const { selectProject } = useUI();
-  const { bookmarks } = useBookmarks();
-
-  if (!user) {
-    return <p className="qd-empty">Đăng nhập để xem các repo bạn đã lưu.</p>;
-  }
-  if (!bookmarks.length) {
-    return <p className="qd-empty">Bạn chưa lưu repo nào. Mở một dự án và bấm “Lưu Repo”.</p>;
-  }
-
-  const open = (b) => {
-    const project = openSourceProjects.find((p) => p.id === b.repo_id);
-    if (project) selectProject(project);
-    else go('/accountscenter/saved');
-  };
-
-  return (
-    <ul className="qd-list">
-      {bookmarks.map((b) => (
-        <li key={b.repo_id}>
-          <button type="button" className="qd-row" onClick={() => open(b)}>
-            <span className="qd-row-title">{b.repo_name}</span>
-            {b.repo_desc && <span className="qd-row-desc qd-clamp">{b.repo_desc}</span>}
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function NotesPane() {
-  const [text, setText] = useState(() => {
-    try { return localStorage.getItem(NOTES_KEY) || ''; } catch { return ''; }
-  });
-
-  const onChange = (e) => {
-    const v = e.target.value;
-    setText(v);
-    try { localStorage.setItem(NOTES_KEY, v); } catch { /* bị chặn (private mode) */ }
-  };
-
-  return (
-    <div className="qd-notes">
-      <textarea
-        className="qd-textarea"
-        value={text}
-        onChange={onChange}
-        maxLength={5000}
-        placeholder="Ghi lại ý tưởng, tên repo muốn xem sau…"
-        aria-label="Ghi chú nhanh"
-      />
-      <p className="qd-hint">Tự động lưu trên trình duyệt này.</p>
-    </div>
-  );
-}
-
-export default function QuickDock() {
-  const navigate = useNavigate();
-  const { openModal, modalType, selectedProject } = useUI();
-  const [active, setActive] = useState(null); // null = đóng
-  const panelRef = useRef(null);
-
-  const current = TABS.find((t) => t.id === active);
-
-  useEffect(() => {
-    if (!active) return;
-    const onKey = (e) => e.key === 'Escape' && setActive(null);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [active]);
-
-  useEffect(() => {
-    if (!active) return;
-    const onDown = (e) => {
-      if (!e.target.closest?.('.qd-root')) setActive(null);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [active]);
-
-  if (modalType || selectedProject) return null;
-
-  const go = (path) => {
-    setActive(null);
-    navigate(path);
-  };
-  const openSupport = () => {
-    setActive(null);
-    openModal('support');
-  };
-
-  return (
-    <div className="qd-root">
-      {current && (
-        <aside className="qd-panel" ref={panelRef} role="dialog" aria-label={current.label}>
-          <header className="qd-head">
-            <h2 className="qd-title">{current.label}</h2>
-            <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label="Đóng">
-              <Icon><path d="M6 6l12 12M18 6L6 18" /></Icon>
-            </button>
-          </header>
-          <div className="qd-body">
-            {active === 'links' && <LinksPane go={go} openSupport={openSupport} />}
-            {active === 'saved' && <SavedPane go={go} />}
-            {active === 'notes' && <NotesPane />}
-          </div>
-        </aside>
-      )}
-
-      <nav className="qd-rail" aria-label="Thanh tiện ích">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className="qd-tab"
-            aria-pressed={active === t.id}
-            aria-label={t.label}
-            title={t.label}
-            onClick={() => setActive((a) => (a === t.id ? null : t.id))}
-          >
-            {t.icon}
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
-}
-</file>
-
 <file path="src/Components/SupportModal.css">
 /* ============================================================
    Support modal: một màu nhấn (amber), không gradient, không emoji.
@@ -2085,216 +1893,6 @@ export default function QuickDock() {
 }
 </file>
 
-<file path="src/Components/TopNav.jsx">
-import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
-import { scrollToId } from '../lib/scroll';
-import './TopNav.css';
-
-const Svg = ({ children }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {children}
-  </svg>
-);
-
-const ICONS = {
-  home: <Svg><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Svg>,
-  news: <Svg><rect x="3" y="4" width="14" height="16" rx="2" /><path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M7 8h6M7 12h6M7 16h4" /></Svg>,
-  community: <Svg><circle cx="9" cy="8" r="3.2" /><path d="M2.8 20c.4-3.4 3-5.5 6.2-5.5s5.8 2.1 6.2 5.5" /><circle cx="17" cy="9" r="2.4" /><path d="M16.5 14.6c2.6.1 4.4 1.8 4.7 4.4" /></Svg>,
-  about: <Svg><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.8v.1" /></Svg>,
-  support: <Svg><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9" /></Svg>,
-  search: <Svg><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></Svg>,
-  grid: <Svg><circle cx="6" cy="6" r="1.4" /><circle cx="12" cy="6" r="1.4" /><circle cx="18" cy="6" r="1.4" /><circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" /><circle cx="6" cy="18" r="1.4" /><circle cx="12" cy="18" r="1.4" /><circle cx="18" cy="18" r="1.4" /></Svg>,
-  bell: <Svg><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15zM10 21h4" /></Svg>,
-  bookmark: <Svg><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></Svg>,
-};
-
-// Các tab giữa. `to` = chuyển trang, `scroll` = cuộn tới mục, `modal` = mở popup.
-const TABS = [
-  { id: 'home', label: 'Trang chủ', to: '/' },
-  { id: 'news', label: 'Tin tức', to: '/news' },
-  { id: 'community', label: 'Cộng đồng', to: '/community' },
-  { id: 'about', label: 'Giới thiệu', scroll: 'about' },
-  { id: 'support', label: 'Hỗ trợ', modal: 'support' },
-];
-
-export default function TopNav() {
-  const { user, logout } = useAuth();
-  const { openModal } = useUI();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-
-  const [query, setQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [menu, setMenu] = useState(null); // 'apps' | 'user' | null
-  const rootRef = useRef(null);
-
-  // Đóng dropdown khi bấm ra ngoài hoặc nhấn Esc
-  useEffect(() => {
-    if (!menu) return undefined;
-    const onDown = (e) => { if (!rootRef.current?.contains(e.target)) setMenu(null); };
-    const onKey = (e) => e.key === 'Escape' && setMenu(null);
-    document.addEventListener('mousedown', onDown);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [menu]);
-
-  const activeId =
-    pathname.startsWith('/news') ? 'news' :
-    pathname.startsWith('/community') ? 'community' :
-    pathname === '/' ? 'home' : null;
-
-  const onTab = (tab) => {
-    setMenu(null);
-    if (tab.to) navigate(tab.to);
-    else if (tab.scroll) scrollToId(tab.scroll);
-    else if (tab.modal) openModal(tab.modal);
-  };
-
-  const onSearch = (e) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-    setSearchOpen(false);
-    navigate(`/?q=${encodeURIComponent(q)}`);
-    setTimeout(() => scrollToId('explore'), 80);
-  };
-
-  const go = (path) => { setMenu(null); navigate(path); };
-
-  return (
-    <header className="tn" ref={rootRef}>
-      {/* ===== TRÁI: logo + tìm kiếm ===== */}
-      <div className="tn-left">
-        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label="NOTOSAN - Trang chủ">
-          <span className="tn-logo-mark">N</span>
-          <span className="tn-logo-text">NOTOSAN</span>
-        </button>
-
-        <form className={`tn-search ${searchOpen ? 'is-open' : ''}`} onSubmit={onSearch} role="search">
-          <button
-            type="button"
-            className="tn-search-icon"
-            aria-label="Tìm kiếm"
-            onClick={() => setSearchOpen((v) => !v)}
-          >
-            {ICONS.search}
-          </button>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm repo, framework..."
-            aria-label="Tìm kiếm repository"
-          />
-        </form>
-      </div>
-
-      {/* ===== GIỮA: tab icon ===== */}
-      <nav className="tn-tabs" aria-label="Điều hướng chính">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
-            onClick={() => onTab(tab)}
-            aria-label={tab.label}
-            aria-current={activeId === tab.id ? 'page' : undefined}
-          >
-            {ICONS[tab.id]}
-            <span className="tn-tip">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* ===== PHẢI: nút tròn + avatar ===== */}
-      <div className="tn-right">
-        <div className="tn-wrap">
-          <button
-            type="button"
-            className={`tn-circle ${menu === 'apps' ? 'is-on' : ''}`}
-            onClick={() => setMenu(menu === 'apps' ? null : 'apps')}
-            aria-label="Lối tắt"
-            aria-expanded={menu === 'apps'}
-          >
-            {ICONS.grid}
-          </button>
-
-          {menu === 'apps' && (
-            <div className="tn-pop tn-apps" role="menu">
-              <p className="tn-pop-title">Lối tắt</p>
-              <div className="tn-apps-grid">
-                <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>Tin tức</span></button>
-                <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>Cộng đồng</span></button>
-                <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>Repo đã lưu</span></button>
-                <button type="button" onClick={() => { setMenu(null); openModal('support'); }}>{ICONS.support}<span>Hỗ trợ</span></button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {user && (
-          <button type="button" className="tn-circle tn-bell" onClick={() => go('/community')} aria-label="Thông báo">
-            {ICONS.bell}
-            <i className="tn-badge" />
-          </button>
-        )}
-
-        {!user ? (
-          <>
-            <button type="button" className="tn-btn tn-btn--ghost" onClick={() => openModal('signin')}>Đăng nhập</button>
-            <button type="button" className="tn-btn tn-btn--solid" onClick={() => openModal('register')}>Đăng ký</button>
-          </>
-        ) : (
-          <div className="tn-wrap">
-            <button
-              type="button"
-              className="tn-avatar"
-              onClick={() => setMenu(menu === 'user' ? null : 'user')}
-              aria-label="Tài khoản"
-              aria-expanded={menu === 'user'}
-            >
-              {user.avatarUrl
-                ? <img src={user.avatarUrl} alt="" />
-                : <span>{user.avatarChar}</span>}
-              <i className="tn-caret" aria-hidden="true">
-                <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </i>
-            </button>
-
-            {menu === 'user' && (
-              <div className="tn-pop tn-user" role="menu">
-                <button type="button" className="tn-user-card" onClick={() => go('/accountscenter/profiles')}>
-                  <span className="tn-user-av">
-                    {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user.avatarChar}
-                  </span>
-                  <span className="tn-user-info">
-                    <strong>{user.name}</strong>
-                    <small>{user.identifier}</small>
-                  </span>
-                </button>
-                <hr />
-                <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>Hồ sơ cá nhân</button>
-                <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>Repo đã lưu</button>
-                <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>Lịch sử hoạt động</button>
-                <hr />
-                <button type="button" className="tn-item tn-item--danger" onClick={() => { setMenu(null); logout(); }}>Đăng xuất</button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </header>
-  );
-}
-</file>
-
 <file path="src/context/AuthContext.jsx">
 import {
   createContext,
@@ -2459,6 +2057,145 @@ export function useUI() {
   if (!ctx) throw new Error('useUI phải được dùng bên trong <UIProvider>');
   return ctx;
 }
+</file>
+
+<file path="src/context/uiStrings.js">
+/**
+ * Chuỗi giao diện bổ sung cho 10 ngôn ngữ (thanh điều hướng, thanh tiện ích, Accounts Center).
+ * LanguageContext tra cứu file này sau TRANSLATIONS, nên không phải sửa bảng cũ.
+ */
+export const UI_STRINGS = {
+  vi: {
+    ui_home: 'Trang chủ', ui_shortcuts: 'Lối tắt', ui_notifications: 'Thông báo', ui_account: 'Tài khoản',
+    ui_main_nav: 'Điều hướng chính', ui_dock_rail: 'Thanh tiện ích', ui_dock_notes: 'Ghi chú nhanh',
+    ui_dock_news_desc: 'Tin mới về mã nguồn mở', ui_dock_comm_desc: 'Thảo luận, hỏi đáp, chia sẻ',
+    ui_dock_acc_in: 'Repo đã lưu, hồ sơ, lịch sử', ui_dock_acc_out: 'Đăng nhập để sử dụng',
+    ui_dock_support_desc: 'Câu hỏi thường gặp, gửi yêu cầu',
+    ui_dock_saved_login: 'Đăng nhập để xem các repo bạn đã lưu.',
+    ui_dock_saved_empty: 'Bạn chưa lưu repo nào. Mở một dự án và bấm “Lưu Repo”.',
+    ui_dock_notes_ph: 'Ghi lại ý tưởng, tên repo muốn xem sau…', ui_dock_notes_hint: 'Tự động lưu trên trình duyệt này.',
+    ui_close: 'Đóng', ui_acc_language: 'Ngôn ngữ',
+    ui_acc_language_sub: 'Chọn ngôn ngữ hiển thị của GitXplore. Lựa chọn được lưu trên trình duyệt này.',
+    ui_current: 'Đang dùng', ui_active: 'Đang đăng nhập:', ui_quick_vault: 'Kho nhanh',
+  },
+  en: {
+    ui_home: 'Home', ui_shortcuts: 'Shortcuts', ui_notifications: 'Notifications', ui_account: 'Account',
+    ui_main_nav: 'Main navigation', ui_dock_rail: 'Quick tools', ui_dock_notes: 'Quick notes',
+    ui_dock_news_desc: 'Latest open-source news', ui_dock_comm_desc: 'Discuss, ask, share',
+    ui_dock_acc_in: 'Saved repos, profile, history', ui_dock_acc_out: 'Sign in to use',
+    ui_dock_support_desc: 'FAQ and submit a request',
+    ui_dock_saved_login: 'Sign in to see the repos you saved.',
+    ui_dock_saved_empty: 'You have not saved any repo yet. Open a project and press “Save Repo”.',
+    ui_dock_notes_ph: 'Jot down ideas or repo names to check later…', ui_dock_notes_hint: 'Saved automatically in this browser.',
+    ui_close: 'Close', ui_acc_language: 'Language',
+    ui_acc_language_sub: 'Choose the display language for GitXplore. Your choice is saved in this browser.',
+    ui_current: 'Current', ui_active: 'Signed in as:', ui_quick_vault: 'Quick Vault',
+  },
+  ja: {
+    ui_home: 'ホーム', ui_shortcuts: 'ショートカット', ui_notifications: '通知', ui_account: 'アカウント',
+    ui_main_nav: 'メインナビゲーション', ui_dock_rail: 'クイックツール', ui_dock_notes: 'クイックメモ',
+    ui_dock_news_desc: 'オープンソースの最新ニュース', ui_dock_comm_desc: '議論・質問・共有',
+    ui_dock_acc_in: '保存したリポジトリ、プロフィール、履歴', ui_dock_acc_out: 'ログインして利用',
+    ui_dock_support_desc: 'よくある質問・リクエスト送信',
+    ui_dock_saved_login: 'ログインすると保存したリポジトリを確認できます。',
+    ui_dock_saved_empty: 'まだリポジトリを保存していません。プロジェクトを開いて「保存」を押してください。',
+    ui_dock_notes_ph: 'アイデアや後で見るリポジトリ名をメモ…', ui_dock_notes_hint: 'このブラウザに自動保存されます。',
+    ui_close: '閉じる', ui_acc_language: '言語',
+    ui_acc_language_sub: 'GitXploreの表示言語を選択します。選択はこのブラウザに保存されます。',
+    ui_current: '使用中', ui_active: 'ログイン中:', ui_quick_vault: 'クイックボルト',
+  },
+  zh: {
+    ui_home: '首页', ui_shortcuts: '快捷方式', ui_notifications: '通知', ui_account: '账户',
+    ui_main_nav: '主导航', ui_dock_rail: '快捷工具栏', ui_dock_notes: '快速笔记',
+    ui_dock_news_desc: '开源最新资讯', ui_dock_comm_desc: '讨论、提问、分享',
+    ui_dock_acc_in: '已收藏仓库、资料、历史', ui_dock_acc_out: '登录后使用',
+    ui_dock_support_desc: '常见问题与提交请求',
+    ui_dock_saved_login: '登录后查看你收藏的仓库。',
+    ui_dock_saved_empty: '你还没有收藏任何仓库。打开一个项目并点击“收藏”。',
+    ui_dock_notes_ph: '记录想法或稍后查看的仓库名…', ui_dock_notes_hint: '自动保存在此浏览器中。',
+    ui_close: '关闭', ui_acc_language: '语言',
+    ui_acc_language_sub: '选择 GitXplore 的显示语言。选择会保存在此浏览器中。',
+    ui_current: '当前使用', ui_active: '当前登录：', ui_quick_vault: '快速收纳',
+  },
+  ko: {
+    ui_home: '홈', ui_shortcuts: '바로가기', ui_notifications: '알림', ui_account: '계정',
+    ui_main_nav: '메인 내비게이션', ui_dock_rail: '빠른 도구', ui_dock_notes: '빠른 메모',
+    ui_dock_news_desc: '오픈소스 최신 소식', ui_dock_comm_desc: '토론, 질문, 공유',
+    ui_dock_acc_in: '저장한 저장소, 프로필, 기록', ui_dock_acc_out: '로그인 후 사용',
+    ui_dock_support_desc: '자주 묻는 질문 및 요청 보내기',
+    ui_dock_saved_login: '로그인하면 저장한 저장소를 볼 수 있어요.',
+    ui_dock_saved_empty: '아직 저장한 저장소가 없어요. 프로젝트를 열고 “저장”을 누르세요.',
+    ui_dock_notes_ph: '아이디어나 나중에 볼 저장소 이름을 적어두세요…', ui_dock_notes_hint: '이 브라우저에 자동 저장됩니다.',
+    ui_close: '닫기', ui_acc_language: '언어',
+    ui_acc_language_sub: 'GitXplore 표시 언어를 선택하세요. 선택은 이 브라우저에 저장됩니다.',
+    ui_current: '사용 중', ui_active: '로그인:', ui_quick_vault: '빠른 보관함',
+  },
+  fr: {
+    ui_home: 'Accueil', ui_shortcuts: 'Raccourcis', ui_notifications: 'Notifications', ui_account: 'Compte',
+    ui_main_nav: 'Navigation principale', ui_dock_rail: 'Outils rapides', ui_dock_notes: 'Notes rapides',
+    ui_dock_news_desc: "Dernières actus open source", ui_dock_comm_desc: 'Discuter, demander, partager',
+    ui_dock_acc_in: 'Dépôts enregistrés, profil, historique', ui_dock_acc_out: 'Connectez-vous pour utiliser',
+    ui_dock_support_desc: 'FAQ et envoi de demande',
+    ui_dock_saved_login: 'Connectez-vous pour voir vos dépôts enregistrés.',
+    ui_dock_saved_empty: "Vous n'avez enregistré aucun dépôt. Ouvrez un projet et cliquez sur « Enregistrer ».",
+    ui_dock_notes_ph: 'Notez des idées ou des dépôts à voir plus tard…', ui_dock_notes_hint: 'Enregistré automatiquement dans ce navigateur.',
+    ui_close: 'Fermer', ui_acc_language: 'Langue',
+    ui_acc_language_sub: "Choisissez la langue d'affichage de GitXplore. Votre choix est enregistré dans ce navigateur.",
+    ui_current: 'Actuelle', ui_active: 'Connecté :', ui_quick_vault: 'Coffre rapide',
+  },
+  de: {
+    ui_home: 'Startseite', ui_shortcuts: 'Verknüpfungen', ui_notifications: 'Benachrichtigungen', ui_account: 'Konto',
+    ui_main_nav: 'Hauptnavigation', ui_dock_rail: 'Schnellwerkzeuge', ui_dock_notes: 'Schnellnotizen',
+    ui_dock_news_desc: 'Neues aus Open Source', ui_dock_comm_desc: 'Diskutieren, fragen, teilen',
+    ui_dock_acc_in: 'Gespeicherte Repos, Profil, Verlauf', ui_dock_acc_out: 'Zum Nutzen anmelden',
+    ui_dock_support_desc: 'FAQ und Anfrage senden',
+    ui_dock_saved_login: 'Melde dich an, um deine gespeicherten Repos zu sehen.',
+    ui_dock_saved_empty: 'Du hast noch kein Repo gespeichert. Öffne ein Projekt und klicke auf „Speichern“.',
+    ui_dock_notes_ph: 'Ideen oder Repo-Namen für später notieren…', ui_dock_notes_hint: 'Wird automatisch in diesem Browser gespeichert.',
+    ui_close: 'Schließen', ui_acc_language: 'Sprache',
+    ui_acc_language_sub: 'Wähle die Anzeigesprache von GitXplore. Deine Auswahl wird in diesem Browser gespeichert.',
+    ui_current: 'Aktiv', ui_active: 'Angemeldet als:', ui_quick_vault: 'Schnellablage',
+  },
+  es: {
+    ui_home: 'Inicio', ui_shortcuts: 'Accesos directos', ui_notifications: 'Notificaciones', ui_account: 'Cuenta',
+    ui_main_nav: 'Navegación principal', ui_dock_rail: 'Herramientas rápidas', ui_dock_notes: 'Notas rápidas',
+    ui_dock_news_desc: 'Últimas noticias de código abierto', ui_dock_comm_desc: 'Debatir, preguntar, compartir',
+    ui_dock_acc_in: 'Repos guardados, perfil, historial', ui_dock_acc_out: 'Inicia sesión para usar',
+    ui_dock_support_desc: 'Preguntas frecuentes y enviar solicitud',
+    ui_dock_saved_login: 'Inicia sesión para ver los repos que guardaste.',
+    ui_dock_saved_empty: 'Aún no guardaste ningún repo. Abre un proyecto y pulsa “Guardar”.',
+    ui_dock_notes_ph: 'Anota ideas o nombres de repos para ver después…', ui_dock_notes_hint: 'Se guarda automáticamente en este navegador.',
+    ui_close: 'Cerrar', ui_acc_language: 'Idioma',
+    ui_acc_language_sub: 'Elige el idioma de GitXplore. Tu elección se guarda en este navegador.',
+    ui_current: 'Actual', ui_active: 'Sesión de:', ui_quick_vault: 'Bóveda rápida',
+  },
+  ru: {
+    ui_home: 'Главная', ui_shortcuts: 'Быстрые ссылки', ui_notifications: 'Уведомления', ui_account: 'Аккаунт',
+    ui_main_nav: 'Главная навигация', ui_dock_rail: 'Быстрые инструменты', ui_dock_notes: 'Быстрые заметки',
+    ui_dock_news_desc: 'Свежие новости open source', ui_dock_comm_desc: 'Обсуждать, спрашивать, делиться',
+    ui_dock_acc_in: 'Сохранённые репозитории, профиль, история', ui_dock_acc_out: 'Войдите, чтобы использовать',
+    ui_dock_support_desc: 'Частые вопросы и отправка запроса',
+    ui_dock_saved_login: 'Войдите, чтобы увидеть сохранённые репозитории.',
+    ui_dock_saved_empty: 'Вы пока ничего не сохранили. Откройте проект и нажмите «Сохранить».',
+    ui_dock_notes_ph: 'Записывайте идеи и названия репозиториев на потом…', ui_dock_notes_hint: 'Сохраняется автоматически в этом браузере.',
+    ui_close: 'Закрыть', ui_acc_language: 'Язык',
+    ui_acc_language_sub: 'Выберите язык интерфейса GitXplore. Выбор сохраняется в этом браузере.',
+    ui_current: 'Текущий', ui_active: 'Вы вошли как:', ui_quick_vault: 'Быстрое хранилище',
+  },
+  pt: {
+    ui_home: 'Início', ui_shortcuts: 'Atalhos', ui_notifications: 'Notificações', ui_account: 'Conta',
+    ui_main_nav: 'Navegação principal', ui_dock_rail: 'Ferramentas rápidas', ui_dock_notes: 'Notas rápidas',
+    ui_dock_news_desc: 'Últimas notícias de código aberto', ui_dock_comm_desc: 'Debater, perguntar, compartilhar',
+    ui_dock_acc_in: 'Repositórios salvos, perfil, histórico', ui_dock_acc_out: 'Entre para usar',
+    ui_dock_support_desc: 'Perguntas frequentes e enviar pedido',
+    ui_dock_saved_login: 'Entre para ver os repositórios que você salvou.',
+    ui_dock_saved_empty: 'Você ainda não salvou nenhum repositório. Abra um projeto e clique em “Salvar”.',
+    ui_dock_notes_ph: 'Anote ideias ou nomes de repositórios para ver depois…', ui_dock_notes_hint: 'Salvo automaticamente neste navegador.',
+    ui_close: 'Fechar', ui_acc_language: 'Idioma',
+    ui_acc_language_sub: 'Escolha o idioma do GitXplore. Sua escolha fica salva neste navegador.',
+    ui_current: 'Atual', ui_active: 'Conectado como:', ui_quick_vault: 'Cofre rápido',
+  },
+};
 </file>
 
 <file path="src/hooks/useBookmarks.js">
@@ -4745,6 +4482,421 @@ export default function ProjectModal() {
         </div>
       </div>
     </div>
+  );
+}
+</file>
+
+<file path="src/Components/QuickDock.jsx">
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useBookmarks } from '../hooks/useBookmarks';
+import { openSourceProjects } from '../data/projectsData';
+import './QuickDock.css';
+
+const NOTES_KEY = 'gx_quick_notes';
+
+const Icon = ({ children }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const TABS = [
+  {
+    id: 'links',
+    labelKey: 'ui_shortcuts',
+    icon: <Icon><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></Icon>,
+  },
+  {
+    id: 'saved',
+    labelKey: 'saved_repos',
+    icon: <Icon><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z" /></Icon>,
+  },
+  {
+    id: 'notes',
+    labelKey: 'ui_dock_notes',
+    icon: <Icon><path d="M4 4h16v12l-4 4H4V4z" /><path d="M16 20v-4h4M8 9h8M8 13h5" /></Icon>,
+  },
+];
+
+function LinksPane({ go, openSupport }) {
+  const { user } = useAuth();
+  const { t: tr } = useLanguage();
+  const items = [
+    { label: tr('news'), desc: tr('ui_dock_news_desc'), onClick: () => go('/news') },
+    { label: tr('community'), desc: tr('ui_dock_comm_desc'), onClick: () => go('/community') },
+    {
+      label: tr('acc_title'),
+      desc: user ? tr('ui_dock_acc_in') : tr('ui_dock_acc_out'),
+      onClick: () => go('/accountscenter/saved'),
+    },
+    { label: tr('support'), desc: tr('ui_dock_support_desc'), onClick: openSupport },
+  ];
+  return (
+    <ul className="qd-list">
+      {items.map((it) => (
+        <li key={it.label}>
+          <button type="button" className="qd-row" onClick={it.onClick}>
+            <span className="qd-row-title">{it.label}</span>
+            <span className="qd-row-desc">{it.desc}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SavedPane({ go }) {
+  const { user } = useAuth();
+  const { t: tr } = useLanguage();
+  const { selectProject } = useUI();
+  const { bookmarks } = useBookmarks();
+
+  if (!user) {
+    return <p className="qd-empty">{tr('ui_dock_saved_login')}</p>;
+  }
+  if (!bookmarks.length) {
+    return <p className="qd-empty">{tr('ui_dock_saved_empty')}</p>;
+  }
+
+  const open = (b) => {
+    const project = openSourceProjects.find((p) => p.id === b.repo_id);
+    if (project) selectProject(project);
+    else go('/accountscenter/saved');
+  };
+
+  return (
+    <ul className="qd-list">
+      {bookmarks.map((b) => (
+        <li key={b.repo_id}>
+          <button type="button" className="qd-row" onClick={() => open(b)}>
+            <span className="qd-row-title">{b.repo_name}</span>
+            {b.repo_desc && <span className="qd-row-desc qd-clamp">{b.repo_desc}</span>}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function NotesPane() {
+  const { t: tr } = useLanguage();
+  const [text, setText] = useState(() => {
+    try { return localStorage.getItem(NOTES_KEY) || ''; } catch { return ''; }
+  });
+
+  const onChange = (e) => {
+    const v = e.target.value;
+    setText(v);
+    try { localStorage.setItem(NOTES_KEY, v); } catch { /* bị chặn (private mode) */ }
+  };
+
+  return (
+    <div className="qd-notes">
+      <textarea
+        className="qd-textarea"
+        value={text}
+        onChange={onChange}
+        maxLength={5000}
+        placeholder={tr('ui_dock_notes_ph')}
+        aria-label={tr('ui_dock_notes')}
+      />
+      <p className="qd-hint">{tr('ui_dock_notes_hint')}</p>
+    </div>
+  );
+}
+
+export default function QuickDock() {
+  const navigate = useNavigate();
+  const { t: tr } = useLanguage();
+  const { openModal, modalType, selectedProject } = useUI();
+  const [active, setActive] = useState(null); // null = đóng
+  const panelRef = useRef(null);
+
+  const current = TABS.find((t) => t.id === active);
+
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e) => e.key === 'Escape' && setActive(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) return;
+    const onDown = (e) => {
+      if (!e.target.closest?.('.qd-root')) setActive(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [active]);
+
+  if (modalType || selectedProject) return null;
+
+  const go = (path) => {
+    setActive(null);
+    navigate(path);
+  };
+  const openSupport = () => {
+    setActive(null);
+    openModal('support');
+  };
+
+  return (
+    <div className="qd-root">
+      {current && (
+        <aside className="qd-panel" ref={panelRef} role="dialog" aria-label={tr(current.labelKey)}>
+          <header className="qd-head">
+            <h2 className="qd-title">{tr(current.labelKey)}</h2>
+            <button type="button" className="qd-close" onClick={() => setActive(null)} aria-label={tr('ui_close')}>
+              <Icon><path d="M6 6l12 12M18 6L6 18" /></Icon>
+            </button>
+          </header>
+          <div className="qd-body">
+            {active === 'links' && <LinksPane go={go} openSupport={openSupport} />}
+            {active === 'saved' && <SavedPane go={go} />}
+            {active === 'notes' && <NotesPane />}
+          </div>
+        </aside>
+      )}
+
+      <nav className="qd-rail" aria-label={tr('ui_dock_rail')}>
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className="qd-tab"
+            aria-pressed={active === t.id}
+            aria-label={tr(t.labelKey)}
+            title={tr(t.labelKey)}
+            onClick={() => setActive((a) => (a === t.id ? null : t.id))}
+          >
+            {t.icon}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+</file>
+
+<file path="src/Components/TopNav.jsx">
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
+import { scrollToId } from '../lib/scroll';
+import './TopNav.css';
+
+const Svg = ({ children }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const ICONS = {
+  home: <Svg><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Svg>,
+  news: <Svg><rect x="3" y="4" width="14" height="16" rx="2" /><path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M7 8h6M7 12h6M7 16h4" /></Svg>,
+  community: <Svg><circle cx="9" cy="8" r="3.2" /><path d="M2.8 20c.4-3.4 3-5.5 6.2-5.5s5.8 2.1 6.2 5.5" /><circle cx="17" cy="9" r="2.4" /><path d="M16.5 14.6c2.6.1 4.4 1.8 4.7 4.4" /></Svg>,
+  about: <Svg><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.8v.1" /></Svg>,
+  support: <Svg><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9" /></Svg>,
+  search: <Svg><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></Svg>,
+  grid: <Svg><circle cx="6" cy="6" r="1.4" /><circle cx="12" cy="6" r="1.4" /><circle cx="18" cy="6" r="1.4" /><circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" /><circle cx="6" cy="18" r="1.4" /><circle cx="12" cy="18" r="1.4" /><circle cx="18" cy="18" r="1.4" /></Svg>,
+  bell: <Svg><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15zM10 21h4" /></Svg>,
+  bookmark: <Svg><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></Svg>,
+};
+
+// Các tab giữa. `to` = chuyển trang, `scroll` = cuộn tới mục, `modal` = mở popup.
+const TABS = [
+  { id: 'home', label: 'Trang chủ', to: '/' },
+  { id: 'news', label: 'Tin tức', to: '/news' },
+  { id: 'community', label: 'Cộng đồng', to: '/community' },
+  { id: 'about', label: 'Giới thiệu', scroll: 'about' },
+  { id: 'support', label: 'Hỗ trợ', modal: 'support' },
+];
+
+export default function TopNav() {
+  const { user, logout } = useAuth();
+  const { openModal } = useUI();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [menu, setMenu] = useState(null); // 'apps' | 'user' | null
+  const rootRef = useRef(null);
+
+  // Đóng dropdown khi bấm ra ngoài hoặc nhấn Esc
+  useEffect(() => {
+    if (!menu) return undefined;
+    const onDown = (e) => { if (!rootRef.current?.contains(e.target)) setMenu(null); };
+    const onKey = (e) => e.key === 'Escape' && setMenu(null);
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
+
+  const activeId =
+    pathname.startsWith('/news') ? 'news' :
+    pathname.startsWith('/community') ? 'community' :
+    pathname === '/' ? 'home' : null;
+
+  const tabLabel = {
+    home: t('ui_home'), news: t('news'), community: t('community'), about: t('about'), support: t('support'),
+  };
+
+  const onTab = (tab) => {
+    setMenu(null);
+    if (tab.to) navigate(tab.to);
+    else if (tab.scroll) scrollToId(tab.scroll);
+    else if (tab.modal) openModal(tab.modal);
+  };
+
+  const onSearch = (e) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setSearchOpen(false);
+    navigate(`/?q=${encodeURIComponent(q)}`);
+    setTimeout(() => scrollToId('explore'), 80);
+  };
+
+  const go = (path) => { setMenu(null); navigate(path); };
+
+  return (
+    <header className="tn" ref={rootRef}>
+      {/* ===== TRÁI: logo + tìm kiếm ===== */}
+      <div className="tn-left">
+        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label={`NOTOSAN - ${t('ui_home')}`}>
+          <span className="tn-logo-mark">N</span>
+          <span className="tn-logo-text">NOTOSAN</span>
+        </button>
+
+        <form className={`tn-search ${searchOpen ? 'is-open' : ''}`} onSubmit={onSearch} role="search">
+          <button
+            type="button"
+            className="tn-search-icon"
+            aria-label={t('search_placeholder')}
+            onClick={() => setSearchOpen((v) => !v)}
+          >
+            {ICONS.search}
+          </button>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('search_placeholder')}
+            aria-label={t('search_placeholder')}
+          />
+        </form>
+      </div>
+
+      {/* ===== GIỮA: tab icon ===== */}
+      <nav className="tn-tabs" aria-label={t('ui_main_nav')}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
+            onClick={() => onTab(tab)}
+            aria-label={tabLabel[tab.id]}
+            aria-current={activeId === tab.id ? 'page' : undefined}
+          >
+            {ICONS[tab.id]}
+            <span className="tn-tip">{tabLabel[tab.id]}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ===== PHẢI: nút tròn + avatar ===== */}
+      <div className="tn-right">
+        <div className="tn-wrap">
+          <button
+            type="button"
+            className={`tn-circle ${menu === 'apps' ? 'is-on' : ''}`}
+            onClick={() => setMenu(menu === 'apps' ? null : 'apps')}
+            aria-label={t('ui_shortcuts')}
+            aria-expanded={menu === 'apps'}
+          >
+            {ICONS.grid}
+          </button>
+
+          {menu === 'apps' && (
+            <div className="tn-pop tn-apps" role="menu">
+              <p className="tn-pop-title">{t('ui_shortcuts')}</p>
+              <div className="tn-apps-grid">
+                <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
+                <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>{t('community')}</span></button>
+                <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>{t('saved_repos')}</span></button>
+                <button type="button" onClick={() => { setMenu(null); openModal('support'); }}>{ICONS.support}<span>{t('support')}</span></button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {user && (
+          <button type="button" className="tn-circle tn-bell" onClick={() => go('/community')} aria-label={t('ui_notifications')}>
+            {ICONS.bell}
+            <i className="tn-badge" />
+          </button>
+        )}
+
+        {!user ? (
+          <>
+            <button type="button" className="tn-btn tn-btn--ghost" onClick={() => openModal('signin')}>{t('signin')}</button>
+            <button type="button" className="tn-btn tn-btn--solid" onClick={() => openModal('register')}>{t('register')}</button>
+          </>
+        ) : (
+          <div className="tn-wrap">
+            <button
+              type="button"
+              className="tn-avatar"
+              onClick={() => setMenu(menu === 'user' ? null : 'user')}
+              aria-label={t('ui_account')}
+              aria-expanded={menu === 'user'}
+            >
+              {user.avatarUrl
+                ? <img src={user.avatarUrl} alt="" />
+                : <span>{user.avatarChar}</span>}
+              <i className="tn-caret" aria-hidden="true">
+                <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </i>
+            </button>
+
+            {menu === 'user' && (
+              <div className="tn-pop tn-user" role="menu">
+                <button type="button" className="tn-user-card" onClick={() => go('/accountscenter/profiles')}>
+                  <span className="tn-user-av">
+                    {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user.avatarChar}
+                  </span>
+                  <span className="tn-user-info">
+                    <strong>{user.name}</strong>
+                    <small>{user.identifier}</small>
+                  </span>
+                </button>
+                <hr />
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>{t('profile_details')}</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>{t('saved_repos')}</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>{t('history')}</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/language')}>{t('language')}</button>
+                <hr />
+                <button type="button" className="tn-item tn-item--danger" onClick={() => { setMenu(null); logout(); }}>{t('signout')}</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
   );
 }
 </file>
@@ -7359,337 +7511,6 @@ function Component2({ project, onSelect }) {
 export default memo(Component2);
 </file>
 
-<file path="src/context/LanguageContext.jsx">
-import { createContext, useContext, useState } from 'react';
-
-export const LANGUAGES = [
-  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'ja', label: '日本語 (Japanese)', flag: '🇯🇵' },
-  { code: 'zh', label: '中文 (Chinese)', flag: '🇨🇳' },
-  { code: 'ko', label: '한국어 (Korean)', flag: '🇰🇷' },
-  { code: 'fr', label: 'Français (French)', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch (German)', flag: '🇩🇪' },
-  { code: 'es', label: 'Español (Spanish)', flag: '🇪🇸' },
-  { code: 'ru', label: 'Русский (Russian)', flag: '🇷🇺' },
-  { code: 'pt', label: 'Português (Portuguese)', flag: '🇧🇷' },
-];
-
-export const TRANSLATIONS = {
-  vi: {
-    community: 'Cộng đồng', about: 'Giới thiệu', support: 'Hỗ trợ', language: 'Ngôn ngữ', register: 'Đăng ký', signin: 'Đăng nhập', signout: 'Đăng xuất',
-    welcome_sub: '▲ HÀNH TRÌNH ĐẾN NHỮNG VÙNG ĐẤT MỚI, KHÁM PHÁ VƯỜN QUỐC GIA NOTO',
-    welcome_title: 'WELCOME',
-    welcome_desc: 'Rời xa sự náo nhiệt của những đô thị sầm uất tại Nhật Bản là ngôi làng cổ Noto thanh bình, ẩn chứa những điều bất ngờ đầy cuốn hút.',
-    start_journey: 'Bắt đầu hành trình ▸',
-    experience_3d: 'TRẢI NGHIỆM 3D',
-    tranquility: 'Thanh Bình',
-    tranquility_desc: 'Tách biệt khỏi nhịp sống hối hả, đắm mình vào những dòng thác lung linh và hồ nước huyền bí nơi lưu giữ kho tàng mã nguồn mở huyền thoại.',
-    learn_more: '— Tìm hiểu thêm',
-    profile_details: 'Chi tiết hồ sơ', saved_repos: 'Kho lưu trữ đã lưu', history: 'Lịch sử hoạt động',
-    all_repos: 'Tất cả kho lưu trữ', search_placeholder: 'Tìm kiếm kho lưu trữ, framework...',
-    quick_view: 'Xem nhanh 👁',
-    about_badge: 'VỀ DỰ ÁN NÀY',
-    about_title: 'Cổng Khám Phá Mã Nguồn Mở Hiệu Năng Cao',
-    about_sub: 'Được xây dựng nhằm tối ưu hóa việc tìm kiếm công nghệ, GitXplore là thư viện trực quan hướng dẫn lập trình viên đến với mã nguồn xuất sắc.',
-    stat_repos: 'Kho lưu trữ tuyển chọn', stat_domains: 'Lĩnh vực công nghệ', stat_foss: 'Mã nguồn mở miễn phí', stat_updates: 'Cập nhật xu hướng',
-    cta_title: 'Bạn có dự án mã nguồn mở muốn giới thiệu?',
-    cta_sub: 'Đóng góp kho lưu trữ của bạn hoặc chia sẻ các phát hiện sáng tạo để phát triển cộng đồng.',
-    cta_btn: 'Đóng góp trên GitHub ↗',
-    acc_title: 'Trung tâm tài khoản',
-    acc_sub: 'Quản lý trải nghiệm kết nối và cài đặt hồ sơ lập trình viên trên các nền tảng GitXplore.',
-    acc_profiles_title: 'Hồ sơ và thông tin cá nhân',
-    acc_settings: 'Cài đặt tài khoản',
-    acc_sec: 'Mật khẩu và bảo mật', acc_conn: 'Trải nghiệm kết nối', acc_perm: 'Thông tin và quyền hạn', acc_act: 'Theo dõi & Hoạt động dự án', acc_bill: 'Thanh toán & Giao dịch', acc_sub_menu: 'Tài trợ & Đăng ký', acc_manage: 'Quản lý tài khoản',
-    acc_return: '← Quay lại GitXplore'
-  },
-  en: {
-    community: 'Community', about: 'About', support: 'Support', language: 'Language', register: 'Register', signin: 'Sign in', signout: 'Sign out',
-    welcome_sub: '▲ JOURNEY TO NEW FRONTIERS, JOURNEY TO NOTO NATURE PARK',
-    welcome_title: 'WELCOME',
-    welcome_desc: "Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. Surprising and captivating in equal measure.",
-    start_journey: 'Start the journey ▸',
-    experience_3d: '3D EXPERIENCE',
-    tranquility: 'Tranquility',
-    tranquility_desc: "Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes harboring a vast realm of legendary open-source artifacts.",
-    learn_more: '— Learn more',
-    profile_details: 'Profile details', saved_repos: 'Saved Repositories', history: 'History',
-    all_repos: 'All Repositories', search_placeholder: 'Search repositories, frameworks...',
-    quick_view: 'Quick View 👁',
-    about_badge: 'ABOUT THE INITIATIVE',
-    about_title: 'A Curated Portal for High-Performance Open-Source Artifacts',
-    about_sub: 'Born to streamline technical discovery, GitXplore serves as an immersive visual library guiding developers directly to exceptional code.',
-    stat_repos: 'Selected Repositories', stat_domains: 'Tech Domains', stat_foss: 'Free & Open Source', stat_updates: 'Trending Updates',
-    cta_title: 'Have an open-source project to feature?',
-    cta_sub: 'Contribute your repository or share innovative discoveries to strengthen the global open-source landscape.',
-    cta_btn: 'Contribute on GitHub ↗',
-    acc_title: 'Accounts Center',
-    acc_sub: 'Manage your connected experiences and developer profile settings across GitXplore technologies.',
-    acc_profiles_title: 'Profiles and personal details',
-    acc_settings: 'Account settings',
-    acc_sec: 'Password and security', acc_conn: 'Connected experiences', acc_perm: 'Your information and permissions', acc_act: 'Project activity & tracking', acc_bill: 'Billing & Payments', acc_sub_menu: 'Sponsorships & Subscriptions', acc_manage: 'Manage accounts',
-    acc_return: '← Return to GitXplore'
-  },
-  ja: {
-    community: 'コミュニティ', about: '概要', support: 'サポート', language: '言語', register: '新規登録', signin: 'ログイン', signout: 'ログアウト',
-    welcome_sub: '▲ 新たなフロンティアへ、能登自然公園への旅',
-    welcome_title: 'ようこそ',
-    welcome_desc: '大都市の喧騒から離れた能登の古き集落。驚きと魅力に満ちた静寂の世界。',
-    start_journey: '旅を始める ▸',
-    experience_3d: '3D 体験',
-    tranquility: '静寂',
-    tranquility_desc: '神秘的な滝と静かな湖に囲まれた、オープンソースの宝庫を探索しましょう。',
-    learn_more: '— 詳細を見る',
-    profile_details: 'プロフィール詳細', saved_repos: '保存したリポジトリ', history: 'アクティビティ履歴',
-    all_repos: 'すべてのリポジトリ', search_placeholder: 'リポジトリ、フレームワークを検索...',
-    quick_view: 'クイックビュー 👁',
-    about_badge: 'プロジェクトについて',
-    about_title: '高性能オープンソースの厳選ポータル',
-    about_sub: 'GitXploreは、開発者が優れたコードに直接アクセスできるように導くビジュアルライブラリです。',
-    stat_repos: '厳選されたリポジトリ', stat_domains: '技術分野', stat_foss: '完全オープンソース', stat_updates: 'トレンド更新',
-    cta_title: '紹介したいプロジェクトはありますか？',
-    cta_sub: 'リポジトリを提供して、世界のオープンソースエコシステムを強化しましょう。',
-    cta_btn: 'GitHubで貢献 ↗',
-    acc_title: 'アカウントセンター',
-    acc_sub: 'GitXplore全体で連携設定と開発者プロファイルを管理します。',
-    acc_profiles_title: 'プロフィールと個人情報',
-    acc_settings: 'アカウント設定',
-    acc_sec: 'パスワードとセキュリティ', acc_conn: '連携エクスペリエンス', acc_perm: '情報とアクセス許可', acc_act: 'プロジェクトのアクティビティ', acc_bill: '請求と支払い', acc_sub_menu: 'スポンサーシップとサブスクリプション', acc_manage: 'アカウント管理',
-    acc_return: '← GitXploreに戻る'
-  },
-  zh: {
-    community: '社区', about: '关于我们', support: '技术支持', language: '语言', register: '注册', signin: '登录', signout: '退出登录',
-    welcome_sub: '▲ 开启全新旅程，探索能登自然公园',
-    welcome_title: '欢迎',
-    welcome_desc: '远离大都市的喧嚣繁华，步入能登古老村落，探索充满魅力与惊喜的宝藏。',
-    start_journey: '启程探索 ▸',
-    experience_3d: '3D 体验',
-    tranquility: '宁静',
-    tranquility_desc: '沉浸于清澈瀑布与神秘湖泊之间，探索浩瀚的开源传奇代码库。',
-    learn_more: '— 了解更多',
-    profile_details: '个人资料详情', saved_repos: '已收藏的仓库', history: '活动历史',
-    all_repos: '所有开源仓库', search_placeholder: '搜索仓库、框架...',
-    quick_view: '快速预览 👁',
-    about_badge: '关于此项目',
-    about_title: '高性能开源宝藏精选平台',
-    about_sub: 'GitXplore 作为沉浸式代码库导航，引领开发者轻松探索全球顶级代码。',
-    stat_repos: '精选仓库', stat_domains: '技术领域', stat_foss: '完全免费开源', stat_updates: '每日趋势更新',
-    cta_title: '想要推荐您的开源项目？',
-    cta_sub: '贡献您的开源仓库，共同繁荣全球开源生态。',
-    cta_btn: '在 GitHub 上贡献 ↗',
-    acc_title: '账户中心',
-    acc_sub: '管理您在 GitXplore 生态下的关联体验及开发者配置。',
-    acc_profiles_title: '个人主页与详情',
-    acc_settings: '账户设置',
-    acc_sec: '密码与安全', acc_conn: '关联体验', acc_perm: '信息与权限', acc_act: '项目活动跟踪', acc_bill: '账单与支付', acc_sub_menu: '赞助与订阅', acc_manage: '管理账户',
-    acc_return: '← 返回 GitXplore'
-  },
-  ko: {
-    community: '커뮤니티', about: '소개', support: '고객지원', language: '언어', register: '회원가입', signin: '로그인', signout: '로그아웃',
-    welcome_sub: '▲ 새로운 경계를 향한 여정, 노토 자연공원으로',
-    welcome_title: '환영합니다',
-    welcome_desc: '대도시의 복잡함을 벗어나 고요한 노토 마을에서 만나는 매혹적인 여정.',
-    start_journey: '여정 시작 ▸',
-    experience_3d: '3D 체험',
-    tranquility: '평온',
-    tranquility_desc: '신비로운 폭포와 호수 속에 펼쳐진 오픈소스 유물의 세계를 경험하세요.',
-    learn_more: '— 더 알아보기',
-    profile_details: '프로필 상세', saved_repos: '저장된 저장소', history: '활동 기록',
-    all_repos: '모든 저장소', search_placeholder: '저장소 및 프레임워크 검색...',
-    quick_view: '빠른 보기 👁',
-    about_badge: '프로젝트 정보',
-    about_title: '고성능 오픈소스 큐레이션 포털',
-    about_sub: 'GitXplore는 개발자가 탁월한 코드에 즉시 접근할 수 있도록 돕는 비주얼 라이브러리입니다.',
-    stat_repos: '선정된 저장소', stat_domains: '기술 분야', stat_foss: '무료 오픈소스', stat_updates: '트렌드 업데이트',
-    cta_title: '소개하고 싶은 프로젝트가 있으신가요?',
-    cta_sub: '오픈소스 저장소를 기여하고 커뮤니티의 발전에 동참하세요.',
-    cta_btn: 'GitHub에서 기여 ↗',
-    acc_title: '계정 센터',
-    acc_sub: 'GitXplore 서비스 전반의 연결 환경 및 개발자 설정을 관리합니다.',
-    acc_profiles_title: '프로필 및 개인 정보',
-    acc_settings: '계정 설정',
-    acc_sec: '비밀번호 및 보안', acc_conn: '연결된 환경', acc_perm: '내 정보 및 권한', acc_act: '프로젝트 활동 및 추적', acc_bill: '결제 및 청구', acc_sub_menu: '후원 및 구독', acc_manage: '계정 관리',
-    acc_return: '← GitXplore로 돌아가기'
-  },
-  fr: {
-    community: 'Communauté', about: 'À propos', support: 'Assistance', language: 'Langue', register: "S'inscrire", signin: 'Connexion', signout: 'Déconnexion',
-    welcome_sub: '▲ VOYAGE VERS DE NOUVELLES FRONTIÈRES, PARC NATUREL DE NOTO',
-    welcome_title: 'BIENVENUE',
-    welcome_desc: 'Loin du tumulte des métropoles japonaises, découvrez le paisible village de Noto.',
-    start_journey: 'Commencer le voyage ▸',
-    experience_3d: 'EXPÉRIENCE 3D',
-    tranquility: 'Tranquillité',
-    tranquility_desc: 'Plongez au cœur des cascades éthérées et découvrez un univers open-source légendaire.',
-    learn_more: '— En savoir plus',
-    profile_details: 'Détails du profil', saved_repos: 'Dépôts enregistrés', history: 'Historique',
-    all_repos: 'Tous les dépôts', search_placeholder: 'Rechercher des dépôts, frameworks...',
-    quick_view: 'Aperçu 👁',
-    about_badge: "À PROPOS DE L'INITIATIVE",
-    about_title: 'Portail Sélectif pour Projets Open-Source',
-    about_sub: 'GitXplore sert de bibliothèque visuelle guidant directement les développeurs vers un code exceptionnel.',
-    stat_repos: 'Dépôts sélectionnés', stat_domains: 'Domaines techniques', stat_foss: 'Open-Source Libre', stat_updates: 'Tendances du jour',
-    cta_title: 'Vous avez un projet à mettre en avant ?',
-    cta_sub: 'Contribuez avec votre dépôt pour renforcer la communauté.',
-    cta_btn: 'Contribuer sur GitHub ↗',
-    acc_title: 'Espace Comptes',
-    acc_sub: 'Gérez vos expériences connectées et paramètres de profil.',
-    acc_profiles_title: 'Profils et données personnelles',
-    acc_settings: 'Paramètres du compte',
-    acc_sec: 'Mot de passe et sécurité', acc_conn: 'Expériences connectées', acc_perm: 'Vos informations et autorisations', acc_act: 'Activité du projet', acc_bill: 'Facturation et paiements', acc_sub_menu: 'Parrainages et abonnements', acc_manage: 'Gérer les comptes',
-    acc_return: '← Retour à GitXplore'
-  },
-  de: {
-    community: 'Community', about: 'Über uns', support: 'Support', language: 'Sprache', register: 'Registrieren', signin: 'Anmelden', signout: 'Abmelden',
-    welcome_sub: '▲ REISE ZU NEUEN HORIZONTEN, NOTO-NATURPARK',
-    welcome_title: 'WILLKOMMEN',
-    welcome_desc: 'Fernab der Hektik japanischer Metropolen liegt das historische Dorf Noto.',
-    start_journey: 'Reise beginnen ▸',
-    experience_3d: '3D-ERLEBNIS',
-    tranquility: 'Ruhe',
-    tranquility_desc: 'Tauchen Sie ein in geheimnisvolle Wasserfälle und legendäre Open-Source-Schätze.',
-    learn_more: '— Mehr erfahren',
-    profile_details: 'Profildetails', saved_repos: 'Gespeicherte Repositories', history: 'Aktivitätsverlauf',
-    all_repos: 'Alle Repositories', search_placeholder: 'Repositories, Frameworks suchen...',
-    quick_view: 'Schnellansicht 👁',
-    about_badge: 'ÜBER DIE INITIATIVE',
-    about_title: 'Kuratierte Plattform für Open-Source-Artefakte',
-    about_sub: 'GitXplore führt Entwickler direkt zu außergewöhnlichem Quellcode.',
-    stat_repos: 'Ausgewählte Repos', stat_domains: 'Fachbereiche', stat_foss: 'Kostenlos & Open-Source', stat_updates: 'Trend-Updates',
-    cta_title: 'Möchten Sie ein Projekt vorstellen?',
-    cta_sub: 'Bringen Sie Ihr Repository ein und stärken Sie die Community.',
-    cta_btn: 'Auf GitHub beitragen ↗',
-    acc_title: 'Kontenübersicht',
-    acc_sub: 'Verwalten Sie Ihre Einstellungen und Profile auf GitXplore.',
-    acc_profiles_title: 'Profile und persönliche Daten',
-    acc_settings: 'Kontoeinstellungen',
-    acc_sec: 'Passwort & Sicherheit', acc_conn: 'Verbundene Erlebnisse', acc_perm: 'Ihre Informationen & Berechtigungen', acc_act: 'Projektaktivitäten', acc_bill: 'Abrechnung & Zahlungen', acc_sub_menu: 'Sponsoring & Abonnements', acc_manage: 'Konten verwalten',
-    acc_return: '← Zurück zu GitXplore'
-  },
-  es: {
-    community: 'Comunidad', about: 'Acerca de', support: 'Soporte', language: 'Idioma', register: 'Registrarse', signin: 'Iniciar sesión', signout: 'Cerrar sesión',
-    welcome_sub: '▲ VIAJE HACIA NUEVAS FRONTERAS, PARQUE NATURAL DE NOTO',
-    welcome_title: 'BIENVENIDO',
-    welcome_desc: 'Lejos del bullicio de las metrópolis japonesas, descubra la tranquilidad de Noto.',
-    start_journey: 'Comenzar viaje ▸',
-    experience_3d: 'EXPERIENCIA 3D',
-    tranquility: 'Tranquilidad',
-    tranquility_desc: 'Sumérjase en cascadas místicas que albergan un vasto reino de código abierto.',
-    learn_more: '— Más información',
-    profile_details: 'Detalles del perfil', saved_repos: 'Repositorios guardados', history: 'Historial',
-    all_repos: 'Todos los repositorios', search_placeholder: 'Buscar repositorios, frameworks...',
-    quick_view: 'Vista previa 👁',
-    about_badge: 'ACERCA DE LA INICIATIVA',
-    about_title: 'Portal Curado para Artefactos de Código Abierto',
-    about_sub: 'GitXplore guía a los desarrolladores directamente al código excepcional.',
-    stat_repos: 'Repositorios selectos', stat_domains: 'Áreas técnicas', stat_foss: 'Código Abierto Libre', stat_updates: 'Tendencias al día',
-    cta_title: '¿Tienes un proyecto para destacar?',
-    cta_sub: 'Contribuye con tu repositorio para enriquecer el ecosistema global.',
-    cta_btn: 'Contribuir en GitHub ↗',
-    acc_title: 'Centro de Cuentas',
-    acc_sub: 'Administra tus experiencias conectadas y perfiles.',
-    acc_profiles_title: 'Perfiles y datos personales',
-    acc_settings: 'Configuración de la cuenta',
-    acc_sec: 'Contraseña y seguridad', acc_conn: 'Experiencias conectadas', acc_perm: 'Tu información y permisos', acc_act: 'Actividad del proyecto', acc_bill: 'Facturación y pagos', acc_sub_menu: 'Patrocinios y suscripciones', acc_manage: 'Administrar cuentas',
-    acc_return: '← Volver a GitXplore'
-  },
-  ru: {
-    community: 'Сообщество', about: 'О нас', support: 'Поддержка', language: 'Язык', register: 'Регистрация', signin: 'Вход', signout: 'Выход',
-    welcome_sub: '▲ ПУТЕШЕСТВИЕ К НОВЫМ ГОРИЗОНТАМ, ПРИРОДНЫЙ ПАРК НОТО',
-    welcome_title: 'ДОБРО ПОЖАЛОВАТЬ',
-    welcome_desc: 'Вдали от суеты японских мегаполисов лежит древняя деревня Ното.',
-    start_journey: 'Начать путешествие ▸',
-    experience_3d: '3D-ОПЫТ',
-    tranquility: 'Спокойствие',
-    tranquility_desc: 'Погрузитесь в мистическую атмосферу водопадов и легендарных проектов с открытым кодом.',
-    learn_more: '— Узнать больше',
-    profile_details: 'Данные профиля', saved_repos: 'Сохраненные репозитории', history: 'История активности',
-    all_repos: 'Все репозитории', search_placeholder: 'Поиск репозиториев, фреймворков...',
-    quick_view: 'Просмотр 👁',
-    about_badge: 'ОБ ИНИЦИАТИВЕ',
-    about_title: 'Кураторский портал решений с открытым кодом',
-    about_sub: 'GitXplore ведет разработчиков напрямую к передовому коду.',
-    stat_repos: 'Избранные проекты', stat_domains: 'Технологические сферы', stat_foss: 'Бесплатно и Open-Source', stat_updates: 'Актуальные тренды',
-    cta_title: 'Хотите добавить свой проект?',
-    cta_sub: 'Поделитесь своим репозиторием и внесите вклад в сообщество.',
-    cta_btn: 'Внести вклад на GitHub ↗',
-    acc_title: 'Центр аккаунтов',
-    acc_sub: 'Управляйте профилями и связанными сервисами.',
-    acc_profiles_title: 'Профили и личные данные',
-    acc_settings: 'Настройки аккаунта',
-    acc_sec: 'Пароль и безопасность', acc_conn: 'Связанные сервисы', acc_perm: 'Информация и разрешения', acc_act: 'Активность проектов', acc_bill: 'Оплата и счета', acc_sub_menu: 'Спонсорство и подписки', acc_manage: 'Управление аккаунтами',
-    acc_return: '← Вернуться в GitXplore'
-  },
-  pt: {
-    community: 'Comunidade', about: 'Sobre', support: 'Suporte', language: 'Idioma', register: 'Cadastre-se', signin: 'Entrar', signout: 'Sair',
-    welcome_sub: '▲ UMA JORNADA PARA NOVAS FRONTEIRAS, PARQUE NATURAL DE NOTO',
-    welcome_title: 'BEM-VINDO',
-    welcome_desc: 'Longe da energia agitada das metrópoles japonesas, repousa o vilarejo de Noto.',
-    start_journey: 'Iniciar jornada ▸',
-    experience_3d: 'EXPERIÊNCIA 3D',
-    tranquilidade: 'Tranquilidade',
-    tranquility_desc: 'Explore cachoeiras etéreas e lagos místicos repletos de artefatos open-source.',
-    learn_more: '— Saiba mais',
-    profile_details: 'Detalhes do perfil', saved_repos: 'Repositórios salvos', history: 'Histórico',
-    all_repos: 'Todos os repositórios', search_placeholder: 'Buscar repositórios, frameworks...',
-    quick_view: 'Ver detalhes 👁',
-    about_badge: 'SOBRE A INICIATIVA',
-    about_title: 'Portal Curado para Projetos de Código Aberto',
-    about_sub: 'GitXplore guia desenvolvedores diretamente para códigos excepcionais.',
-    stat_repos: 'Repositórios selecionados', stat_domains: 'Áreas de tecnologia', stat_foss: 'Livre e Open-Source', stat_updates: 'Tendências atuais',
-    cta_title: 'Tem um projeto para destacar?',
-    cta_sub: 'Contribua com seu repositório para fortalecer a comunidade.',
-    cta_btn: 'Contribuir no GitHub ↗',
-    acc_title: 'Central de Contas',
-    acc_sub: 'Gerencie suas preferências e contas conectadas.',
-    acc_profiles_title: 'Perfis e dados pessoais',
-    acc_settings: 'Configurações da conta',
-    acc_sec: 'Senha e segurança', acc_conn: 'Experiências conectadas', acc_perm: 'Suas informações e permissões', acc_act: 'Atividade do projeto', acc_bill: 'Faturamento e pagamentos', acc_sub_menu: 'Patrocínios e assinaturas', acc_manage: 'Gerenciar contas',
-    acc_return: '← Voltar para GitXplore'
-  },
-};
-
-const NEWS_LABEL = { 
-  vi: 'Tin tức', 
-  en: 'News', 
-  ja: 'ニュース', 
-  zh: '新闻', 
-  ko: '뉴스', 
-  fr: 'Actualités', 
-  de: 'News', 
-  es: 'Noticias', 
-  ru: 'Новости', 
-  pt: 'Notícias' 
-};
-Object.entries(NEWS_LABEL).forEach(([code, v]) => { 
-  if (TRANSLATIONS[code]) TRANSLATIONS[code].news = v; 
-});
-
-const LanguageContext = createContext();
-
-export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem('gxp_lang') || 'en');
-
-  const changeLanguage = (code) => {
-    setLang(code);
-    localStorage.setItem('gxp_lang', code);
-  };
-
-  const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en']?.[key] || key;
-
-  return (
-    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
-export function useLanguage() {
-  const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
-  return ctx;
-}
-</file>
-
 <file path="src/hooks/useLenis.js">
 import { useEffect } from 'react';
 import Lenis from 'lenis';
@@ -8980,6 +8801,340 @@ export default function SupportModal({ onClose }) {
 }
 </file>
 
+<file path="src/context/LanguageContext.jsx">
+import { createContext, useContext, useState } from 'react';
+import { UI_STRINGS } from './uiStrings';
+
+export const LANGUAGES = [
+  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'ja', label: '日本語 (Japanese)', flag: '🇯🇵' },
+  { code: 'zh', label: '中文 (Chinese)', flag: '🇨🇳' },
+  { code: 'ko', label: '한국어 (Korean)', flag: '🇰🇷' },
+  { code: 'fr', label: 'Français (French)', flag: '🇫🇷' },
+  { code: 'de', label: 'Deutsch (German)', flag: '🇩🇪' },
+  { code: 'es', label: 'Español (Spanish)', flag: '🇪🇸' },
+  { code: 'ru', label: 'Русский (Russian)', flag: '🇷🇺' },
+  { code: 'pt', label: 'Português (Portuguese)', flag: '🇧🇷' },
+];
+
+export const TRANSLATIONS = {
+  vi: {
+    community: 'Cộng đồng', about: 'Giới thiệu', support: 'Hỗ trợ', language: 'Ngôn ngữ', register: 'Đăng ký', signin: 'Đăng nhập', signout: 'Đăng xuất',
+    welcome_sub: '▲ HÀNH TRÌNH ĐẾN NHỮNG VÙNG ĐẤT MỚI, KHÁM PHÁ VƯỜN QUỐC GIA NOTO',
+    welcome_title: 'WELCOME',
+    welcome_desc: 'Rời xa sự náo nhiệt của những đô thị sầm uất tại Nhật Bản là ngôi làng cổ Noto thanh bình, ẩn chứa những điều bất ngờ đầy cuốn hút.',
+    start_journey: 'Bắt đầu hành trình ▸',
+    experience_3d: 'TRẢI NGHIỆM 3D',
+    tranquility: 'Thanh Bình',
+    tranquility_desc: 'Tách biệt khỏi nhịp sống hối hả, đắm mình vào những dòng thác lung linh và hồ nước huyền bí nơi lưu giữ kho tàng mã nguồn mở huyền thoại.',
+    learn_more: '— Tìm hiểu thêm',
+    profile_details: 'Chi tiết hồ sơ', saved_repos: 'Kho lưu trữ đã lưu', history: 'Lịch sử hoạt động',
+    all_repos: 'Tất cả kho lưu trữ', search_placeholder: 'Tìm kiếm kho lưu trữ, framework...',
+    quick_view: 'Xem nhanh 👁',
+    about_badge: 'VỀ DỰ ÁN NÀY',
+    about_title: 'Cổng Khám Phá Mã Nguồn Mở Hiệu Năng Cao',
+    about_sub: 'Được xây dựng nhằm tối ưu hóa việc tìm kiếm công nghệ, GitXplore là thư viện trực quan hướng dẫn lập trình viên đến với mã nguồn xuất sắc.',
+    stat_repos: 'Kho lưu trữ tuyển chọn', stat_domains: 'Lĩnh vực công nghệ', stat_foss: 'Mã nguồn mở miễn phí', stat_updates: 'Cập nhật xu hướng',
+    cta_title: 'Bạn có dự án mã nguồn mở muốn giới thiệu?',
+    cta_sub: 'Đóng góp kho lưu trữ của bạn hoặc chia sẻ các phát hiện sáng tạo để phát triển cộng đồng.',
+    cta_btn: 'Đóng góp trên GitHub ↗',
+    acc_title: 'Trung tâm tài khoản',
+    acc_sub: 'Quản lý trải nghiệm kết nối và cài đặt hồ sơ lập trình viên trên các nền tảng GitXplore.',
+    acc_profiles_title: 'Hồ sơ và thông tin cá nhân',
+    acc_settings: 'Cài đặt tài khoản',
+    acc_sec: 'Mật khẩu và bảo mật', acc_conn: 'Trải nghiệm kết nối', acc_perm: 'Thông tin và quyền hạn', acc_act: 'Theo dõi & Hoạt động dự án', acc_bill: 'Thanh toán & Giao dịch', acc_sub_menu: 'Tài trợ & Đăng ký', acc_manage: 'Quản lý tài khoản',
+    acc_return: '← Quay lại GitXplore'
+  },
+  en: {
+    community: 'Community', about: 'About', support: 'Support', language: 'Language', register: 'Register', signin: 'Sign in', signout: 'Sign out',
+    welcome_sub: '▲ JOURNEY TO NEW FRONTIERS, JOURNEY TO NOTO NATURE PARK',
+    welcome_title: 'WELCOME',
+    welcome_desc: "Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. Surprising and captivating in equal measure.",
+    start_journey: 'Start the journey ▸',
+    experience_3d: '3D EXPERIENCE',
+    tranquility: 'Tranquility',
+    tranquility_desc: "Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes harboring a vast realm of legendary open-source artifacts.",
+    learn_more: '— Learn more',
+    profile_details: 'Profile details', saved_repos: 'Saved Repositories', history: 'History',
+    all_repos: 'All Repositories', search_placeholder: 'Search repositories, frameworks...',
+    quick_view: 'Quick View 👁',
+    about_badge: 'ABOUT THE INITIATIVE',
+    about_title: 'A Curated Portal for High-Performance Open-Source Artifacts',
+    about_sub: 'Born to streamline technical discovery, GitXplore serves as an immersive visual library guiding developers directly to exceptional code.',
+    stat_repos: 'Selected Repositories', stat_domains: 'Tech Domains', stat_foss: 'Free & Open Source', stat_updates: 'Trending Updates',
+    cta_title: 'Have an open-source project to feature?',
+    cta_sub: 'Contribute your repository or share innovative discoveries to strengthen the global open-source landscape.',
+    cta_btn: 'Contribute on GitHub ↗',
+    acc_title: 'Accounts Center',
+    acc_sub: 'Manage your connected experiences and developer profile settings across GitXplore technologies.',
+    acc_profiles_title: 'Profiles and personal details',
+    acc_settings: 'Account settings',
+    acc_sec: 'Password and security', acc_conn: 'Connected experiences', acc_perm: 'Your information and permissions', acc_act: 'Project activity & tracking', acc_bill: 'Billing & Payments', acc_sub_menu: 'Sponsorships & Subscriptions', acc_manage: 'Manage accounts',
+    acc_return: '← Return to GitXplore'
+  },
+  ja: {
+    community: 'コミュニティ', about: '概要', support: 'サポート', language: '言語', register: '新規登録', signin: 'ログイン', signout: 'ログアウト',
+    welcome_sub: '▲ 新たなフロンティアへ、能登自然公園への旅',
+    welcome_title: 'ようこそ',
+    welcome_desc: '大都市の喧騒から離れた能登の古き集落。驚きと魅力に満ちた静寂の世界。',
+    start_journey: '旅を始める ▸',
+    experience_3d: '3D 体験',
+    tranquility: '静寂',
+    tranquility_desc: '神秘的な滝と静かな湖に囲まれた、オープンソースの宝庫を探索しましょう。',
+    learn_more: '— 詳細を見る',
+    profile_details: 'プロフィール詳細', saved_repos: '保存したリポジトリ', history: 'アクティビティ履歴',
+    all_repos: 'すべてのリポジトリ', search_placeholder: 'リポジトリ、フレームワークを検索...',
+    quick_view: 'クイックビュー 👁',
+    about_badge: 'プロジェクトについて',
+    about_title: '高性能オープンソースの厳選ポータル',
+    about_sub: 'GitXploreは、開発者が優れたコードに直接アクセスできるように導くビジュアルライブラリです。',
+    stat_repos: '厳選されたリポジトリ', stat_domains: '技術分野', stat_foss: '完全オープンソース', stat_updates: 'トレンド更新',
+    cta_title: '紹介したいプロジェクトはありますか？',
+    cta_sub: 'リポジトリを提供して、世界のオープンソースエコシステムを強化しましょう。',
+    cta_btn: 'GitHubで貢献 ↗',
+    acc_title: 'アカウントセンター',
+    acc_sub: 'GitXplore全体で連携設定と開発者プロファイルを管理します。',
+    acc_profiles_title: 'プロフィールと個人情報',
+    acc_settings: 'アカウント設定',
+    acc_sec: 'パスワードとセキュリティ', acc_conn: '連携エクスペリエンス', acc_perm: '情報とアクセス許可', acc_act: 'プロジェクトのアクティビティ', acc_bill: '請求と支払い', acc_sub_menu: 'スポンサーシップとサブスクリプション', acc_manage: 'アカウント管理',
+    acc_return: '← GitXploreに戻る'
+  },
+  zh: {
+    community: '社区', about: '关于我们', support: '技术支持', language: '语言', register: '注册', signin: '登录', signout: '退出登录',
+    welcome_sub: '▲ 开启全新旅程，探索能登自然公园',
+    welcome_title: '欢迎',
+    welcome_desc: '远离大都市的喧嚣繁华，步入能登古老村落，探索充满魅力与惊喜的宝藏。',
+    start_journey: '启程探索 ▸',
+    experience_3d: '3D 体验',
+    tranquility: '宁静',
+    tranquility_desc: '沉浸于清澈瀑布与神秘湖泊之间，探索浩瀚的开源传奇代码库。',
+    learn_more: '— 了解更多',
+    profile_details: '个人资料详情', saved_repos: '已收藏的仓库', history: '活动历史',
+    all_repos: '所有开源仓库', search_placeholder: '搜索仓库、框架...',
+    quick_view: '快速预览 👁',
+    about_badge: '关于此项目',
+    about_title: '高性能开源宝藏精选平台',
+    about_sub: 'GitXplore 作为沉浸式代码库导航，引领开发者轻松探索全球顶级代码。',
+    stat_repos: '精选仓库', stat_domains: '技术领域', stat_foss: '完全免费开源', stat_updates: '每日趋势更新',
+    cta_title: '想要推荐您的开源项目？',
+    cta_sub: '贡献您的开源仓库，共同繁荣全球开源生态。',
+    cta_btn: '在 GitHub 上贡献 ↗',
+    acc_title: '账户中心',
+    acc_sub: '管理您在 GitXplore 生态下的关联体验及开发者配置。',
+    acc_profiles_title: '个人主页与详情',
+    acc_settings: '账户设置',
+    acc_sec: '密码与安全', acc_conn: '关联体验', acc_perm: '信息与权限', acc_act: '项目活动跟踪', acc_bill: '账单与支付', acc_sub_menu: '赞助与订阅', acc_manage: '管理账户',
+    acc_return: '← 返回 GitXplore'
+  },
+  ko: {
+    community: '커뮤니티', about: '소개', support: '고객지원', language: '언어', register: '회원가입', signin: '로그인', signout: '로그아웃',
+    welcome_sub: '▲ 새로운 경계를 향한 여정, 노토 자연공원으로',
+    welcome_title: '환영합니다',
+    welcome_desc: '대도시의 복잡함을 벗어나 고요한 노토 마을에서 만나는 매혹적인 여정.',
+    start_journey: '여정 시작 ▸',
+    experience_3d: '3D 체험',
+    tranquility: '평온',
+    tranquility_desc: '신비로운 폭포와 호수 속에 펼쳐진 오픈소스 유물의 세계를 경험하세요.',
+    learn_more: '— 더 알아보기',
+    profile_details: '프로필 상세', saved_repos: '저장된 저장소', history: '활동 기록',
+    all_repos: '모든 저장소', search_placeholder: '저장소 및 프레임워크 검색...',
+    quick_view: '빠른 보기 👁',
+    about_badge: '프로젝트 정보',
+    about_title: '고성능 오픈소스 큐레이션 포털',
+    about_sub: 'GitXplore는 개발자가 탁월한 코드에 즉시 접근할 수 있도록 돕는 비주얼 라이브러리입니다.',
+    stat_repos: '선정된 저장소', stat_domains: '기술 분야', stat_foss: '무료 오픈소스', stat_updates: '트렌드 업데이트',
+    cta_title: '소개하고 싶은 프로젝트가 있으신가요?',
+    cta_sub: '오픈소스 저장소를 기여하고 커뮤니티의 발전에 동참하세요.',
+    cta_btn: 'GitHub에서 기여 ↗',
+    acc_title: '계정 센터',
+    acc_sub: 'GitXplore 서비스 전반의 연결 환경 및 개발자 설정을 관리합니다.',
+    acc_profiles_title: '프로필 및 개인 정보',
+    acc_settings: '계정 설정',
+    acc_sec: '비밀번호 및 보안', acc_conn: '연결된 환경', acc_perm: '내 정보 및 권한', acc_act: '프로젝트 활동 및 추적', acc_bill: '결제 및 청구', acc_sub_menu: '후원 및 구독', acc_manage: '계정 관리',
+    acc_return: '← GitXplore로 돌아가기'
+  },
+  fr: {
+    community: 'Communauté', about: 'À propos', support: 'Assistance', language: 'Langue', register: "S'inscrire", signin: 'Connexion', signout: 'Déconnexion',
+    welcome_sub: '▲ VOYAGE VERS DE NOUVELLES FRONTIÈRES, PARC NATUREL DE NOTO',
+    welcome_title: 'BIENVENUE',
+    welcome_desc: 'Loin du tumulte des métropoles japonaises, découvrez le paisible village de Noto.',
+    start_journey: 'Commencer le voyage ▸',
+    experience_3d: 'EXPÉRIENCE 3D',
+    tranquility: 'Tranquillité',
+    tranquility_desc: 'Plongez au cœur des cascades éthérées et découvrez un univers open-source légendaire.',
+    learn_more: '— En savoir plus',
+    profile_details: 'Détails du profil', saved_repos: 'Dépôts enregistrés', history: 'Historique',
+    all_repos: 'Tous les dépôts', search_placeholder: 'Rechercher des dépôts, frameworks...',
+    quick_view: 'Aperçu 👁',
+    about_badge: "À PROPOS DE L'INITIATIVE",
+    about_title: 'Portail Sélectif pour Projets Open-Source',
+    about_sub: 'GitXplore sert de bibliothèque visuelle guidant directement les développeurs vers un code exceptionnel.',
+    stat_repos: 'Dépôts sélectionnés', stat_domains: 'Domaines techniques', stat_foss: 'Open-Source Libre', stat_updates: 'Tendances du jour',
+    cta_title: 'Vous avez un projet à mettre en avant ?',
+    cta_sub: 'Contribuez avec votre dépôt pour renforcer la communauté.',
+    cta_btn: 'Contribuer sur GitHub ↗',
+    acc_title: 'Espace Comptes',
+    acc_sub: 'Gérez vos expériences connectées et paramètres de profil.',
+    acc_profiles_title: 'Profils et données personnelles',
+    acc_settings: 'Paramètres du compte',
+    acc_sec: 'Mot de passe et sécurité', acc_conn: 'Expériences connectées', acc_perm: 'Vos informations et autorisations', acc_act: 'Activité du projet', acc_bill: 'Facturation et paiements', acc_sub_menu: 'Parrainages et abonnements', acc_manage: 'Gérer les comptes',
+    acc_return: '← Retour à GitXplore'
+  },
+  de: {
+    community: 'Community', about: 'Über uns', support: 'Support', language: 'Sprache', register: 'Registrieren', signin: 'Anmelden', signout: 'Abmelden',
+    welcome_sub: '▲ REISE ZU NEUEN HORIZONTEN, NOTO-NATURPARK',
+    welcome_title: 'WILLKOMMEN',
+    welcome_desc: 'Fernab der Hektik japanischer Metropolen liegt das historische Dorf Noto.',
+    start_journey: 'Reise beginnen ▸',
+    experience_3d: '3D-ERLEBNIS',
+    tranquility: 'Ruhe',
+    tranquility_desc: 'Tauchen Sie ein in geheimnisvolle Wasserfälle und legendäre Open-Source-Schätze.',
+    learn_more: '— Mehr erfahren',
+    profile_details: 'Profildetails', saved_repos: 'Gespeicherte Repositories', history: 'Aktivitätsverlauf',
+    all_repos: 'Alle Repositories', search_placeholder: 'Repositories, Frameworks suchen...',
+    quick_view: 'Schnellansicht 👁',
+    about_badge: 'ÜBER DIE INITIATIVE',
+    about_title: 'Kuratierte Plattform für Open-Source-Artefakte',
+    about_sub: 'GitXplore führt Entwickler direkt zu außergewöhnlichem Quellcode.',
+    stat_repos: 'Ausgewählte Repos', stat_domains: 'Fachbereiche', stat_foss: 'Kostenlos & Open-Source', stat_updates: 'Trend-Updates',
+    cta_title: 'Möchten Sie ein Projekt vorstellen?',
+    cta_sub: 'Bringen Sie Ihr Repository ein und stärken Sie die Community.',
+    cta_btn: 'Auf GitHub beitragen ↗',
+    acc_title: 'Kontenübersicht',
+    acc_sub: 'Verwalten Sie Ihre Einstellungen und Profile auf GitXplore.',
+    acc_profiles_title: 'Profile und persönliche Daten',
+    acc_settings: 'Kontoeinstellungen',
+    acc_sec: 'Passwort & Sicherheit', acc_conn: 'Verbundene Erlebnisse', acc_perm: 'Ihre Informationen & Berechtigungen', acc_act: 'Projektaktivitäten', acc_bill: 'Abrechnung & Zahlungen', acc_sub_menu: 'Sponsoring & Abonnements', acc_manage: 'Konten verwalten',
+    acc_return: '← Zurück zu GitXplore'
+  },
+  es: {
+    community: 'Comunidad', about: 'Acerca de', support: 'Soporte', language: 'Idioma', register: 'Registrarse', signin: 'Iniciar sesión', signout: 'Cerrar sesión',
+    welcome_sub: '▲ VIAJE HACIA NUEVAS FRONTERAS, PARQUE NATURAL DE NOTO',
+    welcome_title: 'BIENVENIDO',
+    welcome_desc: 'Lejos del bullicio de las metrópolis japonesas, descubra la tranquilidad de Noto.',
+    start_journey: 'Comenzar viaje ▸',
+    experience_3d: 'EXPERIENCIA 3D',
+    tranquility: 'Tranquilidad',
+    tranquility_desc: 'Sumérjase en cascadas místicas que albergan un vasto reino de código abierto.',
+    learn_more: '— Más información',
+    profile_details: 'Detalles del perfil', saved_repos: 'Repositorios guardados', history: 'Historial',
+    all_repos: 'Todos los repositorios', search_placeholder: 'Buscar repositorios, frameworks...',
+    quick_view: 'Vista previa 👁',
+    about_badge: 'ACERCA DE LA INICIATIVA',
+    about_title: 'Portal Curado para Artefactos de Código Abierto',
+    about_sub: 'GitXplore guía a los desarrolladores directamente al código excepcional.',
+    stat_repos: 'Repositorios selectos', stat_domains: 'Áreas técnicas', stat_foss: 'Código Abierto Libre', stat_updates: 'Tendencias al día',
+    cta_title: '¿Tienes un proyecto para destacar?',
+    cta_sub: 'Contribuye con tu repositorio para enriquecer el ecosistema global.',
+    cta_btn: 'Contribuir en GitHub ↗',
+    acc_title: 'Centro de Cuentas',
+    acc_sub: 'Administra tus experiencias conectadas y perfiles.',
+    acc_profiles_title: 'Perfiles y datos personales',
+    acc_settings: 'Configuración de la cuenta',
+    acc_sec: 'Contraseña y seguridad', acc_conn: 'Experiencias conectadas', acc_perm: 'Tu información y permisos', acc_act: 'Actividad del proyecto', acc_bill: 'Facturación y pagos', acc_sub_menu: 'Patrocinios y suscripciones', acc_manage: 'Administrar cuentas',
+    acc_return: '← Volver a GitXplore'
+  },
+  ru: {
+    community: 'Сообщество', about: 'О нас', support: 'Поддержка', language: 'Язык', register: 'Регистрация', signin: 'Вход', signout: 'Выход',
+    welcome_sub: '▲ ПУТЕШЕСТВИЕ К НОВЫМ ГОРИЗОНТАМ, ПРИРОДНЫЙ ПАРК НОТО',
+    welcome_title: 'ДОБРО ПОЖАЛОВАТЬ',
+    welcome_desc: 'Вдали от суеты японских мегаполисов лежит древняя деревня Ното.',
+    start_journey: 'Начать путешествие ▸',
+    experience_3d: '3D-ОПЫТ',
+    tranquility: 'Спокойствие',
+    tranquility_desc: 'Погрузитесь в мистическую атмосферу водопадов и легендарных проектов с открытым кодом.',
+    learn_more: '— Узнать больше',
+    profile_details: 'Данные профиля', saved_repos: 'Сохраненные репозитории', history: 'История активности',
+    all_repos: 'Все репозитории', search_placeholder: 'Поиск репозиториев, фреймворков...',
+    quick_view: 'Просмотр 👁',
+    about_badge: 'ОБ ИНИЦИАТИВЕ',
+    about_title: 'Кураторский портал решений с открытым кодом',
+    about_sub: 'GitXplore ведет разработчиков напрямую к передовому коду.',
+    stat_repos: 'Избранные проекты', stat_domains: 'Технологические сферы', stat_foss: 'Бесплатно и Open-Source', stat_updates: 'Актуальные тренды',
+    cta_title: 'Хотите добавить свой проект?',
+    cta_sub: 'Поделитесь своим репозиторием и внесите вклад в сообщество.',
+    cta_btn: 'Внести вклад на GitHub ↗',
+    acc_title: 'Центр аккаунтов',
+    acc_sub: 'Управляйте профилями и связанными сервисами.',
+    acc_profiles_title: 'Профили и личные данные',
+    acc_settings: 'Настройки аккаунта',
+    acc_sec: 'Пароль и безопасность', acc_conn: 'Связанные сервисы', acc_perm: 'Информация и разрешения', acc_act: 'Активность проектов', acc_bill: 'Оплата и счета', acc_sub_menu: 'Спонсорство и подписки', acc_manage: 'Управление аккаунтами',
+    acc_return: '← Вернуться в GitXplore'
+  },
+  pt: {
+    community: 'Comunidade', about: 'Sobre', support: 'Suporte', language: 'Idioma', register: 'Cadastre-se', signin: 'Entrar', signout: 'Sair',
+    welcome_sub: '▲ UMA JORNADA PARA NOVAS FRONTEIRAS, PARQUE NATURAL DE NOTO',
+    welcome_title: 'BEM-VINDO',
+    welcome_desc: 'Longe da energia agitada das metrópoles japonesas, repousa o vilarejo de Noto.',
+    start_journey: 'Iniciar jornada ▸',
+    experience_3d: 'EXPERIÊNCIA 3D',
+    tranquilidade: 'Tranquilidade',
+    tranquility_desc: 'Explore cachoeiras etéreas e lagos místicos repletos de artefatos open-source.',
+    learn_more: '— Saiba mais',
+    profile_details: 'Detalhes do perfil', saved_repos: 'Repositórios salvos', history: 'Histórico',
+    all_repos: 'Todos os repositórios', search_placeholder: 'Buscar repositórios, frameworks...',
+    quick_view: 'Ver detalhes 👁',
+    about_badge: 'SOBRE A INICIATIVA',
+    about_title: 'Portal Curado para Projetos de Código Aberto',
+    about_sub: 'GitXplore guia desenvolvedores diretamente para códigos excepcionais.',
+    stat_repos: 'Repositórios selecionados', stat_domains: 'Áreas de tecnologia', stat_foss: 'Livre e Open-Source', stat_updates: 'Tendências atuais',
+    cta_title: 'Tem um projeto para destacar?',
+    cta_sub: 'Contribua com seu repositório para fortalecer a comunidade.',
+    cta_btn: 'Contribuir no GitHub ↗',
+    acc_title: 'Central de Contas',
+    acc_sub: 'Gerencie suas preferências e contas conectadas.',
+    acc_profiles_title: 'Perfis e dados pessoais',
+    acc_settings: 'Configurações da conta',
+    acc_sec: 'Senha e segurança', acc_conn: 'Experiências conectadas', acc_perm: 'Suas informações e permissões', acc_act: 'Atividade do projeto', acc_bill: 'Faturamento e pagamentos', acc_sub_menu: 'Patrocínios e assinaturas', acc_manage: 'Gerenciar contas',
+    acc_return: '← Voltar para GitXplore'
+  },
+};
+
+const NEWS_LABEL = { 
+  vi: 'Tin tức', 
+  en: 'News', 
+  ja: 'ニュース', 
+  zh: '新闻', 
+  ko: '뉴스', 
+  fr: 'Actualités', 
+  de: 'News', 
+  es: 'Noticias', 
+  ru: 'Новости', 
+  pt: 'Notícias' 
+};
+Object.entries(NEWS_LABEL).forEach(([code, v]) => { 
+  if (TRANSLATIONS[code]) TRANSLATIONS[code].news = v; 
+});
+
+const LanguageContext = createContext();
+
+export function LanguageProvider({ children }) {
+  const [lang, setLang] = useState(() => localStorage.getItem('gxp_lang') || 'en');
+
+  const changeLanguage = (code) => {
+    setLang(code);
+    localStorage.setItem('gxp_lang', code);
+  };
+
+  const t = (key) =>
+    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] ||
+    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || key;
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
+  return ctx;
+}
+</file>
+
 <file path="src/Components/NavModals.jsx">
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
@@ -9340,15 +9495,17 @@ export default function HomePage() {
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { openSourceProjects } from '../data/projectsData';
 
 const SECTIONS = [
   'profiles', 'security', 'connected', 'permissions', 'activity',
-  'billing', 'subscriptions', 'manage', 'saved', 'history',
+  'billing', 'subscriptions', 'manage', 'saved', 'history', 'language',
 ];
 
 export default function SavedDashboard() {
   const { user, updateUser, logout } = useAuth();
+  const { t: tr, lang, setLang, languages } = useLanguage();
   const navigate = useNavigate();
   const onBack = () => navigate('/');
 
@@ -9520,23 +9677,23 @@ export default function SavedDashboard() {
             className="link-btn btn-secondary"
             style={{ padding: '7px 14px', fontSize: '12.5px', cursor: 'pointer' }}
           >
-            ← Return to GitXplore
+            {tr('acc_return')}
           </button>
           <div style={{ fontSize: '17px', fontWeight: 700, color: '#fef08a', letterSpacing: '0.5px' }}>
-            GIT<span style={{ color: '#ef4444' }}>XPLORE</span> ACCOUNTS CENTER
+            GIT<span style={{ color: '#ef4444' }}>XPLORE</span> {tr('acc_title').toUpperCase()}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '12.5px', color: '#a8a29e' }}>
-            Active: <strong style={{ color: '#fef08a' }}>{user?.name || user?.identifier}</strong>
+            {tr('ui_active')} <strong style={{ color: '#fef08a' }}>{user?.name || user?.identifier}</strong>
           </span>
           <button
             type="button"
             onClick={() => { logout(); onBack(); }}
             style={{ background: '#241010', color: '#f87171', border: '1px solid #4a1d1d', padding: '6px 14px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}
           >
-            Sign out
+            {tr('signout')}
           </button>
         </div>
       </header>
@@ -9582,9 +9739,9 @@ export default function SavedDashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontSize: '13px', fontWeight: 700 }}>
                 <span>♾️</span> GitXplore
               </div>
-              <h2 style={{ margin: '6px 0 4px', fontSize: '22px', fontWeight: 700, color: '#fff' }}>Accounts Center</h2>
+              <h2 style={{ margin: '6px 0 4px', fontSize: '22px', fontWeight: 700, color: '#fff' }}>{tr('acc_title')}</h2>
               <p style={{ margin: 0, fontSize: '12px', color: '#8c827a', lineHeight: 1.5 }}>
-                Manage your connected experiences and developer profile settings across GitXplore technologies.
+                {tr('acc_sub')}
               </p>
             </div>
 
@@ -9605,24 +9762,25 @@ export default function SavedDashboard() {
                 border: activeMenu === 'profiles' ? '1px solid #4a1d1d' : '1px solid transparent'
               }}
             >
-              <span>👤</span> Profiles and personal details
+              <span>👤</span> {tr('acc_profiles_title')}
             </div>
 
             {/* Danh mục Account Settings */}
             <div>
               <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Account settings
+                {tr('acc_settings')}
               </span>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
                 {[
-                  { id: 'security', icon: '🛡️', label: 'Password and security' },
-                  { id: 'connected', icon: '🔗', label: 'Connected experiences' },
-                  { id: 'permissions', icon: '📄', label: 'Your information and permissions' },
-                  { id: 'activity', icon: '🚀', label: 'Project activity & tracking' },
-                  { id: 'billing', icon: '💳', label: 'Billing & Payments' },
-                  { id: 'subscriptions', icon: '⭐', label: 'Sponsorships & Subscriptions' },
-                  { id: 'manage', icon: '👥', label: 'Manage accounts' },
+                  { id: 'security', icon: '🛡️', label: tr('acc_sec') },
+                  { id: 'connected', icon: '🔗', label: tr('acc_conn') },
+                  { id: 'permissions', icon: '📄', label: tr('acc_perm') },
+                  { id: 'activity', icon: '🚀', label: tr('acc_act') },
+                  { id: 'billing', icon: '💳', label: tr('acc_bill') },
+                  { id: 'subscriptions', icon: '⭐', label: tr('acc_sub_menu') },
+                  { id: 'manage', icon: '👥', label: tr('acc_manage') },
+                  { id: 'language', icon: '🌐', label: tr('ui_acc_language') },
                 ].map((item) => (
                   <div
                     key={item.id}
@@ -9651,7 +9809,7 @@ export default function SavedDashboard() {
             {/* Mục bổ sung: Repositories & History */}
             <div style={{ marginTop: 'auto', borderTop: '1px solid #201010', paddingTop: '16px' }}>
               <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Quick Vault
+                {tr('ui_quick_vault')}
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
                 <div
@@ -9665,7 +9823,7 @@ export default function SavedDashboard() {
                     cursor: 'pointer'
                   }}
                 >
-                  ⭐ Saved Repositories ({savedList.length})
+                  ⭐ {tr('saved_repos')} ({savedList.length})
                 </div>
                 <div
                   onClick={() => handleSelectMenu('history')}
@@ -9678,7 +9836,7 @@ export default function SavedDashboard() {
                     cursor: 'pointer'
                   }}
                 >
-                  🕒 Activity History
+                  🕒 {tr('history')}
                 </div>
               </div>
             </div>
@@ -9689,6 +9847,46 @@ export default function SavedDashboard() {
           {/* ======================================================== */}
           <section style={{ padding: '36px 44px', background: '#120909', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', maxHeight: '82vh' }}>
             
+            {/* 0. LANGUAGE */}
+            {activeMenu === 'language' && (
+              <div>
+                <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>🌐 {tr('ui_acc_language')}</h1>
+                <p style={{ margin: '0 0 18px', fontSize: '13px', color: '#9ca3af' }}>{tr('ui_acc_language_sub')}</p>
+                <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
+                  {languages.map((l, i) => {
+                    const on = l.code === lang;
+                    return (
+                      <div
+                        key={l.code}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={on}
+                        onClick={() => setLang(l.code)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLang(l.code); } }}
+                        style={{
+                          padding: '14px 20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '14px',
+                          cursor: 'pointer',
+                          background: on ? '#261414' : 'transparent',
+                          borderBottom: i === languages.length - 1 ? 'none' : '1px solid #1f1212',
+                        }}
+                      >
+                        <span style={{ fontSize: '22px' }}>{l.flag}</span>
+                        <span style={{ flex: 1, fontSize: '14px', fontWeight: 600, color: on ? '#fef08a' : '#f3f4f6' }}>{l.label}</span>
+                        {on && (
+                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: '#f59e0b', color: '#1a1006' }}>
+                            {tr('ui_current')}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 1. PROFILES AND PERSONAL DETAILS */}
             {activeMenu === 'profiles' && (
               <>
