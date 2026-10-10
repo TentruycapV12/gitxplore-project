@@ -202,7 +202,7 @@ export default function TopNav() {
                     {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user.avatarChar}
                   </span>
                   <span className="tn-user-info">
-                    <strong>{user.name}</strong>
+                    <strong>{user.name}{user.publicId && <span className="tn-uid">#{user.publicId}</span>}</strong>
                     <small>{user.identifier}</small>
                   </span>
                 </button>

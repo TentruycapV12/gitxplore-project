@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import AdminDashboardModal from './AdminDashboardModal';
+import UidTag from './UidTag';
 
 const PREFIX_MAP = {
   'General': { label: 'General', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
@@ -19,6 +20,20 @@ const PREFIX_MAP = {
 };
 
 const resolvePrefix = (prefix) => PREFIX_MAP[prefix] || PREFIX_MAP['Discussion'];
+
+const GRID_COLS = '1fr 140px 220px 112px';
+const stillActive = (until) => !until || new Date(until) > new Date();
+
+// Chèn dòng mới; nếu database chưa có cột tùy chọn (chưa chạy SQL) thì thử lại không có các cột đó.
+const insertWithFallback = async (table, row, optionalKeys) => {
+  let res = await supabase.from(table).insert([row]).select();
+  if (res.error && /column|schema cache/i.test(res.error.message || '')) {
+    const slim = { ...row };
+    optionalKeys.forEach((k) => delete slim[k]);
+    res = await supabase.from(table).insert([slim]).select();
+  }
+  return res;
+};
 
 export default function CommunityForum() {
   const { user } = useAuth();
@@ -55,9 +70,18 @@ export default function CommunityForum() {
   const [filterMode, setFilterMode] = useState('newest');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
-  // Quyền Admin
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Quyền & trạng thái của người đang đăng nhập (admin / editor / support / member)
+  const [access, setAccess] = useState({ role: 'member', status: 'active', banReason: null, bannedUntil: null, mutedUntil: null });
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [profileIds, setProfileIds] = useState(() => new Map()); // tên → ID (chỉ khi tên không bị trùng)
+
+  const isBanned = access.status === 'banned' && stillActive(access.bannedUntil);
+  const isMuted = stillActive(access.mutedUntil) && Boolean(access.mutedUntil);
+  const isAdmin = access.role === 'admin' && !isBanned;
+  const isStaff = ['admin', 'editor', 'support'].includes(access.role) && !isBanned;
+  const canModerate = ['admin', 'editor'].includes(access.role) && !isBanned;
+  const canPost = !isBanned && !isMuted;
 
   const commentsEndRef = useRef(null);
   const commentInputRef = useRef(null);
@@ -65,19 +89,63 @@ export default function CommunityForum() {
 
   useEffect(() => {
     const checkRole = async () => {
-      if (!user?.identifier) return;
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role, status')
-        .eq('email', user.identifier.toLowerCase())
-        .maybeSingle();
-
-      if (data?.role === 'admin' && data?.status !== 'banned') {
-        setIsAdmin(true);
+      if (!user?.identifier) {
+        setAccess({ role: 'member', status: 'active', banReason: null, bannedUntil: null, mutedUntil: null });
+        return;
       }
+      const email = user.identifier.toLowerCase();
+      let res = await supabase
+        .from('user_roles')
+        .select('role, status, ban_reason, banned_until, muted_until')
+        .eq('email', email)
+        .maybeSingle();
+      // Chưa chạy SQL (thiếu cột mới) → đọc bản cũ để Admin vẫn vào được.
+      if (res.error) res = await supabase.from('user_roles').select('role, status').eq('email', email).maybeSingle();
+      const d = res.data;
+      setAccess({
+        role: d?.role || 'member',
+        status: d?.status || 'active',
+        banReason: d?.ban_reason || null,
+        bannedUntil: d?.banned_until || null,
+        mutedUntil: d?.muted_until || null,
+      });
     };
     checkRole();
   }, [user]);
+
+  // Bảng tên → ID để hiện ID cạnh tên (kể cả bài cũ chưa lưu ID). Tên trùng nhau thì không đoán.
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from('profiles').select('name, public_id').limit(2000);
+      if (error || !data) return;
+      const map = new Map();
+      const dup = new Set();
+      data.forEach((p) => {
+        if (!p.name || !p.public_id) return;
+        if (map.has(p.name) && map.get(p.name) !== p.public_id) dup.add(p.name);
+        else map.set(p.name, p.public_id);
+      });
+      dup.forEach((n) => map.delete(n));
+      setProfileIds(map);
+    })();
+  }, []);
+
+  // Thông báo của admin (bỏ qua nếu bảng chưa tồn tại)
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('announcements').select('*').eq('is_active', true)
+        .order('created_at', { ascending: false }).limit(5);
+      if (!error && data) setAnnouncements(data.filter((a) => stillActive(a.expires_at)));
+    })();
+  }, []);
+
+  const idOf = (storedId, name) => storedId || profileIds.get(name) || null;
+
+  const logAction = async (action, target) => {
+    if (!user?.identifier) return;
+    await supabase.from('activity_logs').insert([{ actor_email: user.identifier, action, target }]);
+  };
 
   const fetchTopics = useCallback(async () => {
     try {
@@ -164,7 +232,7 @@ export default function CommunityForum() {
   }, [threadId]);
 
   const handleToggleLike = async () => {
-    if (!activeTopic) return;
+    if (!activeTopic || isBanned) return;
     const nextLiked = !hasLiked;
     const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
     setHasLiked(nextLiked);
@@ -200,6 +268,7 @@ export default function CommunityForum() {
     e.preventDefault();
     const cleanComment = commentInput.trim();
     if ((!cleanComment && !commentFile) || !activeTopic || isCommentUploading) return;
+    if (!canPost || (activeTopic.is_locked && !canModerate)) return;
 
     setIsCommentUploading(true);
     const sender = user?.name || user?.identifier || 'Member';
@@ -217,14 +286,13 @@ export default function CommunityForum() {
         }
       }
 
-      const { error } = await supabase.from('topic_messages').insert([
-        { 
-          topic_id: activeTopic.id, 
-          user_name: sender, 
-          content: cleanComment || (commentFile?.type.startsWith('image/') ? '📷 Photo' : '📎 Attachment'),
-          media_url: uploadedMediaUrl
-        }
-      ]);
+      const { error } = await insertWithFallback('topic_messages', {
+        topic_id: activeTopic.id,
+        user_name: sender,
+        user_public_id: user?.publicId || null,
+        content: cleanComment || (commentFile?.type.startsWith('image/') ? '📷 Photo' : '📎 Attachment'),
+        media_url: uploadedMediaUrl,
+      }, ['user_public_id']);
 
       if (!error) {
         setCommentInput('');
@@ -253,7 +321,7 @@ export default function CommunityForum() {
 
   const handleCreateTopic = async (e) => {
     e.preventDefault();
-    if (!newTopicTitle.trim() || isSubmitting) return;
+    if (!newTopicTitle.trim() || isSubmitting || !canPost) return;
 
     setIsSubmitting(true);
     const author = user?.name || user?.identifier || 'Anonymous Member';
@@ -272,19 +340,17 @@ export default function CommunityForum() {
         setUploading(false);
       }
 
-      const { data, error } = await supabase
-        .from('topics')
-        .insert([{
-          title: newTopicTitle.trim(),
-          description: newTopicDesc.trim() || uploadedMediaUrl || null,
-          author_name: author,
-          prefix: newPrefix,
-          views_count: 1,
-          likes_count: 0,
-          last_reply_user: author,
-          last_reply_time: new Date().toISOString()
-        }])
-        .select();
+      const { data, error } = await insertWithFallback('topics', {
+        title: newTopicTitle.trim(),
+        description: newTopicDesc.trim() || uploadedMediaUrl || null,
+        author_name: author,
+        author_public_id: user?.publicId || null,
+        prefix: newPrefix,
+        views_count: 1,
+        likes_count: 0,
+        last_reply_user: author,
+        last_reply_time: new Date().toISOString(),
+      }, ['author_public_id']);
 
       if (!error && data && data.length > 0) {
         setNewTopicTitle('');
@@ -304,12 +370,29 @@ export default function CommunityForum() {
   const handleTogglePin = async (e, topic) => {
     e.stopPropagation();
     await supabase.from('topics').update({ is_pinned: !topic.is_pinned }).eq('id', topic.id);
+    logAction(topic.is_pinned ? 'Unpin Topic' : 'Pin Topic', `#${topic.id} ${topic.title}`);
     fetchTopics();
+  };
+
+  const handleToggleLock = async (e, topic) => {
+    e.stopPropagation();
+    const { error } = await supabase.from('topics').update({ is_locked: !topic.is_locked }).eq('id', topic.id);
+    if (error) { alert('Cannot lock topic. Did you run supabase_admin_setup.sql?\n' + error.message); return; }
+    logAction(topic.is_locked ? 'Unlock Topic' : 'Lock Topic', `#${topic.id} ${topic.title}`);
+    fetchTopics();
+  };
+
+  const handleDeleteComment = async (c) => {
+    if (!window.confirm(`Delete this comment by ${c.user_name}?`)) return;
+    await supabase.from('topic_messages').delete().eq('id', c.id);
+    logAction('Delete Comment', `${c.user_name}: ${(c.content || '').slice(0, 60)}`);
+    setComments((prev) => prev.filter((x) => x.id !== c.id));
   };
 
   const handleDeleteTopic = async (topicId, topicTitle) => {
     if (!window.confirm(`ADMIN: Are you sure you want to delete "${topicTitle}"?`)) return;
     await supabase.from('topics').delete().eq('id', topicId);
+    logAction('Delete Topic', `#${topicId} ${topicTitle}`);
     setTopics((prev) => prev.filter((t) => t.id !== topicId));
     if (activeTopic?.id === topicId) handleBackToList();
   };
@@ -383,7 +466,7 @@ export default function CommunityForum() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {isAdmin && (
+          {isStaff && (
             <button
               onClick={() => setShowAdminModal(true)}
               style={{
@@ -397,16 +480,39 @@ export default function CommunityForum() {
                 cursor: 'pointer',
               }}
             >
-              👑 Admin Console
+              👑 {isAdmin ? 'Admin Console' : access.role === 'editor' ? 'Moderator Console' : 'Support Console'}
             </button>
           )}
           <div style={{ fontSize: '13px', color: '#a8a29e' }}>
             {user ? (
-              <span>Welcome, <strong style={{ color: isAdmin ? '#ef4444' : '#fef08a' }}>{user.name}</strong></span>
+              <span>Welcome, <strong style={{ color: isStaff ? '#ef4444' : '#fef08a' }}>{user.name}</strong><UidTag id={user.publicId} /></span>
             ) : 'Guest Mode'}
           </div>
         </div>
       </header>
+
+      {/* THÔNG BÁO CỦA ADMIN */}
+      {announcements.map((a) => {
+        const tone = { info: ['#1e3a8a', '#93c5fd', '📢'], warning: ['#78350f', '#fde047', '⚠️'], danger: ['#7f1d1d', '#fca5a5', '🚨'] }[a.level] || ['#1e3a8a', '#93c5fd', '📢'];
+        return (
+          <div key={a.id} style={{ background: tone[0], color: tone[1], padding: '10px 5vw', fontSize: '13.5px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+            {tone[2]} {a.message}
+          </div>
+        );
+      })}
+
+      {/* TÀI KHOẢN BỊ BAN / MUTE */}
+      {isBanned && (
+        <div style={{ background: '#7f1d1d', color: '#fecaca', padding: '10px 5vw', fontSize: '13.5px' }}>
+          🚫 Your account is suspended{access.bannedUntil ? ` until ${new Date(access.bannedUntil).toLocaleString('en-US')}` : ' permanently'}.
+          {access.banReason ? ` Reason: ${access.banReason}` : ''} You can read the forum but cannot post, comment or like.
+        </div>
+      )}
+      {!isBanned && isMuted && (
+        <div style={{ background: '#78350f', color: '#fde68a', padding: '10px 5vw', fontSize: '13.5px' }}>
+          🔇 You are muted until {new Date(access.mutedUntil).toLocaleString('en-US')} — you cannot post or comment right now.
+        </div>
+      )}
 
       {/* TẦNG 1: BẢNG DANH SÁCH CHỦ ĐỀ */}
       {!activeTopic ? (
@@ -480,9 +586,9 @@ export default function CommunityForum() {
 
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => (canPost ? setShowCreateModal(true) : alert(isBanned ? 'Your account is suspended.' : 'You are muted and cannot post right now.'))}
                   className="link-btn btn-primary"
-                  style={{ padding: '9px 18px', fontSize: '13.5px' }}
+                  style={{ padding: '9px 18px', fontSize: '13.5px', opacity: canPost ? 1 : 0.5 }}
                 >
                   + Post New Topic
                 </button>
@@ -494,7 +600,7 @@ export default function CommunityForum() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 140px 220px 40px',
+                  gridTemplateColumns: GRID_COLS,
                   padding: '12px 20px',
                   background: '#190d0d',
                   borderBottom: '1px solid #2a1515',
@@ -521,7 +627,7 @@ export default function CommunityForum() {
                     onClick={() => handleOpenTopic(t)}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr 140px 220px 40px',
+                      gridTemplateColumns: GRID_COLS,
                       padding: '14px 20px',
                       borderBottom: '1px solid #1f1010',
                       alignItems: 'center',
@@ -554,6 +660,7 @@ export default function CommunityForum() {
                       <div style={{ overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           {t.is_pinned && <span title="Pinned Topic" style={{ color: '#ef4444', fontSize: '13px' }}>📌</span>}
+                          {t.is_locked && <span title="Locked Topic" style={{ fontSize: '13px' }}>🔒</span>}
 
                           <span
                             style={{
@@ -577,7 +684,7 @@ export default function CommunityForum() {
                         </div>
 
                         <div style={{ fontSize: '12px', color: '#8c827a', marginTop: '4px' }}>
-                          <span style={{ color: '#fef08a' }}>{t.author_name}</span> • {new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <span style={{ color: '#fef08a' }}>{t.author_name}</span><UidTag id={idOf(t.author_public_id, t.author_name)} /> • {new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </div>
                       </div>
                     </div>
@@ -624,7 +731,7 @@ export default function CommunityForum() {
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      {isAdmin && (
+                      {canModerate && (
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                           <button
                             onClick={(e) => handleTogglePin(e, t)}
@@ -632,6 +739,13 @@ export default function CommunityForum() {
                             style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}
                           >
                             📌
+                          </button>
+                          <button
+                            onClick={(e) => handleToggleLock(e, t)}
+                            title={t.is_locked ? 'Unlock' : 'Lock (no new comments)'}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                          >
+                            {t.is_locked ? '🔓' : '🔒'}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id, t.title); }}
@@ -687,7 +801,7 @@ export default function CommunityForum() {
                   </h1>
 
                   <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
-                    🌐 Thread created by <strong>{activeTopic.author_name}</strong> · {formatForumTime(activeTopic.created_at)}
+                    🌐 Thread created by <strong>{activeTopic.author_name}</strong><UidTag id={idOf(activeTopic.author_public_id, activeTopic.author_name)} /> · {formatForumTime(activeTopic.created_at)}
                   </div>
                 </div>
               </div>
@@ -765,7 +879,7 @@ export default function CommunityForum() {
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
-                        {activeTopic.author_name}
+                        {activeTopic.author_name}<UidTag id={idOf(activeTopic.author_public_id, activeTopic.author_name)} />
                       </div>
                       <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
                         {formatForumTime(activeTopic.created_at)} · 🌐
@@ -854,7 +968,19 @@ export default function CommunityForum() {
                         {c.user_name.charAt(0).toUpperCase()}
                       </div>
                       <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
-                        <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px' }}>{c.user_name}</div>
+                        <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px', display: 'flex', alignItems: 'center' }}>
+                          <span>{c.user_name}</span><UidTag id={idOf(c.user_public_id, c.user_name)} />
+                          {canModerate && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(c)}
+                              title="Delete comment"
+                              style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', paddingLeft: '12px' }}
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
                         
                         {/* Nội dung chữ */}
                         {c.content && (
@@ -904,6 +1030,11 @@ export default function CommunityForum() {
                   )}
 
                   {/* KHUNG NHẬP BÌNH LUẬN KÈM NÚT ĐÍNH KÈM */}
+                  {(!canPost || (activeTopic.is_locked && !canModerate)) ? (
+                    <div style={{ marginTop: '4px', padding: '10px 14px', borderRadius: '10px', background: '#1a0d0d', border: '1px dashed #381a1a', color: '#a8a29e', fontSize: '13px', textAlign: 'center' }}>
+                      {isBanned ? '🚫 Your account is suspended.' : isMuted ? '🔇 You are muted right now.' : '🔒 This topic is locked — no new comments.'}
+                    </div>
+                  ) : (
                   <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                     <input
                       ref={commentInputRef}
@@ -966,6 +1097,7 @@ export default function CommunityForum() {
                       {isCommentUploading ? 'Uploading...' : 'Send'}
                     </button>
                   </form>
+                  )}
                 </div>
               </div>
             )}
@@ -1110,7 +1242,7 @@ export default function CommunityForum() {
 
       {/* MODAL ADMIN */}
       {showAdminModal && (
-        <AdminDashboardModal onClose={() => setShowAdminModal(false)} />
+        <AdminDashboardModal role={access.role} onClose={() => setShowAdminModal(false)} onChanged={fetchTopics} />
       )}
     </div>
   );

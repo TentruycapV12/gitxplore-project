@@ -432,7 +432,7 @@ export default function SavedDashboard() {
                           {user?.avatarChar || 'H'}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600, color: '#fff', fontSize: '15px' }}>{user?.name}</div>
+                          <div style={{ fontWeight: 600, color: '#fff', fontSize: '15px' }}>{user?.name}{user?.publicId && <span title="Account ID" style={{ marginLeft: '8px', padding: '1px 7px', fontSize: '11.5px', fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,.12)', border: '1px solid rgba(251,191,36,.35)', borderRadius: '6px' }}>#{user.publicId}</span>}</div>
                           <div style={{ color: '#38bdf8', fontSize: '12px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span>🐙</span> GitXplore Core / GitHub Account Connected
                           </div>

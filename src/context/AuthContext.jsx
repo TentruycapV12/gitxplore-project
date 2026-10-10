@@ -40,8 +40,14 @@ export function mapSupabaseUser(u) {
 
 function authReducer(state, action) {
   switch (action.type) {
-    case 'SET_USER':
-      return { user: action.payload };
+    case 'SET_USER': {
+      // Đăng nhập lại cùng một tài khoản thì giữ nguyên ID đã có (OAuth hay ghi đè object user).
+      const prev = state.user;
+      const keep = prev && prev.identifier === action.payload.identifier && prev.publicId
+        ? { publicId: prev.publicId }
+        : {};
+      return { user: { ...keep, ...action.payload } };
+    }
     case 'UPDATE_USER':
       return state.user ? { user: { ...state.user, ...action.payload } } : state;
     case 'CLEAR_USER':
@@ -65,6 +71,30 @@ export function AuthProvider({ children }) {
       /* localStorage có thể bị chặn (private mode) */
     }
   }, [state.user]);
+
+  // Mỗi tài khoản (đăng ký/đăng nhập, Local hay OAuth) đều có ID công khai 6 số.
+  // ID do database tự cấp lúc tạo hồ sơ (xem supabase_admin_setup.sql); ở đây chỉ tạo hồ sơ nếu chưa có rồi đọc ID về.
+  const identifier = state.user?.identifier;
+  useEffect(() => {
+    const email = identifier?.toLowerCase();
+    if (!email) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const u = state.user;
+        await supabase.from('profiles').upsert(
+          { email, name: u?.name || email.split('@')[0], avatar_url: u?.avatarUrl || null },
+          { onConflict: 'email', ignoreDuplicates: true }
+        );
+        const { data } = await supabase.from('profiles').select('public_id').eq('email', email).maybeSingle();
+        if (!cancelled && data?.public_id) dispatch({ type: 'UPDATE_USER', payload: { publicId: data.public_id } });
+      } catch {
+        /* chưa chạy SQL hoặc mất mạng: bỏ qua, lần đăng nhập sau sẽ thử lại */
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identifier]);
 
   // Lắng nghe Supabase auth, có cleanup khi unmount (bài 5-6, useEffect + cleanup).
   useEffect(() => {
