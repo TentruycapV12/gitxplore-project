@@ -73,7 +73,7 @@
 .nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
 .nw-body p {
   margin: 0; color: var(--muted); font-size: 13.5px;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
 }
 .nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
 .nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

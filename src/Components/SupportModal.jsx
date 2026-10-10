@@ -33,6 +33,18 @@ const TYPES = [
   { id: 'account', label: 'Tài khoản', hint: 'Mô tả vấn đề về đăng nhập, liên kết hoặc dữ liệu tài khoản của bạn.' },
 ];
 
+// Chuyển lỗi Supabase thành gợi ý dễ hiểu (đồng thời log đầy đủ ra console)
+function getErrorHint(err) {
+  const code = err?.code || '';
+  const msg = err?.message || '';
+  if (code === 'PGRST205' || code === '42P01') return 'Bảng support_tickets chưa tồn tại trên Supabase.';
+  if (code === '42501' || /row-level security/i.test(msg)) return 'Bị chặn bởi RLS: thiếu policy INSERT cho bảng support_tickets.';
+  if (code === 'PGRST204' || code === '42703') return 'Tên cột không khớp với bảng support_tickets.';
+  if (/Failed to fetch|NetworkError/i.test(msg)) return 'Không kết nối được Supabase (kiểm tra mạng hoặc biến môi trường VITE_SUPABASE_URL).';
+  if (/Invalid API key|JWT/i.test(msg)) return 'API key Supabase không hợp lệ (kiểm tra VITE_SUPABASE_ANON_KEY).';
+  return msg;
+}
+
 export default function SupportModal({ onClose }) {
   const { user } = useAuth();
   const panelRef = useRef(null);
@@ -44,6 +56,7 @@ export default function SupportModal({ onClose }) {
   const [contact, setContact] = useState(user?.identifier || '');
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
+  const [errorDetail, setErrorDetail] = useState('');
 
   const currentType = TYPES.find((t) => t.id === ticketType);
   const canSend = message.trim() && contact.trim() && status !== 'sending';
@@ -87,6 +100,7 @@ export default function SupportModal({ onClose }) {
     e.preventDefault();
     if (!canSend) return;
     setStatus('sending');
+    setErrorDetail('');
 
     try {
       const { error } = await supabase.from('support_tickets').insert([
@@ -99,8 +113,10 @@ export default function SupportModal({ onClose }) {
       ]);
       if (error) throw error;
       setStatus('sent');
-    } catch {
+    } catch (err) {
       // Giữ nguyên nội dung người dùng đã nhập để họ gửi lại
+      console.error('Support ticket error:', err);
+      setErrorDetail(getErrorHint(err));
       setStatus('error');
     }
   };
@@ -255,6 +271,12 @@ export default function SupportModal({ onClose }) {
                 <p className="sp-error" role="alert">
                   Chưa gửi được yêu cầu. Nội dung của bạn vẫn còn nguyên, hãy thử lại hoặc gửi email tới{' '}
                   <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+                  {errorDetail && (
+                    <>
+                      <br />
+                      <small>Chi tiết: {errorDetail}</small>
+                    </>
+                  )}
                 </p>
               )}
 
