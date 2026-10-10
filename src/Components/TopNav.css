@@ -12,7 +12,7 @@
   left: 0;
   right: 0;
   z-index: 20;
-  height: 60px;
+  height: 56px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
@@ -32,9 +32,9 @@
   color: inherit; cursor: pointer; flex: none;
 }
 .tn-logo-mark {
-  width: 40px; height: 40px; display: grid; place-items: center;
+  width: 36px; height: 36px; display: grid; place-items: center;
   border-radius: 12px; background: var(--tn-accent); color: #1a1006;
-  font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; line-height: 1;
+  font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; line-height: 1;
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
 }
 .tn-logo-text {
@@ -43,15 +43,15 @@
 }
 
 .tn-search {
-  position: relative; display: flex; align-items: center; height: 40px; min-width: 0;
-  width: 240px; padding-left: 40px;
+  position: relative; display: flex; align-items: center; height: 36px; min-width: 0;
+  width: 220px; padding-left: 36px;
   background: var(--tn-surface); backdrop-filter: blur(12px);
   border: 1px solid var(--tn-line); border-radius: 999px;
   transition: width 0.2s, border-color 0.15s, background 0.15s;
 }
 .tn-search:focus-within { width: 300px; border-color: rgba(245, 158, 11, 0.6); background: rgba(18, 11, 11, 0.92); }
 .tn-search-icon {
-  position: absolute; left: 0; top: 0; width: 40px; height: 100%;
+  position: absolute; left: 0; top: 0; width: 36px; height: 100%;
   display: grid; place-items: center; background: none; border: 0; color: var(--tn-muted); cursor: default;
 }
 .tn-search-icon svg { width: 18px; height: 18px; }
@@ -63,9 +63,9 @@
 .tn-search input::-webkit-search-cancel-button { display: none; }
 
 /* ---------- Giữa: tab icon ---------- */
-.tn-tabs { display: flex; align-items: stretch; gap: 6px; height: 100%; }
+.tn-tabs { display: flex; align-items: stretch; gap: 2px; height: 100%; }
 .tn-tab {
-  position: relative; width: 84px; height: 100%; display: grid; place-items: center;
+  position: relative; width: 72px; height: 100%; display: grid; place-items: center;
   background: none; border: 0; color: var(--tn-muted); cursor: pointer;
 }
 .tn-tab svg { position: relative; z-index: 1; transition: color 0.15s; }
@@ -98,15 +98,14 @@
 /* ---------- Phải ---------- */
 .tn-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .tn-wrap { position: relative; }
-.tn-dock { display: flex; align-items: center; }
 
 .tn-circle {
-  position: relative; width: 40px; height: 40px; display: grid; place-items: center;
+  position: relative; width: 36px; height: 36px; display: grid; place-items: center;
   background: var(--tn-surface); backdrop-filter: blur(12px);
   border: 1px solid var(--tn-line); border-radius: 50%; color: var(--tn-text); cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.tn-circle svg { width: 20px; height: 20px; }
+.tn-circle svg { width: 19px; height: 19px; }
 .tn-circle:hover { background: rgba(255, 255, 255, 0.14); }
 .tn-circle.is-on { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.5); color: var(--tn-accent); }
 .tn-badge {
@@ -115,7 +114,7 @@
 }
 
 .tn-avatar {
-  position: relative; width: 40px; height: 40px; padding: 0; display: grid; place-items: center;
+  position: relative; width: 36px; height: 36px; padding: 0; display: grid; place-items: center;
   background: #b91c1c; color: #fff; font-weight: 700; font-size: 15px;
   border: 2px solid rgba(245, 158, 11, 0.55); border-radius: 50%; cursor: pointer;
   transition: border-color 0.15s;
@@ -189,15 +188,14 @@
   .tn-tab { width: 52px; }
   .tn-tab::after { left: 8px; right: 8px; }
   /* tìm kiếm thu lại thành nút tròn, bấm để mở rộng */
-  .tn-search { width: 40px; padding-left: 0; }
+  .tn-search { width: 36px; padding-left: 0; }
   .tn-search input { display: none; }
   .tn-search-icon { width: 100%; cursor: pointer; }
   .tn-search.is-open { position: absolute; left: 10px; right: 10px; top: 10px; width: auto; padding-left: 40px; z-index: 40; background: #161010; }
   .tn-search.is-open input { display: block; }
 }
 @media (max-width: 560px) {
-  .tn-tab:nth-child(5) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
-  .tn-dock { display: none; }
+  .tn-tab:nth-child(4) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
   .tn-btn--ghost { display: none; }
   .tn-logo-mark { width: 36px; height: 36px; font-size: 22px; }
 }
