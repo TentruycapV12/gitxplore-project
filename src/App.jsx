@@ -31,6 +31,12 @@ function ScrollToTop() {
   return null;
 }
 
+/** Link cũ /community/forum?thread=... chuyển sang /forum, giữ nguyên phần ?thread=. */
+function ForumRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/forum${search}`} replace />;
+}
+
 /** Protected route: chưa đăng nhập thì đẩy về trang chủ và mở form đăng nhập. */
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -48,10 +54,9 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         {/* Trang Cộng đồng mới (sidebar + ngôn ngữ) */}
         <Route path="/community" element={<CommunityHub />} />
-        {/* Diễn đàn cũ chuyển sang /community/forum (đặt TRƯỚC :section để không bị nuốt) */}
-        <Route path="/community/forum" element={<CommunityForum />} />
-        {/* Link ngắn /forum chuyển về diễn đàn */}
-        <Route path="/forum" element={<Navigate to="/community/forum" replace />} />
+        {/* Diễn đàn nằm ở /forum. Link cũ /community/forum chuyển sang đây (đặt TRƯỚC :section để không bị nuốt) */}
+        <Route path="/forum" element={<CommunityForum />} />
+        <Route path="/community/forum" element={<ForumRedirect />} />
         <Route path="/community/:section" element={<CommunityHub />} />
         <Route path="/news" element={<NewsPage />} />
         <Route path="/search" element={<SearchPage />} />

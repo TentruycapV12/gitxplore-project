@@ -329,7 +329,7 @@ export default function SearchPage() {
                   {desc && <p className="sr-desc"><Hl text={desc} tokens={tokens} /></p>}
                 </div>
                 <div className="sr-actions">
-                  <Link className="sr-btn sr-btn--primary" to={`/community/forum?thread=${t.id}`}>{L.view_topic}</Link>
+                  <Link className="sr-btn sr-btn--primary" to={`/forum?thread=${t.id}`}>{L.view_topic}</Link>
                 </div>
               </li>
             );

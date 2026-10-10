@@ -29,7 +29,7 @@ const TABS = [
   { id: 'home', label: 'Trang chủ', to: '/' },
   { id: 'news', label: 'Tin tức', to: '/news' },
   { id: 'community', label: 'Cộng đồng', to: '/community' },
-  { id: 'forum', label: 'Diễn đàn', to: '/community/forum' },
+  { id: 'forum', label: 'Diễn đàn', to: '/forum' },
   { id: 'support', label: 'Hỗ trợ', modal: 'support' },
 ];
 
@@ -70,7 +70,7 @@ export default function TopNav() {
 
   const activeId =
     pathname.startsWith('/news') ? 'news' :
-    pathname.startsWith('/community/forum') ? 'forum' :
+    pathname.startsWith('/forum') ? 'forum' :
     pathname.startsWith('/community') ? 'community' :
     pathname === '/' ? 'home' : null;
 
