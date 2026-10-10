@@ -1,0 +1,201 @@
+/* Thanh điều hướng kiểu Facebook, nền kính tối + một màu nhấn amber. Mọi class bắt đầu bằng tn- */
+.tn {
+  --tn-surface: rgba(18, 11, 11, 0.78);
+  --tn-hover: rgba(255, 255, 255, 0.08);
+  --tn-line: rgba(255, 255, 255, 0.1);
+  --tn-text: #f6f2ef;
+  --tn-muted: #b9ada7;
+  --tn-accent: #f59e0b;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: 60px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding: 0 16px;
+  background: linear-gradient(to bottom, rgba(8, 5, 5, 0.85), rgba(8, 5, 5, 0));
+  color: var(--tn-text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.tn *, .tn *::before, .tn *::after { box-sizing: border-box; }
+.tn button { font-family: inherit; }
+.tn :focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+
+/* ---------- Trái ---------- */
+.tn-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tn-logo {
+  display: flex; align-items: center; gap: 10px; padding: 0; background: none; border: 0;
+  color: inherit; cursor: pointer; flex: none;
+}
+.tn-logo-mark {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border-radius: 12px; background: var(--tn-accent); color: #1a1006;
+  font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; line-height: 1;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+}
+.tn-logo-text {
+  font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700;
+  letter-spacing: 1.5px; color: #fef08a;
+}
+
+.tn-search {
+  position: relative; display: flex; align-items: center; height: 40px; min-width: 0;
+  width: 240px; padding-left: 40px;
+  background: var(--tn-surface); backdrop-filter: blur(12px);
+  border: 1px solid var(--tn-line); border-radius: 999px;
+  transition: width 0.2s, border-color 0.15s, background 0.15s;
+}
+.tn-search:focus-within { width: 300px; border-color: rgba(245, 158, 11, 0.6); background: rgba(18, 11, 11, 0.92); }
+.tn-search-icon {
+  position: absolute; left: 0; top: 0; width: 40px; height: 100%;
+  display: grid; place-items: center; background: none; border: 0; color: var(--tn-muted); cursor: default;
+}
+.tn-search-icon svg { width: 18px; height: 18px; }
+.tn-search input {
+  flex: 1; min-width: 0; height: 100%; padding: 0 14px 0 0;
+  background: transparent; border: 0; outline: 0; color: var(--tn-text); font-size: 14.5px;
+}
+.tn-search input::placeholder { color: var(--tn-muted); opacity: 0.8; }
+.tn-search input::-webkit-search-cancel-button { display: none; }
+
+/* ---------- Giữa: tab icon ---------- */
+.tn-tabs { display: flex; align-items: stretch; gap: 6px; height: 100%; }
+.tn-tab {
+  position: relative; width: 84px; height: 100%; display: grid; place-items: center;
+  background: none; border: 0; color: var(--tn-muted); cursor: pointer;
+}
+.tn-tab svg { position: relative; z-index: 1; transition: color 0.15s; }
+/* nền bo tròn khi hover, giống Facebook */
+.tn-tab::before {
+  content: ''; position: absolute; inset: 6px 4px; border-radius: 10px;
+  background: transparent; transition: background 0.15s;
+}
+.tn-tab:hover::before { background: var(--tn-hover); }
+.tn-tab:hover { color: var(--tn-text); }
+/* thanh active dưới chân tab */
+.tn-tab::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px;
+  border-radius: 3px 3px 0 0; background: var(--tn-accent);
+  transform: scaleX(0); transition: transform 0.2s;
+}
+.tn-tab.is-active { color: var(--tn-accent); }
+.tn-tab.is-active::after { transform: scaleX(1); }
+.tn-tab.is-active:hover::before { background: transparent; }
+
+/* tooltip nhỏ phía dưới */
+.tn-tip {
+  position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  padding: 5px 10px; background: #1e1616; color: var(--tn-text); border: 1px solid var(--tn-line);
+  border-radius: 8px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 5;
+}
+.tn-tab:hover .tn-tip, .tn-tab:focus-visible .tn-tip { opacity: 1; }
+
+/* ---------- Phải ---------- */
+.tn-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.tn-wrap { position: relative; }
+
+.tn-circle {
+  position: relative; width: 40px; height: 40px; display: grid; place-items: center;
+  background: var(--tn-surface); backdrop-filter: blur(12px);
+  border: 1px solid var(--tn-line); border-radius: 50%; color: var(--tn-text); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tn-circle svg { width: 20px; height: 20px; }
+.tn-circle:hover { background: rgba(255, 255, 255, 0.14); }
+.tn-circle.is-on { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.5); color: var(--tn-accent); }
+.tn-badge {
+  position: absolute; top: 5px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
+  background: #ef4444; border: 2px solid #120b0b;
+}
+
+.tn-avatar {
+  position: relative; width: 40px; height: 40px; padding: 0; display: grid; place-items: center;
+  background: #b91c1c; color: #fff; font-weight: 700; font-size: 15px;
+  border: 2px solid rgba(245, 158, 11, 0.55); border-radius: 50%; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.tn-avatar:hover, .tn-avatar[aria-expanded='true'] { border-color: #fef08a; }
+.tn-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.tn-caret {
+  position: absolute; right: -4px; bottom: -3px; width: 16px; height: 16px; display: grid; place-items: center;
+  background: #2a1f1f; color: #fff; border: 1px solid var(--tn-line); border-radius: 50%;
+}
+
+.tn-btn {
+  height: 38px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s;
+}
+.tn-btn--ghost { background: var(--tn-surface); backdrop-filter: blur(12px); color: var(--tn-text); border: 1px solid var(--tn-line); }
+.tn-btn--ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.tn-btn--solid { background: var(--tn-accent); color: #1a1006; border: 1px solid var(--tn-accent); }
+.tn-btn--solid:hover { background: #fbbf24; border-color: #fbbf24; }
+
+/* ---------- Dropdown ---------- */
+.tn-pop {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 30;
+  background: #161010; border: 1px solid #2d2121; border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65); padding: 8px;
+  animation: tn-in 0.14s ease-out;
+}
+@keyframes tn-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tn-pop { animation: none; } .tn-search, .tn-tab::after { transition: none; } }
+
+.tn-apps { width: 280px; }
+.tn-pop-title { margin: 6px 8px 8px; font-size: 16px; font-weight: 700; }
+.tn-apps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.tn-apps-grid button {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px;
+  background: transparent; border: 0; border-radius: 10px; color: var(--tn-text); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.tn-apps-grid button:hover { background: #1e1616; }
+.tn-apps-grid svg { color: var(--tn-accent); }
+
+.tn-user { width: 280px; }
+.tn-user hr { border: 0; height: 1px; background: #2d2121; margin: 6px 4px; }
+.tn-user-card {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px;
+  background: #1e1616; border: 0; border-radius: 10px; color: var(--tn-text); text-align: left; cursor: pointer;
+}
+.tn-user-card:hover { background: #251a1a; }
+.tn-user-av {
+  width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  background: #b91c1c; font-weight: 700; overflow: hidden;
+}
+.tn-user-av img { width: 100%; height: 100%; object-fit: cover; }
+.tn-user-info { min-width: 0; display: flex; flex-direction: column; }
+.tn-user-info strong { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-user-info small { font-size: 12px; color: var(--tn-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-item {
+  width: 100%; display: block; padding: 10px 12px; background: transparent; border: 0; border-radius: 8px;
+  color: var(--tn-text); font-size: 14px; text-align: left; cursor: pointer;
+}
+.tn-item:hover { background: #1e1616; }
+.tn-item--danger { color: #f87171; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .tn-logo-text { display: none; }
+  .tn-tab { width: 68px; }
+}
+@media (max-width: 860px) {
+  .tn { grid-template-columns: auto 1fr auto; padding: 0 10px; gap: 4px; }
+  .tn-tabs { justify-content: center; }
+  .tn-tab { width: 52px; }
+  .tn-tab::after { left: 8px; right: 8px; }
+  /* tìm kiếm thu lại thành nút tròn, bấm để mở rộng */
+  .tn-search { width: 40px; padding-left: 0; }
+  .tn-search input { display: none; }
+  .tn-search-icon { width: 100%; cursor: pointer; }
+  .tn-search.is-open { position: absolute; left: 10px; right: 10px; top: 10px; width: auto; padding-left: 40px; z-index: 40; background: #161010; }
+  .tn-search.is-open input { display: block; }
+}
+@media (max-width: 560px) {
+  .tn-tab:nth-child(4) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
+  .tn-btn--ghost { display: none; }
+  .tn-logo-mark { width: 36px; height: 36px; font-size: 22px; }
+}

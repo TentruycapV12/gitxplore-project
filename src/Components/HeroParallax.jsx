@@ -1,11 +1,8 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
-import { useLanguage } from '../context/LanguageContext';
 import { scrollToId } from '../lib/scroll';
+import TopNav from './TopNav.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -43,17 +40,11 @@ function createSequence(canvas, srcOf) {
 }
 
 export default function HeroParallax() {
-  const { user, logout } = useAuth();
-  const { openModal: setModal } = useUI();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
   const slide1Ref = useRef(null);
   const slide2Ref = useRef(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useLayoutEffect(() => {
     const c1 = canvas1Ref.current;
@@ -150,155 +141,8 @@ export default function HeroParallax() {
         }}
       />
 
-      <nav
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          padding: '30px 6vw',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 20,
-        }}
-      >
-        <span
-          onClick={() => scrollToId('explore')}
-          style={{
-            fontSize: '19px',
-            fontWeight: 700,
-            letterSpacing: '1.5px',
-            color: '#fef08a',
-            fontFamily: 'Cormorant Garamond, serif',
-            cursor: 'pointer',
-          }}
-        >
-          NOTOSAN
-        </span>
-
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/news')}
-            className="nav-link-btn"
-          >
-            {t('news')}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/community')}
-            className="nav-link-btn"
-          >
-            Community
-          </button>
-
-          <button
-            type="button"
-            onClick={() => scrollToId('about')}
-            className="nav-link-btn"
-          >
-            About
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => setModal('support')} 
-            className="nav-link-btn"
-          >
-            Support
-          </button>
-
-          {!user ? (
-            <button
-              type="button"
-              onClick={() => setModal('register')}
-              className="register-btn-main"
-            >
-              Register
-            </button>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
-              <button type="button" className="bell-btn" title="Notifications">
-                🔔
-              </button>
-
-              <div
-                className="user-avatar-badge"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt="Avatar"
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <span>{user.avatarChar}</span>
-                )}
-                <span style={{ fontSize: '10px', marginLeft: '2px' }}>▾</span>
-              </div>
-
-              {dropdownOpen && (
-                <div className="user-dropdown-menu">
-                  <div className="dropdown-user-header">
-                    <strong>{user.name}</strong>
-                    <span className="dropdown-user-sub">{user.identifier}</span>
-                  </div>
-                  <div className="dropdown-divider" />
-                  
-                  {/* Điều hướng trực tiếp sang các tab Accounts Center chuẩn URL */}
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/profiles');
-                    }}
-                  >
-                    👤 Profile details
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/saved');
-                    }}
-                  >
-                    ⭐ Saved Repositories
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/history');
-                    }}
-                  >
-                    🕒 History
-                  </button>
-
-                  <div className="dropdown-divider" />
-                  <button
-                    type="button"
-                    className="dropdown-item logout-item"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      logout();
-                    }}
-                  >
-                    ⏻ Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </nav>
+      {/* Thanh điều hướng kiểu Facebook */}
+      <TopNav />
 
       {/* SCENE 1: WELCOME */}
       <div
