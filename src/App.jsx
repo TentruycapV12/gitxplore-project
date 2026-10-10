@@ -6,6 +6,7 @@ import { useAuth } from './context/AuthContext';
 import { useUI } from './context/UIContext';
 import HomePage from './pages/HomePage.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
+import CommunityHub from './pages/CommunityHub.jsx';
 import SavedDashboard from './Components/SavedDashboard.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import NewsPage from './pages/NewsPage.jsx';
@@ -44,7 +45,11 @@ export default function App() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/community" element={<CommunityForum />} />
+        {/* Trang Cộng đồng mới (sidebar + ngôn ngữ) */}
+        <Route path="/community" element={<CommunityHub />} />
+        {/* Diễn đàn cũ chuyển sang /community/forum (đặt TRƯỚC :section để không bị nuốt) */}
+        <Route path="/community/forum" element={<CommunityForum />} />
+        <Route path="/community/:section" element={<CommunityHub />} />
         <Route path="/news" element={<NewsPage />} />
 
         {/* /accountscenter/:section */}

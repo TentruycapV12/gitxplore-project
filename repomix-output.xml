@@ -67,6 +67,8 @@ src/
     SubNavBar.jsx
     SupportModal.css
     SupportModal.jsx
+    TopNav.css
+    TopNav.jsx
   context/
     AuthContext.jsx
     LanguageContext.jsx
@@ -1874,6 +1876,420 @@ export default function QuickDock() {
   .sp { width: 100%; height: min(92dvh, 680px); border-radius: 16px 16px 0 0; border-bottom: 0; }
   .sp-head, .sp-tabs, .sp-body, .sp-foot { padding-left: 18px; padding-right: 18px; }
   .sp-done-actions { flex-direction: column; width: 100%; }
+}
+</file>
+
+<file path="src/Components/TopNav.css">
+/* Thanh điều hướng kiểu Facebook, nền kính tối + một màu nhấn amber. Mọi class bắt đầu bằng tn- */
+.tn {
+  --tn-surface: rgba(18, 11, 11, 0.78);
+  --tn-hover: rgba(255, 255, 255, 0.08);
+  --tn-line: rgba(255, 255, 255, 0.1);
+  --tn-text: #f6f2ef;
+  --tn-muted: #b9ada7;
+  --tn-accent: #f59e0b;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: 60px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding: 0 16px;
+  background: linear-gradient(to bottom, rgba(8, 5, 5, 0.85), rgba(8, 5, 5, 0));
+  color: var(--tn-text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.tn *, .tn *::before, .tn *::after { box-sizing: border-box; }
+.tn button { font-family: inherit; }
+.tn :focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+
+/* ---------- Trái ---------- */
+.tn-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tn-logo {
+  display: flex; align-items: center; gap: 10px; padding: 0; background: none; border: 0;
+  color: inherit; cursor: pointer; flex: none;
+}
+.tn-logo-mark {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border-radius: 12px; background: var(--tn-accent); color: #1a1006;
+  font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; line-height: 1;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+}
+.tn-logo-text {
+  font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700;
+  letter-spacing: 1.5px; color: #fef08a;
+}
+
+.tn-search {
+  position: relative; display: flex; align-items: center; height: 40px; min-width: 0;
+  width: 240px; padding-left: 40px;
+  background: var(--tn-surface); backdrop-filter: blur(12px);
+  border: 1px solid var(--tn-line); border-radius: 999px;
+  transition: width 0.2s, border-color 0.15s, background 0.15s;
+}
+.tn-search:focus-within { width: 300px; border-color: rgba(245, 158, 11, 0.6); background: rgba(18, 11, 11, 0.92); }
+.tn-search-icon {
+  position: absolute; left: 0; top: 0; width: 40px; height: 100%;
+  display: grid; place-items: center; background: none; border: 0; color: var(--tn-muted); cursor: default;
+}
+.tn-search-icon svg { width: 18px; height: 18px; }
+.tn-search input {
+  flex: 1; min-width: 0; height: 100%; padding: 0 14px 0 0;
+  background: transparent; border: 0; outline: 0; color: var(--tn-text); font-size: 14.5px;
+}
+.tn-search input::placeholder { color: var(--tn-muted); opacity: 0.8; }
+.tn-search input::-webkit-search-cancel-button { display: none; }
+
+/* ---------- Giữa: tab icon ---------- */
+.tn-tabs { display: flex; align-items: stretch; gap: 6px; height: 100%; }
+.tn-tab {
+  position: relative; width: 84px; height: 100%; display: grid; place-items: center;
+  background: none; border: 0; color: var(--tn-muted); cursor: pointer;
+}
+.tn-tab svg { position: relative; z-index: 1; transition: color 0.15s; }
+/* nền bo tròn khi hover, giống Facebook */
+.tn-tab::before {
+  content: ''; position: absolute; inset: 6px 4px; border-radius: 10px;
+  background: transparent; transition: background 0.15s;
+}
+.tn-tab:hover::before { background: var(--tn-hover); }
+.tn-tab:hover { color: var(--tn-text); }
+/* thanh active dưới chân tab */
+.tn-tab::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px;
+  border-radius: 3px 3px 0 0; background: var(--tn-accent);
+  transform: scaleX(0); transition: transform 0.2s;
+}
+.tn-tab.is-active { color: var(--tn-accent); }
+.tn-tab.is-active::after { transform: scaleX(1); }
+.tn-tab.is-active:hover::before { background: transparent; }
+
+/* tooltip nhỏ phía dưới */
+.tn-tip {
+  position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  padding: 5px 10px; background: #1e1616; color: var(--tn-text); border: 1px solid var(--tn-line);
+  border-radius: 8px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 5;
+}
+.tn-tab:hover .tn-tip, .tn-tab:focus-visible .tn-tip { opacity: 1; }
+
+/* ---------- Phải ---------- */
+.tn-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.tn-wrap { position: relative; }
+
+.tn-circle {
+  position: relative; width: 40px; height: 40px; display: grid; place-items: center;
+  background: var(--tn-surface); backdrop-filter: blur(12px);
+  border: 1px solid var(--tn-line); border-radius: 50%; color: var(--tn-text); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tn-circle svg { width: 20px; height: 20px; }
+.tn-circle:hover { background: rgba(255, 255, 255, 0.14); }
+.tn-circle.is-on { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.5); color: var(--tn-accent); }
+.tn-badge {
+  position: absolute; top: 5px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
+  background: #ef4444; border: 2px solid #120b0b;
+}
+
+.tn-avatar {
+  position: relative; width: 40px; height: 40px; padding: 0; display: grid; place-items: center;
+  background: #b91c1c; color: #fff; font-weight: 700; font-size: 15px;
+  border: 2px solid rgba(245, 158, 11, 0.55); border-radius: 50%; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.tn-avatar:hover, .tn-avatar[aria-expanded='true'] { border-color: #fef08a; }
+.tn-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.tn-caret {
+  position: absolute; right: -4px; bottom: -3px; width: 16px; height: 16px; display: grid; place-items: center;
+  background: #2a1f1f; color: #fff; border: 1px solid var(--tn-line); border-radius: 50%;
+}
+
+.tn-btn {
+  height: 38px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s;
+}
+.tn-btn--ghost { background: var(--tn-surface); backdrop-filter: blur(12px); color: var(--tn-text); border: 1px solid var(--tn-line); }
+.tn-btn--ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.tn-btn--solid { background: var(--tn-accent); color: #1a1006; border: 1px solid var(--tn-accent); }
+.tn-btn--solid:hover { background: #fbbf24; border-color: #fbbf24; }
+
+/* ---------- Dropdown ---------- */
+.tn-pop {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 30;
+  background: #161010; border: 1px solid #2d2121; border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65); padding: 8px;
+  animation: tn-in 0.14s ease-out;
+}
+@keyframes tn-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tn-pop { animation: none; } .tn-search, .tn-tab::after { transition: none; } }
+
+.tn-apps { width: 280px; }
+.tn-pop-title { margin: 6px 8px 8px; font-size: 16px; font-weight: 700; }
+.tn-apps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.tn-apps-grid button {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px;
+  background: transparent; border: 0; border-radius: 10px; color: var(--tn-text); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.tn-apps-grid button:hover { background: #1e1616; }
+.tn-apps-grid svg { color: var(--tn-accent); }
+
+.tn-user { width: 280px; }
+.tn-user hr { border: 0; height: 1px; background: #2d2121; margin: 6px 4px; }
+.tn-user-card {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px;
+  background: #1e1616; border: 0; border-radius: 10px; color: var(--tn-text); text-align: left; cursor: pointer;
+}
+.tn-user-card:hover { background: #251a1a; }
+.tn-user-av {
+  width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  background: #b91c1c; font-weight: 700; overflow: hidden;
+}
+.tn-user-av img { width: 100%; height: 100%; object-fit: cover; }
+.tn-user-info { min-width: 0; display: flex; flex-direction: column; }
+.tn-user-info strong { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-user-info small { font-size: 12px; color: var(--tn-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-item {
+  width: 100%; display: block; padding: 10px 12px; background: transparent; border: 0; border-radius: 8px;
+  color: var(--tn-text); font-size: 14px; text-align: left; cursor: pointer;
+}
+.tn-item:hover { background: #1e1616; }
+.tn-item--danger { color: #f87171; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .tn-logo-text { display: none; }
+  .tn-tab { width: 68px; }
+}
+@media (max-width: 860px) {
+  .tn { grid-template-columns: auto 1fr auto; padding: 0 10px; gap: 4px; }
+  .tn-tabs { justify-content: center; }
+  .tn-tab { width: 52px; }
+  .tn-tab::after { left: 8px; right: 8px; }
+  /* tìm kiếm thu lại thành nút tròn, bấm để mở rộng */
+  .tn-search { width: 40px; padding-left: 0; }
+  .tn-search input { display: none; }
+  .tn-search-icon { width: 100%; cursor: pointer; }
+  .tn-search.is-open { position: absolute; left: 10px; right: 10px; top: 10px; width: auto; padding-left: 40px; z-index: 40; background: #161010; }
+  .tn-search.is-open input { display: block; }
+}
+@media (max-width: 560px) {
+  .tn-tab:nth-child(4) { display: none; } /* ẩn "Giới thiệu" trên điện thoại nhỏ */
+  .tn-btn--ghost { display: none; }
+  .tn-logo-mark { width: 36px; height: 36px; font-size: 22px; }
+}
+</file>
+
+<file path="src/Components/TopNav.jsx">
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { scrollToId } from '../lib/scroll';
+import './TopNav.css';
+
+const Svg = ({ children }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const ICONS = {
+  home: <Svg><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Svg>,
+  news: <Svg><rect x="3" y="4" width="14" height="16" rx="2" /><path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M7 8h6M7 12h6M7 16h4" /></Svg>,
+  community: <Svg><circle cx="9" cy="8" r="3.2" /><path d="M2.8 20c.4-3.4 3-5.5 6.2-5.5s5.8 2.1 6.2 5.5" /><circle cx="17" cy="9" r="2.4" /><path d="M16.5 14.6c2.6.1 4.4 1.8 4.7 4.4" /></Svg>,
+  about: <Svg><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.8v.1" /></Svg>,
+  support: <Svg><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9" /></Svg>,
+  search: <Svg><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></Svg>,
+  grid: <Svg><circle cx="6" cy="6" r="1.4" /><circle cx="12" cy="6" r="1.4" /><circle cx="18" cy="6" r="1.4" /><circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" /><circle cx="6" cy="18" r="1.4" /><circle cx="12" cy="18" r="1.4" /><circle cx="18" cy="18" r="1.4" /></Svg>,
+  bell: <Svg><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15zM10 21h4" /></Svg>,
+  bookmark: <Svg><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></Svg>,
+};
+
+// Các tab giữa. `to` = chuyển trang, `scroll` = cuộn tới mục, `modal` = mở popup.
+const TABS = [
+  { id: 'home', label: 'Trang chủ', to: '/' },
+  { id: 'news', label: 'Tin tức', to: '/news' },
+  { id: 'community', label: 'Cộng đồng', to: '/community' },
+  { id: 'about', label: 'Giới thiệu', scroll: 'about' },
+  { id: 'support', label: 'Hỗ trợ', modal: 'support' },
+];
+
+export default function TopNav() {
+  const { user, logout } = useAuth();
+  const { openModal } = useUI();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [menu, setMenu] = useState(null); // 'apps' | 'user' | null
+  const rootRef = useRef(null);
+
+  // Đóng dropdown khi bấm ra ngoài hoặc nhấn Esc
+  useEffect(() => {
+    if (!menu) return undefined;
+    const onDown = (e) => { if (!rootRef.current?.contains(e.target)) setMenu(null); };
+    const onKey = (e) => e.key === 'Escape' && setMenu(null);
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
+
+  const activeId =
+    pathname.startsWith('/news') ? 'news' :
+    pathname.startsWith('/community') ? 'community' :
+    pathname === '/' ? 'home' : null;
+
+  const onTab = (tab) => {
+    setMenu(null);
+    if (tab.to) navigate(tab.to);
+    else if (tab.scroll) scrollToId(tab.scroll);
+    else if (tab.modal) openModal(tab.modal);
+  };
+
+  const onSearch = (e) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setSearchOpen(false);
+    navigate(`/?q=${encodeURIComponent(q)}`);
+    setTimeout(() => scrollToId('explore'), 80);
+  };
+
+  const go = (path) => { setMenu(null); navigate(path); };
+
+  return (
+    <header className="tn" ref={rootRef}>
+      {/* ===== TRÁI: logo + tìm kiếm ===== */}
+      <div className="tn-left">
+        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label="NOTOSAN - Trang chủ">
+          <span className="tn-logo-mark">N</span>
+          <span className="tn-logo-text">NOTOSAN</span>
+        </button>
+
+        <form className={`tn-search ${searchOpen ? 'is-open' : ''}`} onSubmit={onSearch} role="search">
+          <button
+            type="button"
+            className="tn-search-icon"
+            aria-label="Tìm kiếm"
+            onClick={() => setSearchOpen((v) => !v)}
+          >
+            {ICONS.search}
+          </button>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm repo, framework..."
+            aria-label="Tìm kiếm repository"
+          />
+        </form>
+      </div>
+
+      {/* ===== GIỮA: tab icon ===== */}
+      <nav className="tn-tabs" aria-label="Điều hướng chính">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
+            onClick={() => onTab(tab)}
+            aria-label={tab.label}
+            aria-current={activeId === tab.id ? 'page' : undefined}
+          >
+            {ICONS[tab.id]}
+            <span className="tn-tip">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ===== PHẢI: nút tròn + avatar ===== */}
+      <div className="tn-right">
+        <div className="tn-wrap">
+          <button
+            type="button"
+            className={`tn-circle ${menu === 'apps' ? 'is-on' : ''}`}
+            onClick={() => setMenu(menu === 'apps' ? null : 'apps')}
+            aria-label="Lối tắt"
+            aria-expanded={menu === 'apps'}
+          >
+            {ICONS.grid}
+          </button>
+
+          {menu === 'apps' && (
+            <div className="tn-pop tn-apps" role="menu">
+              <p className="tn-pop-title">Lối tắt</p>
+              <div className="tn-apps-grid">
+                <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>Tin tức</span></button>
+                <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>Cộng đồng</span></button>
+                <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>Repo đã lưu</span></button>
+                <button type="button" onClick={() => { setMenu(null); openModal('support'); }}>{ICONS.support}<span>Hỗ trợ</span></button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {user && (
+          <button type="button" className="tn-circle tn-bell" onClick={() => go('/community')} aria-label="Thông báo">
+            {ICONS.bell}
+            <i className="tn-badge" />
+          </button>
+        )}
+
+        {!user ? (
+          <>
+            <button type="button" className="tn-btn tn-btn--ghost" onClick={() => openModal('signin')}>Đăng nhập</button>
+            <button type="button" className="tn-btn tn-btn--solid" onClick={() => openModal('register')}>Đăng ký</button>
+          </>
+        ) : (
+          <div className="tn-wrap">
+            <button
+              type="button"
+              className="tn-avatar"
+              onClick={() => setMenu(menu === 'user' ? null : 'user')}
+              aria-label="Tài khoản"
+              aria-expanded={menu === 'user'}
+            >
+              {user.avatarUrl
+                ? <img src={user.avatarUrl} alt="" />
+                : <span>{user.avatarChar}</span>}
+              <i className="tn-caret" aria-hidden="true">
+                <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </i>
+            </button>
+
+            {menu === 'user' && (
+              <div className="tn-pop tn-user" role="menu">
+                <button type="button" className="tn-user-card" onClick={() => go('/accountscenter/profiles')}>
+                  <span className="tn-user-av">
+                    {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user.avatarChar}
+                  </span>
+                  <span className="tn-user-info">
+                    <strong>{user.name}</strong>
+                    <small>{user.identifier}</small>
+                  </span>
+                </button>
+                <hr />
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>Hồ sơ cá nhân</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>Repo đã lưu</button>
+                <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>Lịch sử hoạt động</button>
+                <hr />
+                <button type="button" className="tn-item tn-item--danger" onClick={() => { setMenu(null); logout(); }}>Đăng xuất</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
+  );
 }
 </file>
 
@@ -10059,14 +10475,11 @@ export default function CommunityForum() {
 </file>
 
 <file path="src/Components/HeroParallax.jsx">
-import { useLayoutEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
-import { useLanguage } from '../context/LanguageContext';
 import { scrollToId } from '../lib/scroll';
+import TopNav from './TopNav.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -10104,17 +10517,11 @@ function createSequence(canvas, srcOf) {
 }
 
 export default function HeroParallax() {
-  const { user, logout } = useAuth();
-  const { openModal: setModal } = useUI();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
   const slide1Ref = useRef(null);
   const slide2Ref = useRef(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useLayoutEffect(() => {
     const c1 = canvas1Ref.current;
@@ -10211,155 +10618,8 @@ export default function HeroParallax() {
         }}
       />
 
-      <nav
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          padding: '30px 6vw',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 20,
-        }}
-      >
-        <span
-          onClick={() => scrollToId('explore')}
-          style={{
-            fontSize: '19px',
-            fontWeight: 700,
-            letterSpacing: '1.5px',
-            color: '#fef08a',
-            fontFamily: 'Cormorant Garamond, serif',
-            cursor: 'pointer',
-          }}
-        >
-          NOTOSAN
-        </span>
-
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/news')}
-            className="nav-link-btn"
-          >
-            {t('news')}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/community')}
-            className="nav-link-btn"
-          >
-            Community
-          </button>
-
-          <button
-            type="button"
-            onClick={() => scrollToId('about')}
-            className="nav-link-btn"
-          >
-            About
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => setModal('support')} 
-            className="nav-link-btn"
-          >
-            Support
-          </button>
-
-          {!user ? (
-            <button
-              type="button"
-              onClick={() => setModal('register')}
-              className="register-btn-main"
-            >
-              Register
-            </button>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
-              <button type="button" className="bell-btn" title="Notifications">
-                🔔
-              </button>
-
-              <div
-                className="user-avatar-badge"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt="Avatar"
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <span>{user.avatarChar}</span>
-                )}
-                <span style={{ fontSize: '10px', marginLeft: '2px' }}>▾</span>
-              </div>
-
-              {dropdownOpen && (
-                <div className="user-dropdown-menu">
-                  <div className="dropdown-user-header">
-                    <strong>{user.name}</strong>
-                    <span className="dropdown-user-sub">{user.identifier}</span>
-                  </div>
-                  <div className="dropdown-divider" />
-                  
-                  {/* Điều hướng trực tiếp sang các tab Accounts Center chuẩn URL */}
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/profiles');
-                    }}
-                  >
-                    👤 Profile details
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/saved');
-                    }}
-                  >
-                    ⭐ Saved Repositories
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="dropdown-item" 
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate('/accountscenter/history');
-                    }}
-                  >
-                    🕒 History
-                  </button>
-
-                  <div className="dropdown-divider" />
-                  <button
-                    type="button"
-                    className="dropdown-item logout-item"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      logout();
-                    }}
-                  >
-                    ⏻ Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </nav>
+      {/* Thanh điều hướng kiểu Facebook */}
+      <TopNav />
 
       {/* SCENE 1: WELCOME */}
       <div

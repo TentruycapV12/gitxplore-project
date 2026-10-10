@@ -23,7 +23,7 @@ const resolvePrefix = (prefix) => PREFIX_MAP[prefix] || PREFIX_MAP['Discussion']
 export default function CommunityForum() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const onBack = () => navigate('/');
+  const onBack = () => navigate('/community');
   const [topics, setTopics] = useState([]);
   // Bài viết đang mở nằm trên URL (?thread=ID) → link chia sẻ mở thẳng đúng bài, Back hoạt động đúng.
   const [searchParams, setSearchParams] = useSearchParams();
