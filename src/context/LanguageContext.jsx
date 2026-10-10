@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import { UI_STRINGS } from './uiStrings';
+import { EXTRA_STRINGS } from './extraStrings';
 
 export const LANGUAGES = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
@@ -314,8 +315,8 @@ export function LanguageProvider({ children }) {
   };
 
   const t = (key) =>
-    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] ||
-    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || key;
+    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] || EXTRA_STRINGS[lang]?.[key] ||
+    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || EXTRA_STRINGS['en']?.[key] || key;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
