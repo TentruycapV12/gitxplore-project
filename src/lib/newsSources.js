@@ -7,14 +7,10 @@
  * Muốn thêm nguồn mới: thêm 1 object vào SOURCES (hoặc 1 dòng vào EXTRA_FEEDS).
  */
 
-// ---------------------------------------------------------------
-// THÊM RSS TUỲ Ý Ở ĐÂY (blog, YouTube, và cả X / Instagram / TikTok / Facebook
-// nếu bạn có RSSHub – xem INTEGRATION.md). Ví dụ:
+// Thêm RSS tuỳ ý ở đây (blog, YouTube, và X / Instagram / TikTok / Facebook
+// nếu bạn có RSSHub). Ví dụ:
 //   { id: 'x-vercel', label: 'X · @vercel', kind: 'social',
 //     url: 'https://YOUR-RSSHUB.example.com/twitter/user/vercel' },
-//   { id: 'yt-fireship', label: 'YouTube · Fireship', kind: 'social',
-//     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCsBjURrPoezykLs9EqgamOA' },
-// ---------------------------------------------------------------
 export const EXTRA_FEEDS = [];
 
 const DEFAULT_FEEDS = [

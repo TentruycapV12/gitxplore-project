@@ -74,11 +74,15 @@ src/
   hooks/
     useBookmarks.js
     useLenis.js
+    useNewsFeed.js
     useProjectFilters.js
   lib/
+    newsSources.js
     scroll.js
   pages/
     HomePage.jsx
+    NewsPage.css
+    NewsPage.jsx
     NotFoundPage.jsx
   App.css
   App.jsx
@@ -1753,6 +1757,117 @@ export function useBookmarks() {
 }
 </file>
 
+<file path="src/hooks/useNewsFeed.js">
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { fetchAllNews } from '../lib/newsSources';
+
+const CACHE_KEY = 'gxp_news_cache_v1';
+
+const loadCache = () => {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (c?.items?.length) return c;
+  } catch {
+    /* cache hỏng -> bỏ qua */
+  }
+  return null;
+};
+
+/**
+ * Tự động cập nhật theo chu kỳ (intervalMs).
+ * - Hiện cache ngay rồi tải mới.
+ * - Tab ẩn thì tạm dừng; quay lại tab thì cập nhật nếu đã quá hạn.
+ * - Có bài mới -> không làm nhảy danh sách, mà hiện nút "N bài mới".
+ */
+export function useNewsFeed(intervalMs) {
+  const [cache] = useState(loadCache);
+  const [items, setItems] = useState(cache?.items || []);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(cache?.ts || null);
+  const [pending, setPending] = useState(null);
+
+  const itemsRef = useRef(items);
+  const lastRef = useRef(cache?.ts || 0);
+  const abortRef = useRef(null);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const refresh = useCallback(async (manual = false) => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setLoading(true);
+
+    const { items: next, errors: errs } = await fetchAllNews(ctrl.signal);
+    if (ctrl.signal.aborted) return;
+
+    setErrors(errs);
+    setLoading(false);
+    if (!next.length) return;
+
+    const now = Date.now();
+    lastRef.current = now;
+    setLastUpdated(now);
+
+    const known = new Set(itemsRef.current.map((i) => i.id));
+    const fresh = next.filter((i) => !known.has(i.id)).length;
+
+    if (manual || itemsRef.current.length === 0 || fresh === 0) {
+      setItems(next);
+      setPending(null);
+    } else {
+      setPending({ items: next, count: fresh });
+    }
+
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: now, items: next.slice(0, 150) }));
+    } catch {
+      /* hết dung lượng -> bỏ qua */
+    }
+  }, []);
+
+  const applyPending = useCallback(() => {
+    setPending((p) => {
+      if (p) setItems(p.items);
+      return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    return () => abortRef.current?.abort();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!intervalMs) return undefined;
+    const id = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, intervalMs);
+    const onVisible = () => {
+      if (!document.hidden && Date.now() - lastRef.current > intervalMs) refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [intervalMs, refresh]);
+
+  return {
+    items,
+    errors,
+    loading,
+    lastUpdated,
+    newCount: pending?.count || 0,
+    applyPending,
+    refresh: () => refresh(true),
+  };
+}
+</file>
+
 <file path="src/hooks/useProjectFilters.js">
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -1806,6 +1921,242 @@ export function useProjectFilters() {
 }
 </file>
 
+<file path="src/lib/newsSources.js">
+/**
+ * Nguồn tin cho mục NEWS.
+ * Mỗi nguồn là 1 "adapter": fetch -> trả về mảng item chuẩn hoá:
+ * { id, source, sourceLabel, kind, title, summary, url, image, author, date, meta }
+ * kind: 'repo' | 'article' | 'social' | 'discussion'
+ *
+ * Muốn thêm nguồn mới: thêm 1 object vào SOURCES (hoặc 1 dòng vào EXTRA_FEEDS).
+ */
+
+// Thêm RSS tuỳ ý ở đây (blog, YouTube, và X / Instagram / TikTok / Facebook
+// nếu bạn có RSSHub). Ví dụ:
+//   { id: 'x-vercel', label: 'X · @vercel', kind: 'social',
+//     url: 'https://YOUR-RSSHUB.example.com/twitter/user/vercel' },
+export const EXTRA_FEEDS = [];
+
+const DEFAULT_FEEDS = [
+  { id: 'ghblog', label: 'GitHub Blog', kind: 'article', url: 'https://github.blog/open-source/feed/' },
+  { id: 'opensourcecom', label: 'Opensource.com', kind: 'article', url: 'https://opensource.com/feed' },
+  { id: 'itsfoss', label: "It's FOSS", kind: 'article', url: 'https://news.itsfoss.com/rss/' },
+  { id: 'phoronix', label: 'Phoronix', kind: 'article', url: 'https://www.phoronix.com/rss.php' },
+];
+
+const TIMEOUT_MS = 10000;
+
+const getJson = async (url, signal) => {
+  const s = AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]);
+  const res = await fetch(url, { signal: s, headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
+const clip = (text = '', n = 220) => {
+  const t = text.replace(/\s+/g, ' ').trim();
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+};
+
+const htmlToText = (html = '') => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+};
+
+const isoDaysAgo = (d) => new Date(Date.now() - d * 864e5).toISOString().slice(0, 10);
+
+/* ---------------- Adapters ---------------- */
+
+const githubTrending = {
+  id: 'github',
+  label: 'GitHub',
+  kind: 'repo',
+  async fetch(signal) {
+    const q = encodeURIComponent(`created:>${isoDaysAgo(7)} stars:>30`);
+    const data = await getJson(
+      `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=20`,
+      signal
+    );
+    return data.items.map((r) => ({
+      id: `github:${r.id}`,
+      title: r.full_name,
+      summary: clip(r.description || 'No description'),
+      url: r.html_url,
+      image: r.owner?.avatar_url,
+      author: r.owner?.login,
+      date: Date.parse(r.created_at),
+      meta: `★ ${r.stargazers_count.toLocaleString()}${r.language ? ` · ${r.language}` : ''}`,
+    }));
+  },
+};
+
+const hackerNews = {
+  id: 'hn',
+  label: 'Hacker News',
+  kind: 'discussion',
+  async fetch(signal) {
+    const data = await getJson(
+      'https://hn.algolia.com/api/v1/search_by_date?query=open%20source&tags=story&numericFilters=points%3E5&hitsPerPage=25',
+      signal
+    );
+    return data.hits
+      .filter((h) => h.title)
+      .map((h) => ({
+        id: `hn:${h.objectID}`,
+        title: h.title,
+        summary: '',
+        url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+        author: h.author,
+        date: h.created_at_i * 1000,
+        meta: `▲ ${h.points} · ${h.num_comments || 0} comments`,
+      }));
+  },
+};
+
+const reddit = {
+  id: 'reddit',
+  label: 'Reddit',
+  kind: 'discussion',
+  async fetch(signal) {
+    const data = await getJson(
+      'https://www.reddit.com/r/opensource+selfhosted+linux/top.json?t=day&limit=25&raw_json=1',
+      signal
+    );
+    return data.data.children.map(({ data: d }) => ({
+      id: `reddit:${d.id}`,
+      title: d.title,
+      summary: clip(d.selftext),
+      url: `https://www.reddit.com${d.permalink}`,
+      image: /^https?:/.test(d.thumbnail || '') ? d.thumbnail : undefined,
+      author: `u/${d.author}`,
+      date: d.created_utc * 1000,
+      meta: `▲ ${d.score} · r/${d.subreddit}`,
+    }));
+  },
+};
+
+const devto = {
+  id: 'devto',
+  label: 'DEV',
+  kind: 'article',
+  async fetch(signal) {
+    const data = await getJson('https://dev.to/api/articles?tag=opensource&per_page=25', signal);
+    return data.map((a) => ({
+      id: `devto:${a.id}`,
+      title: a.title,
+      summary: clip(a.description),
+      url: a.url,
+      image: a.cover_image || a.social_image,
+      author: a.user?.name,
+      date: Date.parse(a.published_at),
+      meta: `♥ ${a.public_reactions_count}`,
+    }));
+  },
+};
+
+const mastodon = {
+  id: 'mastodon',
+  label: 'Mastodon',
+  kind: 'social',
+  async fetch(signal) {
+    const data = await getJson('https://mastodon.social/api/v1/timelines/tag/opensource?limit=25', signal);
+    return data
+      .filter((p) => !p.reblog)
+      .map((p) => {
+        const text = htmlToText(p.content);
+        return {
+          id: `mastodon:${p.id}`,
+          title: clip(text, 110) || 'Post',
+          summary: text.length > 110 ? clip(text, 260) : '',
+          url: p.url,
+          image: p.media_attachments?.find((m) => m.type === 'image')?.preview_url,
+          author: `@${p.account.acct}`,
+          date: Date.parse(p.created_at),
+          meta: `♥ ${p.favourites_count}`,
+        };
+      });
+  },
+};
+
+/** Adapter RSS/Atom chung, đi qua rss2json (miễn phí, có CORS). */
+const rssSource = ({ id, label, kind, url }) => ({
+  id,
+  label,
+  kind,
+  async fetch(signal) {
+    const data = await getJson(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`, signal);
+    if (data.status !== 'ok') throw new Error(data.message || 'RSS error');
+    return data.items.slice(0, 15).map((it) => ({
+      id: `${id}:${it.guid || it.link}`,
+      title: it.title,
+      summary: clip(htmlToText(it.description || it.content)),
+      url: it.link,
+      image: it.thumbnail || it.enclosure?.link || undefined,
+      author: it.author || label,
+      // rss2json trả "YYYY-MM-DD HH:mm:ss" theo UTC
+      date: Date.parse(`${(it.pubDate || '').replace(' ', 'T')}Z`) || Date.now(),
+      meta: '',
+    }));
+  },
+});
+
+export const SOURCES = [
+  githubTrending,
+  hackerNews,
+  reddit,
+  devto,
+  mastodon,
+  ...[...DEFAULT_FEEDS, ...EXTRA_FEEDS].map(rssSource),
+];
+
+export const KINDS = [
+  { id: 'all', label: 'All' },
+  { id: 'repo', label: 'Repositories' },
+  { id: 'article', label: 'Articles' },
+  { id: 'discussion', label: 'Discussions' },
+  { id: 'social', label: 'Social' },
+];
+
+/* ---------------- Aggregator ---------------- */
+
+const normUrl = (u = '') => {
+  try {
+    const x = new URL(u);
+    return `${x.hostname.replace(/^www\./, '')}${x.pathname.replace(/\/$/, '')}`.toLowerCase();
+  } catch {
+    return u;
+  }
+};
+
+export async function fetchAllNews(signal) {
+  const results = await Promise.allSettled(SOURCES.map((s) => s.fetch(signal)));
+  const errors = {};
+  const all = [];
+
+  results.forEach((r, i) => {
+    const s = SOURCES[i];
+    if (r.status === 'fulfilled') {
+      r.value.forEach((it) => all.push({ ...it, source: s.id, sourceLabel: s.label, kind: s.kind }));
+    } else {
+      errors[s.id] = r.reason?.message || 'failed';
+    }
+  });
+
+  const seen = new Set();
+  const items = all
+    .filter((it) => it.title && it.url && Number.isFinite(it.date))
+    .filter((it) => {
+      const key = normUrl(it.url);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.date - a.date);
+
+  return { items, errors };
+}
+</file>
+
 <file path="src/lib/scroll.js">
 // Giữ instance Lenis ở một chỗ duy nhất thay vì gắn vào window.
 let lenis = null;
@@ -1821,6 +2172,286 @@ export function scrollToId(id) {
   if (lenis) lenis.scrollTo(target);
   else target.scrollIntoView({ behavior: 'smooth' });
   return true;
+}
+</file>
+
+<file path="src/pages/NewsPage.css">
+/* News page — cùng hệ màu amber với CommunityForum. Mọi class bắt đầu bằng nw- */
+.nw {
+  --bg: #0d0909; --surface: #161010; --surface-2: #1e1616; --line: #2d2121;
+  --text: #f6f2ef; --muted: #b9ada7; --faint: #8d817b;
+  --accent: #f59e0b; --accent-ink: #1a1006; --accent-soft: rgba(245,158,11,.14);
+  min-height: 100vh; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5;
+  position: relative; z-index: 1;
+}
+.nw *, .nw *::before, .nw *::after { box-sizing: border-box; }
+.nw :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.nw-top {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 5vw; background: rgba(13,9,9,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.nw-brand { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 19px; letter-spacing: 1.5px; color: #fef08a; margin-right: auto; }
+.nw-brand span { color: var(--accent); }
+.nw-back, .nw-btn {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-back:hover, .nw-btn:hover:not(:disabled) { border-color: var(--accent); }
+.nw-btn:disabled { opacity: .5; cursor: default; }
+.nw-live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.nw-dot.is-live { background: #34d399; animation: nw-pulse 2s infinite; }
+.nw-dot.is-loading { background: var(--accent); animation: nw-pulse .8s infinite; }
+@keyframes nw-pulse { 50% { opacity: .3; transform: scale(1.4); } }
+.nw-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nw-select select, .nw-input {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font: inherit; font-size: 13px;
+}
+
+.nw-main { max-width: 1240px; margin: 0 auto; padding: 32px 5vw 80px; }
+.nw-head h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; margin: 0 0 6px; }
+.nw-head p { color: var(--muted); margin: 0 0 22px; }
+
+.nw-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.nw-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
+.nw-chips button {
+  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.nw-chips button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.nw-search { min-width: 200px; }
+
+.nw-new {
+  display: block; margin: 0 auto 18px; background: var(--accent); color: var(--accent-ink); border: 0;
+  border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.nw-warn { font-size: 13px; color: var(--faint); margin-bottom: 16px; }
+.nw-empty { color: var(--muted); text-align: center; padding: 60px 0; }
+
+.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.nw-card {
+  display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color .2s, transform .2s;
+}
+.nw-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.nw-skel { min-height: 170px; background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: nw-shimmer 1.4s infinite; }
+@keyframes nw-shimmer { to { background-position: -200% 0; } }
+.nw-img { width: 100%; height: 150px; object-fit: cover; background: var(--surface-2); }
+.nw-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; flex: 1; }
+.nw-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-time { margin-left: auto; }
+.nw-tag { border-radius: 4px; padding: 1px 7px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.nw-tag--repo { background: rgba(167,139,250,.15); color: #a78bfa; }
+.nw-tag--article { background: rgba(96,165,250,.15); color: #60a5fa; }
+.nw-tag--social { background: rgba(52,211,153,.15); color: #34d399; }
+.nw-body h3 { margin: 0; font-size: 16px; line-height: 1.35; display: flex; align-items: flex-start; gap: 8px; word-break: break-word; }
+.nw-avatar { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+.nw-body p {
+  margin: 0; color: var(--muted); font-size: 13.5px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.nw-foot { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--faint); }
+.nw-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 640px) { .nw-head h1 { font-size: 30px; } .nw-search { width: 100%; } }
+</file>
+
+<file path="src/pages/NewsPage.jsx">
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useNewsFeed } from '../hooks/useNewsFeed';
+import { KINDS, SOURCES } from '../lib/newsSources';
+import './NewsPage.css';
+
+const INTERVALS = [
+  { ms: 60_000, label: '1 min' },
+  { ms: 300_000, label: '5 min' },
+  { ms: 900_000, label: '15 min' },
+  { ms: 0, label: 'Off' },
+];
+
+const relTime = (ts, now) => {
+  const m = Math.max(0, Math.floor((now - ts) / 60000));
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const KIND_LABEL = { repo: 'Repo', article: 'Article', discussion: 'Discussion', social: 'Social' };
+
+const readInterval = () => {
+  const raw = localStorage.getItem('gxp_news_interval');
+  const v = Number(raw);
+  return raw !== null && INTERVALS.some((i) => i.ms === v) ? v : 300_000;
+};
+
+export default function NewsPage() {
+  const navigate = useNavigate();
+  const [intervalMs, setIntervalMs] = useState(readInterval);
+  const { items, errors, loading, lastUpdated, newCount, applyPending, refresh } = useNewsFeed(intervalMs);
+
+  const [kind, setKind] = useState('all');
+  const [source, setSource] = useState('all');
+  const [query, setQuery] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const changeInterval = (ms) => {
+    setIntervalMs(ms);
+    localStorage.setItem('gxp_news_interval', String(ms));
+  };
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items.filter(
+      (it) =>
+        (kind === 'all' || it.kind === kind) &&
+        (source === 'all' || it.source === source) &&
+        (!q || `${it.title} ${it.summary} ${it.author}`.toLowerCase().includes(q))
+    );
+  }, [items, kind, source, query]);
+
+  const failed = Object.keys(errors);
+  const sourceOptions = SOURCES.filter((s) => kind === 'all' || s.kind === kind);
+
+  return (
+    <div className="nw">
+      <header className="nw-top">
+        <button type="button" className="nw-back" onClick={() => navigate('/')}>
+          ← Back
+        </button>
+        <span className="nw-brand">
+          GIT<span>XPLORE</span> News
+        </span>
+        <div className="nw-live" title={lastUpdated ? new Date(lastUpdated).toLocaleString() : ''}>
+          <i className={`nw-dot ${loading ? 'is-loading' : intervalMs ? 'is-live' : ''}`} />
+          {loading ? 'Updating…' : lastUpdated ? `Updated ${relTime(lastUpdated, now)}` : 'Waiting…'}
+        </div>
+        <label className="nw-select">
+          Auto-refresh
+          <select value={intervalMs} onChange={(e) => changeInterval(Number(e.target.value))}>
+            {INTERVALS.map((i) => (
+              <option key={i.ms} value={i.ms}>
+                {i.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="nw-btn" onClick={refresh} disabled={loading}>
+          ↻ Refresh
+        </button>
+      </header>
+
+      <main className="nw-main">
+        <div className="nw-head">
+          <h1>Open-source News</h1>
+          <p>Repositories, articles, discussions and posts from across the web, refreshed automatically.</p>
+        </div>
+
+        <div className="nw-filters">
+          <div className="nw-chips" role="group" aria-label="Type">
+            {KINDS.map((k) => (
+              <button
+                key={k.id}
+                type="button"
+                aria-pressed={kind === k.id}
+                onClick={() => {
+                  setKind(k.id);
+                  setSource('all');
+                }}
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
+          <select className="nw-input" value={source} onChange={(e) => setSource(e.target.value)} aria-label="Source">
+            <option value="all">All sources</option>
+            {sourceOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <input
+            className="nw-input nw-search"
+            type="search"
+            placeholder="Search news…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
+        {newCount > 0 && (
+          <button type="button" className="nw-new" onClick={applyPending}>
+            ↑ Show {newCount} new {newCount === 1 ? 'item' : 'items'}
+          </button>
+        )}
+
+        {failed.length > 0 && (
+          <p className="nw-warn">
+            Couldn’t load: {failed.map((id) => SOURCES.find((s) => s.id === id)?.label || id).join(', ')} (will retry on
+            next refresh).
+          </p>
+        )}
+
+        {items.length === 0 && loading ? (
+          <div className="nw-grid">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="nw-card nw-skel" />
+            ))}
+          </div>
+        ) : visible.length === 0 ? (
+          <p className="nw-empty">No news matches your filters.</p>
+        ) : (
+          <div className="nw-grid">
+            {visible.map((it) => (
+              <a key={it.id} className="nw-card" href={it.url} target="_blank" rel="noreferrer noopener">
+                {it.image && it.kind !== 'repo' && (
+                  <img
+                    className="nw-img"
+                    src={it.image}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                )}
+                <div className="nw-body">
+                  <div className="nw-meta">
+                    <span className={`nw-tag nw-tag--${it.kind}`}>{KIND_LABEL[it.kind]}</span>
+                    <span>{it.sourceLabel}</span>
+                    <span className="nw-time">{relTime(it.date, now)}</span>
+                  </div>
+                  <h3>
+                    {it.kind === 'repo' && it.image && (
+                      <img className="nw-avatar" src={it.image} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                    )}
+                    {it.title}
+                  </h3>
+                  {it.summary && <p>{it.summary}</p>}
+                  <div className="nw-foot">
+                    <span>{it.author}</span>
+                    <span>{it.meta}</span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
 </file>
 
@@ -2560,321 +3191,6 @@ export default function ProjectModal() {
       </div>
     </div>
   );
-}
-</file>
-
-<file path="src/context/LanguageContext.jsx">
-import { createContext, useContext, useState } from 'react';
-
-export const LANGUAGES = [
-  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'ja', label: '日本語 (Japanese)', flag: '🇯🇵' },
-  { code: 'zh', label: '中文 (Chinese)', flag: '🇨🇳' },
-  { code: 'ko', label: '한국어 (Korean)', flag: '🇰🇷' },
-  { code: 'fr', label: 'Français (French)', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch (German)', flag: '🇩🇪' },
-  { code: 'es', label: 'Español (Spanish)', flag: '🇪🇸' },
-  { code: 'ru', label: 'Русский (Russian)', flag: '🇷🇺' },
-  { code: 'pt', label: 'Português (Portuguese)', flag: '🇧🇷' },
-];
-
-export const TRANSLATIONS = {
-  vi: {
-    community: 'Cộng đồng', about: 'Giới thiệu', support: 'Hỗ trợ', language: 'Ngôn ngữ', register: 'Đăng ký', signin: 'Đăng nhập', signout: 'Đăng xuất',
-    welcome_sub: '▲ HÀNH TRÌNH ĐẾN NHỮNG VÙNG ĐẤT MỚI, KHÁM PHÁ VƯỜN QUỐC GIA NOTO',
-    welcome_title: 'WELCOME',
-    welcome_desc: 'Rời xa sự náo nhiệt của những đô thị sầm uất tại Nhật Bản là ngôi làng cổ Noto thanh bình, ẩn chứa những điều bất ngờ đầy cuốn hút.',
-    start_journey: 'Bắt đầu hành trình ▸',
-    experience_3d: 'TRẢI NGHIỆM 3D',
-    tranquility: 'Thanh Bình',
-    tranquility_desc: 'Tách biệt khỏi nhịp sống hối hả, đắm mình vào những dòng thác lung linh và hồ nước huyền bí nơi lưu giữ kho tàng mã nguồn mở huyền thoại.',
-    learn_more: '— Tìm hiểu thêm',
-    profile_details: 'Chi tiết hồ sơ', saved_repos: 'Kho lưu trữ đã lưu', history: 'Lịch sử hoạt động',
-    all_repos: 'Tất cả kho lưu trữ', search_placeholder: 'Tìm kiếm kho lưu trữ, framework...',
-    quick_view: 'Xem nhanh 👁',
-    about_badge: 'VỀ DỰ ÁN NÀY',
-    about_title: 'Cổng Khám Phá Mã Nguồn Mở Hiệu Năng Cao',
-    about_sub: 'Được xây dựng nhằm tối ưu hóa việc tìm kiếm công nghệ, GitXplore là thư viện trực quan hướng dẫn lập trình viên đến với mã nguồn xuất sắc.',
-    stat_repos: 'Kho lưu trữ tuyển chọn', stat_domains: 'Lĩnh vực công nghệ', stat_foss: 'Mã nguồn mở miễn phí', stat_updates: 'Cập nhật xu hướng',
-    cta_title: 'Bạn có dự án mã nguồn mở muốn giới thiệu?',
-    cta_sub: 'Đóng góp kho lưu trữ của bạn hoặc chia sẻ các phát hiện sáng tạo để phát triển cộng đồng.',
-    cta_btn: 'Đóng góp trên GitHub ↗',
-    acc_title: 'Trung tâm tài khoản',
-    acc_sub: 'Quản lý trải nghiệm kết nối và cài đặt hồ sơ lập trình viên trên các nền tảng GitXplore.',
-    acc_profiles_title: 'Hồ sơ và thông tin cá nhân',
-    acc_settings: 'Cài đặt tài khoản',
-    acc_sec: 'Mật khẩu và bảo mật', acc_conn: 'Trải nghiệm kết nối', acc_perm: 'Thông tin và quyền hạn', acc_act: 'Theo dõi & Hoạt động dự án', acc_bill: 'Thanh toán & Giao dịch', acc_sub_menu: 'Tài trợ & Đăng ký', acc_manage: 'Quản lý tài khoản',
-    acc_return: '← Quay lại GitXplore'
-  },
-  en: {
-    community: 'Community', about: 'About', support: 'Support', language: 'Language', register: 'Register', signin: 'Sign in', signout: 'Sign out',
-    welcome_sub: '▲ JOURNEY TO NEW FRONTIERS, JOURNEY TO NOTO NATURE PARK',
-    welcome_title: 'WELCOME',
-    welcome_desc: "Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. Surprising and captivating in equal measure.",
-    start_journey: 'Start the journey ▸',
-    experience_3d: '3D EXPERIENCE',
-    tranquility: 'Tranquility',
-    tranquility_desc: "Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes harboring a vast realm of legendary open-source artifacts.",
-    learn_more: '— Learn more',
-    profile_details: 'Profile details', saved_repos: 'Saved Repositories', history: 'History',
-    all_repos: 'All Repositories', search_placeholder: 'Search repositories, frameworks...',
-    quick_view: 'Quick View 👁',
-    about_badge: 'ABOUT THE INITIATIVE',
-    about_title: 'A Curated Portal for High-Performance Open-Source Artifacts',
-    about_sub: 'Born to streamline technical discovery, GitXplore serves as an immersive visual library guiding developers directly to exceptional code.',
-    stat_repos: 'Selected Repositories', stat_domains: 'Tech Domains', stat_foss: 'Free & Open Source', stat_updates: 'Trending Updates',
-    cta_title: 'Have an open-source project to feature?',
-    cta_sub: 'Contribute your repository or share innovative discoveries to strengthen the global open-source landscape.',
-    cta_btn: 'Contribute on GitHub ↗',
-    acc_title: 'Accounts Center',
-    acc_sub: 'Manage your connected experiences and developer profile settings across GitXplore technologies.',
-    acc_profiles_title: 'Profiles and personal details',
-    acc_settings: 'Account settings',
-    acc_sec: 'Password and security', acc_conn: 'Connected experiences', acc_perm: 'Your information and permissions', acc_act: 'Project activity & tracking', acc_bill: 'Billing & Payments', acc_sub_menu: 'Sponsorships & Subscriptions', acc_manage: 'Manage accounts',
-    acc_return: '← Return to GitXplore'
-  },
-  ja: {
-    community: 'コミュニティ', about: '概要', support: 'サポート', language: '言語', register: '新規登録', signin: 'ログイン', signout: 'ログアウト',
-    welcome_sub: '▲ 新たなフロンティアへ、能登自然公園への旅',
-    welcome_title: 'ようこそ',
-    welcome_desc: '大都市の喧騒から離れた能登の古き集落。驚きと魅力に満ちた静寂の世界。',
-    start_journey: '旅を始める ▸',
-    experience_3d: '3D 体験',
-    tranquility: '静寂',
-    tranquility_desc: '神秘的な滝と静かな湖に囲まれた、オープンソースの宝庫を探索しましょう。',
-    learn_more: '— 詳細を見る',
-    profile_details: 'プロフィール詳細', saved_repos: '保存したリポジトリ', history: 'アクティビティ履歴',
-    all_repos: 'すべてのリポジトリ', search_placeholder: 'リポジトリ、フレームワークを検索...',
-    quick_view: 'クイックビュー 👁',
-    about_badge: 'プロジェクトについて',
-    about_title: '高性能オープンソースの厳選ポータル',
-    about_sub: 'GitXploreは、開発者が優れたコードに直接アクセスできるように導くビジュアルライブラリです。',
-    stat_repos: '厳選されたリポジトリ', stat_domains: '技術分野', stat_foss: '完全オープンソース', stat_updates: 'トレンド更新',
-    cta_title: '紹介したいプロジェクトはありますか？',
-    cta_sub: 'リポジトリを提供して、世界のオープンソースエコシステムを強化しましょう。',
-    cta_btn: 'GitHubで貢献 ↗',
-    acc_title: 'アカウントセンター',
-    acc_sub: 'GitXplore全体で連携設定と開発者プロファイルを管理します。',
-    acc_profiles_title: 'プロフィールと個人情報',
-    acc_settings: 'アカウント設定',
-    acc_sec: 'パスワードとセキュリティ', acc_conn: '連携エクスペリエンス', acc_perm: '情報とアクセス許可', acc_act: 'プロジェクトのアクティビティ', acc_bill: '請求と支払い', acc_sub_menu: 'スポンサーシップとサブスクリプション', acc_manage: 'アカウント管理',
-    acc_return: '← GitXploreに戻る'
-  },
-  zh: {
-    community: '社区', about: '关于我们', support: '技术支持', language: '语言', register: '注册', signin: '登录', signout: '退出登录',
-    welcome_sub: '▲ 开启全新旅程，探索能登自然公园',
-    welcome_title: '欢迎',
-    welcome_desc: '远离大都市的喧嚣繁华，步入能登古老村落，探索充满魅力与惊喜的宝藏。',
-    start_journey: '启程探索 ▸',
-    experience_3d: '3D 体验',
-    tranquility: '宁静',
-    tranquility_desc: '沉浸于清澈瀑布与神秘湖泊之间，探索浩瀚的开源传奇代码库。',
-    learn_more: '— 了解更多',
-    profile_details: '个人资料详情', saved_repos: '已收藏的仓库', history: '活动历史',
-    all_repos: '所有开源仓库', search_placeholder: '搜索仓库、框架...',
-    quick_view: '快速预览 👁',
-    about_badge: '关于此项目',
-    about_title: '高性能开源宝藏精选平台',
-    about_sub: 'GitXplore 作为沉浸式代码库导航，引领开发者轻松探索全球顶级代码。',
-    stat_repos: '精选仓库', stat_domains: '技术领域', stat_foss: '完全免费开源', stat_updates: '每日趋势更新',
-    cta_title: '想要推荐您的开源项目？',
-    cta_sub: '贡献您的开源仓库，共同繁荣全球开源生态。',
-    cta_btn: '在 GitHub 上贡献 ↗',
-    acc_title: '账户中心',
-    acc_sub: '管理您在 GitXplore 生态下的关联体验及开发者配置。',
-    acc_profiles_title: '个人主页与详情',
-    acc_settings: '账户设置',
-    acc_sec: '密码与安全', acc_conn: '关联体验', acc_perm: '信息与权限', acc_act: '项目活动跟踪', acc_bill: '账单与支付', acc_sub_menu: '赞助与订阅', acc_manage: '管理账户',
-    acc_return: '← 返回 GitXplore'
-  },
-  ko: {
-    community: '커뮤니티', about: '소개', support: '고객지원', language: '언어', register: '회원가입', signin: '로그인', signout: '로그아웃',
-    welcome_sub: '▲ 새로운 경계를 향한 여정, 노토 자연공원으로',
-    welcome_title: '환영합니다',
-    welcome_desc: '대도시의 복잡함을 벗어나 고요한 노토 마을에서 만나는 매혹적인 여정.',
-    start_journey: '여정 시작 ▸',
-    experience_3d: '3D 체험',
-    tranquility: '평온',
-    tranquility_desc: '신비로운 폭포와 호수 속에 펼쳐진 오픈소스 유물의 세계를 경험하세요.',
-    learn_more: '— 더 알아보기',
-    profile_details: '프로필 상세', saved_repos: '저장된 저장소', history: '활동 기록',
-    all_repos: '모든 저장소', search_placeholder: '저장소 및 프레임워크 검색...',
-    quick_view: '빠른 보기 👁',
-    about_badge: '프로젝트 정보',
-    about_title: '고성능 오픈소스 큐레이션 포털',
-    about_sub: 'GitXplore는 개발자가 탁월한 코드에 즉시 접근할 수 있도록 돕는 비주얼 라이브러리입니다.',
-    stat_repos: '선정된 저장소', stat_domains: '기술 분야', stat_foss: '무료 오픈소스', stat_updates: '트렌드 업데이트',
-    cta_title: '소개하고 싶은 프로젝트가 있으신가요?',
-    cta_sub: '오픈소스 저장소를 기여하고 커뮤니티의 발전에 동참하세요.',
-    cta_btn: 'GitHub에서 기여 ↗',
-    acc_title: '계정 센터',
-    acc_sub: 'GitXplore 서비스 전반의 연결 환경 및 개발자 설정을 관리합니다.',
-    acc_profiles_title: '프로필 및 개인 정보',
-    acc_settings: '계정 설정',
-    acc_sec: '비밀번호 및 보안', acc_conn: '연결된 환경', acc_perm: '내 정보 및 권한', acc_act: '프로젝트 활동 및 추적', acc_bill: '결제 및 청구', acc_sub_menu: '후원 및 구독', acc_manage: '계정 관리',
-    acc_return: '← GitXplore로 돌아가기'
-  },
-  fr: {
-    community: 'Communauté', about: 'À propos', support: 'Assistance', language: 'Langue', register: "S'inscrire", signin: 'Connexion', signout: 'Déconnexion',
-    welcome_sub: '▲ VOYAGE VERS DE NOUVELLES FRONTIÈRES, PARC NATUREL DE NOTO',
-    welcome_title: 'BIENVENUE',
-    welcome_desc: 'Loin du tumulte des métropoles japonaises, découvrez le paisible village de Noto.',
-    start_journey: 'Commencer le voyage ▸',
-    experience_3d: 'EXPÉRIENCE 3D',
-    tranquility: 'Tranquillité',
-    tranquility_desc: 'Plongez au cœur des cascades éthérées et découvrez un univers open-source légendaire.',
-    learn_more: '— En savoir plus',
-    profile_details: 'Détails du profil', saved_repos: 'Dépôts enregistrés', history: 'Historique',
-    all_repos: 'Tous les dépôts', search_placeholder: 'Rechercher des dépôts, frameworks...',
-    quick_view: 'Aperçu 👁',
-    about_badge: "À PROPOS DE L'INITIATIVE",
-    about_title: 'Portail Sélectif pour Projets Open-Source',
-    about_sub: 'GitXplore sert de bibliothèque visuelle guidant directement les développeurs vers un code exceptionnel.',
-    stat_repos: 'Dépôts sélectionnés', stat_domains: 'Domaines techniques', stat_foss: 'Open-Source Libre', stat_updates: 'Tendances du jour',
-    cta_title: 'Vous avez un projet à mettre en avant ?',
-    cta_sub: 'Contribuez avec votre dépôt pour renforcer la communauté.',
-    cta_btn: 'Contribuer sur GitHub ↗',
-    acc_title: 'Espace Comptes',
-    acc_sub: 'Gérez vos expériences connectées et paramètres de profil.',
-    acc_profiles_title: 'Profils et données personnelles',
-    acc_settings: 'Paramètres du compte',
-    acc_sec: 'Mot de passe et sécurité', acc_conn: 'Expériences connectées', acc_perm: 'Vos informations et autorisations', acc_act: 'Activité du projet', acc_bill: 'Facturation et paiements', acc_sub_menu: 'Parrainages et abonnements', acc_manage: 'Gérer les comptes',
-    acc_return: '← Retour à GitXplore'
-  },
-  de: {
-    community: 'Community', about: 'Über uns', support: 'Support', language: 'Sprache', register: 'Registrieren', signin: 'Anmelden', signout: 'Abmelden',
-    welcome_sub: '▲ REISE ZU NEUEN HORIZONTEN, NOTO-NATURPARK',
-    welcome_title: 'WILLKOMMEN',
-    welcome_desc: 'Fernab der Hektik japanischer Metropolen liegt das historische Dorf Noto.',
-    start_journey: 'Reise beginnen ▸',
-    experience_3d: '3D-ERLEBNIS',
-    tranquility: 'Ruhe',
-    tranquility_desc: 'Tauchen Sie ein in geheimnisvolle Wasserfälle und legendäre Open-Source-Schätze.',
-    learn_more: '— Mehr erfahren',
-    profile_details: 'Profildetails', saved_repos: 'Gespeicherte Repositories', history: 'Aktivitätsverlauf',
-    all_repos: 'Alle Repositories', search_placeholder: 'Repositories, Frameworks suchen...',
-    quick_view: 'Schnellansicht 👁',
-    about_badge: 'ÜBER DIE INITIATIVE',
-    about_title: 'Kuratierte Plattform für Open-Source-Artefakte',
-    about_sub: 'GitXplore führt Entwickler direkt zu außergewöhnlichem Quellcode.',
-    stat_repos: 'Ausgewählte Repos', stat_domains: 'Fachbereiche', stat_foss: 'Kostenlos & Open-Source', stat_updates: 'Trend-Updates',
-    cta_title: 'Möchten Sie ein Projekt vorstellen?',
-    cta_sub: 'Bringen Sie Ihr Repository ein und stärken Sie die Community.',
-    cta_btn: 'Auf GitHub beitragen ↗',
-    acc_title: 'Kontenübersicht',
-    acc_sub: 'Verwalten Sie Ihre Einstellungen und Profile auf GitXplore.',
-    acc_profiles_title: 'Profile und persönliche Daten',
-    acc_settings: 'Kontoeinstellungen',
-    acc_sec: 'Passwort & Sicherheit', acc_conn: 'Verbundene Erlebnisse', acc_perm: 'Ihre Informationen & Berechtigungen', acc_act: 'Projektaktivitäten', acc_bill: 'Abrechnung & Zahlungen', acc_sub_menu: 'Sponsoring & Abonnements', acc_manage: 'Konten verwalten',
-    acc_return: '← Zurück zu GitXplore'
-  },
-  es: {
-    community: 'Comunidad', about: 'Acerca de', support: 'Soporte', language: 'Idioma', register: 'Registrarse', signin: 'Iniciar sesión', signout: 'Cerrar sesión',
-    welcome_sub: '▲ VIAJE HACIA NUEVAS FRONTERAS, PARQUE NATURAL DE NOTO',
-    welcome_title: 'BIENVENIDO',
-    welcome_desc: 'Lejos del bullicio de las metrópolis japonesas, descubra la tranquilidad de Noto.',
-    start_journey: 'Comenzar viaje ▸',
-    experience_3d: 'EXPERIENCIA 3D',
-    tranquility: 'Tranquilidad',
-    tranquility_desc: 'Sumérjase en cascadas místicas que albergan un vasto reino de código abierto.',
-    learn_more: '— Más información',
-    profile_details: 'Detalles del perfil', saved_repos: 'Repositorios guardados', history: 'Historial',
-    all_repos: 'Todos los repositorios', search_placeholder: 'Buscar repositorios, frameworks...',
-    quick_view: 'Vista previa 👁',
-    about_badge: 'ACERCA DE LA INICIATIVA',
-    about_title: 'Portal Curado para Artefactos de Código Abierto',
-    about_sub: 'GitXplore guía a los desarrolladores directamente al código excepcional.',
-    stat_repos: 'Repositorios selectos', stat_domains: 'Áreas técnicas', stat_foss: 'Código Abierto Libre', stat_updates: 'Tendencias al día',
-    cta_title: '¿Tienes un proyecto para destacar?',
-    cta_sub: 'Contribuye con tu repositorio para enriquecer el ecosistema global.',
-    cta_btn: 'Contribuir en GitHub ↗',
-    acc_title: 'Centro de Cuentas',
-    acc_sub: 'Administra tus experiencias conectadas y perfiles.',
-    acc_profiles_title: 'Perfiles y datos personales',
-    acc_settings: 'Configuración de la cuenta',
-    acc_sec: 'Contraseña y seguridad', acc_conn: 'Experiencias conectadas', acc_perm: 'Tu información y permisos', acc_act: 'Actividad del proyecto', acc_bill: 'Facturación y pagos', acc_sub_menu: 'Patrocinios y suscripciones', acc_manage: 'Administrar cuentas',
-    acc_return: '← Volver a GitXplore'
-  },
-  ru: {
-    community: 'Сообщество', about: 'О нас', support: 'Поддержка', language: 'Язык', register: 'Регистрация', signin: 'Вход', signout: 'Выход',
-    welcome_sub: '▲ ПУТЕШЕСТВИЕ К НОВЫМ ГОРИЗОНТАМ, ПРИРОДНЫЙ ПАРК НОТО',
-    welcome_title: 'ДОБРО ПОЖАЛОВАТЬ',
-    welcome_desc: 'Вдали от суеты японских мегаполисов лежит древняя деревня Ното.',
-    start_journey: 'Начать путешествие ▸',
-    experience_3d: '3D-ОПЫТ',
-    tranquility: 'Спокойствие',
-    tranquility_desc: 'Погрузитесь в мистическую атмосферу водопадов и легендарных проектов с открытым кодом.',
-    learn_more: '— Узнать больше',
-    profile_details: 'Данные профиля', saved_repos: 'Сохраненные репозитории', history: 'История активности',
-    all_repos: 'Все репозитории', search_placeholder: 'Поиск репозиториев, фреймворков...',
-    quick_view: 'Просмотр 👁',
-    about_badge: 'ОБ ИНИЦИАТИВЕ',
-    about_title: 'Кураторский портал решений с открытым кодом',
-    about_sub: 'GitXplore ведет разработчиков напрямую к передовому коду.',
-    stat_repos: 'Избранные проекты', stat_domains: 'Технологические сферы', stat_foss: 'Бесплатно и Open-Source', stat_updates: 'Актуальные тренды',
-    cta_title: 'Хотите добавить свой проект?',
-    cta_sub: 'Поделитесь своим репозиторием и внесите вклад в сообщество.',
-    cta_btn: 'Внести вклад на GitHub ↗',
-    acc_title: 'Центр аккаунтов',
-    acc_sub: 'Управляйте профилями и связанными сервисами.',
-    acc_profiles_title: 'Профили и личные данные',
-    acc_settings: 'Настройки аккаунта',
-    acc_sec: 'Пароль и безопасность', acc_conn: 'Связанные сервисы', acc_perm: 'Информация и разрешения', acc_act: 'Активность проектов', acc_bill: 'Оплата и счета', acc_sub_menu: 'Спонсорство и подписки', acc_manage: 'Управление аккаунтами',
-    acc_return: '← Вернуться в GitXplore'
-  },
-  pt: {
-    community: 'Comunidade', about: 'Sobre', support: 'Suporte', language: 'Idioma', register: 'Cadastre-se', signin: 'Entrar', signout: 'Sair',
-    welcome_sub: '▲ UMA JORNADA PARA NOVAS FRONTEIRAS, PARQUE NATURAL DE NOTO',
-    welcome_title: 'BEM-VINDO',
-    welcome_desc: 'Longe da energia agitada das metrópoles japonesas, repousa o vilarejo de Noto.',
-    start_journey: 'Iniciar jornada ▸',
-    experience_3d: 'EXPERIÊNCIA 3D',
-    tranquilidade: 'Tranquilidade',
-    tranquility_desc: 'Explore cachoeiras etéreas e lagos místicos repletos de artefatos open-source.',
-    learn_more: '— Saiba mais',
-    profile_details: 'Detalhes do perfil', saved_repos: 'Repositórios salvos', history: 'Histórico',
-    all_repos: 'Todos os repositórios', search_placeholder: 'Buscar repositórios, frameworks...',
-    quick_view: 'Ver detalhes 👁',
-    about_badge: 'SOBRE A INICIATIVA',
-    about_title: 'Portal Curado para Projetos de Código Aberto',
-    about_sub: 'GitXplore guia desenvolvedores diretamente para códigos excepcionais.',
-    stat_repos: 'Repositórios selecionados', stat_domains: 'Áreas de tecnologia', stat_foss: 'Livre e Open-Source', stat_updates: 'Tendências atuais',
-    cta_title: 'Tem um projeto para destacar?',
-    cta_sub: 'Contribua com seu repositório para fortalecer a comunidade.',
-    cta_btn: 'Contribuir no GitHub ↗',
-    acc_title: 'Central de Contas',
-    acc_sub: 'Gerencie suas preferências e contas conectadas.',
-    acc_profiles_title: 'Perfis e dados pessoais',
-    acc_settings: 'Configurações da conta',
-    acc_sec: 'Senha e segurança', acc_conn: 'Experiências conectadas', acc_perm: 'Suas informações e permissões', acc_act: 'Atividade do projeto', acc_bill: 'Faturamento e pagamentos', acc_sub_menu: 'Patrocínios e assinaturas', acc_manage: 'Gerenciar contas',
-    acc_return: '← Voltar para GitXplore'
-  },
-};
-
-const LanguageContext = createContext();
-
-export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem('gxp_lang') || 'en');
-
-  const changeLanguage = (code) => {
-    setLang(code);
-    localStorage.setItem('gxp_lang', code);
-  };
-
-  const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en']?.[key] || key;
-
-  return (
-    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
-export function useLanguage() {
-  const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
-  return ctx;
 }
 </file>
 
@@ -4240,35 +4556,6 @@ export const openSourceProjects = [
     demoUrl: 'https://prisma.io'
   }
 ];
-</file>
-
-<file path="src/hooks/useLenis.js">
-import { useEffect } from 'react';
-import Lenis from 'lenis';
-import { setLenis } from '../lib/scroll';
-
-/** Smooth scroll chỉ chạy ở trang dùng nó; unmount là dọn sạch (cleanup). */
-export function useLenis() {
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    });
-    setLenis(lenis);
-
-    let rafId = requestAnimationFrame(function raf(time) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    });
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      lenis.destroy();
-      setLenis(null);
-    };
-  }, []);
-}
 </file>
 
 <file path="src/App.css">
@@ -5800,6 +6087,366 @@ export default function SupportModal({ onClose }) {
 }
 </file>
 
+<file path="src/context/LanguageContext.jsx">
+import { createContext, useContext, useState } from 'react';
+
+export const LANGUAGES = [
+  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'ja', label: '日本語 (Japanese)', flag: '🇯🇵' },
+  { code: 'zh', label: '中文 (Chinese)', flag: '🇨🇳' },
+  { code: 'ko', label: '한국어 (Korean)', flag: '🇰🇷' },
+  { code: 'fr', label: 'Français (French)', flag: '🇫🇷' },
+  { code: 'de', label: 'Deutsch (German)', flag: '🇩🇪' },
+  { code: 'es', label: 'Español (Spanish)', flag: '🇪🇸' },
+  { code: 'ru', label: 'Русский (Russian)', flag: '🇷🇺' },
+  { code: 'pt', label: 'Português (Portuguese)', flag: '🇧🇷' },
+];
+
+export const TRANSLATIONS = {
+  vi: {
+    community: 'Cộng đồng', about: 'Giới thiệu', support: 'Hỗ trợ', language: 'Ngôn ngữ', register: 'Đăng ký', signin: 'Đăng nhập', signout: 'Đăng xuất',
+    welcome_sub: '▲ HÀNH TRÌNH ĐẾN NHỮNG VÙNG ĐẤT MỚI, KHÁM PHÁ VƯỜN QUỐC GIA NOTO',
+    welcome_title: 'WELCOME',
+    welcome_desc: 'Rời xa sự náo nhiệt của những đô thị sầm uất tại Nhật Bản là ngôi làng cổ Noto thanh bình, ẩn chứa những điều bất ngờ đầy cuốn hút.',
+    start_journey: 'Bắt đầu hành trình ▸',
+    experience_3d: 'TRẢI NGHIỆM 3D',
+    tranquility: 'Thanh Bình',
+    tranquility_desc: 'Tách biệt khỏi nhịp sống hối hả, đắm mình vào những dòng thác lung linh và hồ nước huyền bí nơi lưu giữ kho tàng mã nguồn mở huyền thoại.',
+    learn_more: '— Tìm hiểu thêm',
+    profile_details: 'Chi tiết hồ sơ', saved_repos: 'Kho lưu trữ đã lưu', history: 'Lịch sử hoạt động',
+    all_repos: 'Tất cả kho lưu trữ', search_placeholder: 'Tìm kiếm kho lưu trữ, framework...',
+    quick_view: 'Xem nhanh 👁',
+    about_badge: 'VỀ DỰ ÁN NÀY',
+    about_title: 'Cổng Khám Phá Mã Nguồn Mở Hiệu Năng Cao',
+    about_sub: 'Được xây dựng nhằm tối ưu hóa việc tìm kiếm công nghệ, GitXplore là thư viện trực quan hướng dẫn lập trình viên đến với mã nguồn xuất sắc.',
+    stat_repos: 'Kho lưu trữ tuyển chọn', stat_domains: 'Lĩnh vực công nghệ', stat_foss: 'Mã nguồn mở miễn phí', stat_updates: 'Cập nhật xu hướng',
+    cta_title: 'Bạn có dự án mã nguồn mở muốn giới thiệu?',
+    cta_sub: 'Đóng góp kho lưu trữ của bạn hoặc chia sẻ các phát hiện sáng tạo để phát triển cộng đồng.',
+    cta_btn: 'Đóng góp trên GitHub ↗',
+    acc_title: 'Trung tâm tài khoản',
+    acc_sub: 'Quản lý trải nghiệm kết nối và cài đặt hồ sơ lập trình viên trên các nền tảng GitXplore.',
+    acc_profiles_title: 'Hồ sơ và thông tin cá nhân',
+    acc_settings: 'Cài đặt tài khoản',
+    acc_sec: 'Mật khẩu và bảo mật', acc_conn: 'Trải nghiệm kết nối', acc_perm: 'Thông tin và quyền hạn', acc_act: 'Theo dõi & Hoạt động dự án', acc_bill: 'Thanh toán & Giao dịch', acc_sub_menu: 'Tài trợ & Đăng ký', acc_manage: 'Quản lý tài khoản',
+    acc_return: '← Quay lại GitXplore'
+  },
+  en: {
+    community: 'Community', about: 'About', support: 'Support', language: 'Language', register: 'Register', signin: 'Sign in', signout: 'Sign out',
+    welcome_sub: '▲ JOURNEY TO NEW FRONTIERS, JOURNEY TO NOTO NATURE PARK',
+    welcome_title: 'WELCOME',
+    welcome_desc: "Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. Surprising and captivating in equal measure.",
+    start_journey: 'Start the journey ▸',
+    experience_3d: '3D EXPERIENCE',
+    tranquility: 'Tranquility',
+    tranquility_desc: "Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes harboring a vast realm of legendary open-source artifacts.",
+    learn_more: '— Learn more',
+    profile_details: 'Profile details', saved_repos: 'Saved Repositories', history: 'History',
+    all_repos: 'All Repositories', search_placeholder: 'Search repositories, frameworks...',
+    quick_view: 'Quick View 👁',
+    about_badge: 'ABOUT THE INITIATIVE',
+    about_title: 'A Curated Portal for High-Performance Open-Source Artifacts',
+    about_sub: 'Born to streamline technical discovery, GitXplore serves as an immersive visual library guiding developers directly to exceptional code.',
+    stat_repos: 'Selected Repositories', stat_domains: 'Tech Domains', stat_foss: 'Free & Open Source', stat_updates: 'Trending Updates',
+    cta_title: 'Have an open-source project to feature?',
+    cta_sub: 'Contribute your repository or share innovative discoveries to strengthen the global open-source landscape.',
+    cta_btn: 'Contribute on GitHub ↗',
+    acc_title: 'Accounts Center',
+    acc_sub: 'Manage your connected experiences and developer profile settings across GitXplore technologies.',
+    acc_profiles_title: 'Profiles and personal details',
+    acc_settings: 'Account settings',
+    acc_sec: 'Password and security', acc_conn: 'Connected experiences', acc_perm: 'Your information and permissions', acc_act: 'Project activity & tracking', acc_bill: 'Billing & Payments', acc_sub_menu: 'Sponsorships & Subscriptions', acc_manage: 'Manage accounts',
+    acc_return: '← Return to GitXplore'
+  },
+  ja: {
+    community: 'コミュニティ', about: '概要', support: 'サポート', language: '言語', register: '新規登録', signin: 'ログイン', signout: 'ログアウト',
+    welcome_sub: '▲ 新たなフロンティアへ、能登自然公園への旅',
+    welcome_title: 'ようこそ',
+    welcome_desc: '大都市の喧騒から離れた能登の古き集落。驚きと魅力に満ちた静寂の世界。',
+    start_journey: '旅を始める ▸',
+    experience_3d: '3D 体験',
+    tranquility: '静寂',
+    tranquility_desc: '神秘的な滝と静かな湖に囲まれた、オープンソースの宝庫を探索しましょう。',
+    learn_more: '— 詳細を見る',
+    profile_details: 'プロフィール詳細', saved_repos: '保存したリポジトリ', history: 'アクティビティ履歴',
+    all_repos: 'すべてのリポジトリ', search_placeholder: 'リポジトリ、フレームワークを検索...',
+    quick_view: 'クイックビュー 👁',
+    about_badge: 'プロジェクトについて',
+    about_title: '高性能オープンソースの厳選ポータル',
+    about_sub: 'GitXploreは、開発者が優れたコードに直接アクセスできるように導くビジュアルライブラリです。',
+    stat_repos: '厳選されたリポジトリ', stat_domains: '技術分野', stat_foss: '完全オープンソース', stat_updates: 'トレンド更新',
+    cta_title: '紹介したいプロジェクトはありますか？',
+    cta_sub: 'リポジトリを提供して、世界のオープンソースエコシステムを強化しましょう。',
+    cta_btn: 'GitHubで貢献 ↗',
+    acc_title: 'アカウントセンター',
+    acc_sub: 'GitXplore全体で連携設定と開発者プロファイルを管理します。',
+    acc_profiles_title: 'プロフィールと個人情報',
+    acc_settings: 'アカウント設定',
+    acc_sec: 'パスワードとセキュリティ', acc_conn: '連携エクスペリエンス', acc_perm: '情報とアクセス許可', acc_act: 'プロジェクトのアクティビティ', acc_bill: '請求と支払い', acc_sub_menu: 'スポンサーシップとサブスクリプション', acc_manage: 'アカウント管理',
+    acc_return: '← GitXploreに戻る'
+  },
+  zh: {
+    community: '社区', about: '关于我们', support: '技术支持', language: '语言', register: '注册', signin: '登录', signout: '退出登录',
+    welcome_sub: '▲ 开启全新旅程，探索能登自然公园',
+    welcome_title: '欢迎',
+    welcome_desc: '远离大都市的喧嚣繁华，步入能登古老村落，探索充满魅力与惊喜的宝藏。',
+    start_journey: '启程探索 ▸',
+    experience_3d: '3D 体验',
+    tranquility: '宁静',
+    tranquility_desc: '沉浸于清澈瀑布与神秘湖泊之间，探索浩瀚的开源传奇代码库。',
+    learn_more: '— 了解更多',
+    profile_details: '个人资料详情', saved_repos: '已收藏的仓库', history: '活动历史',
+    all_repos: '所有开源仓库', search_placeholder: '搜索仓库、框架...',
+    quick_view: '快速预览 👁',
+    about_badge: '关于此项目',
+    about_title: '高性能开源宝藏精选平台',
+    about_sub: 'GitXplore 作为沉浸式代码库导航，引领开发者轻松探索全球顶级代码。',
+    stat_repos: '精选仓库', stat_domains: '技术领域', stat_foss: '完全免费开源', stat_updates: '每日趋势更新',
+    cta_title: '想要推荐您的开源项目？',
+    cta_sub: '贡献您的开源仓库，共同繁荣全球开源生态。',
+    cta_btn: '在 GitHub 上贡献 ↗',
+    acc_title: '账户中心',
+    acc_sub: '管理您在 GitXplore 生态下的关联体验及开发者配置。',
+    acc_profiles_title: '个人主页与详情',
+    acc_settings: '账户设置',
+    acc_sec: '密码与安全', acc_conn: '关联体验', acc_perm: '信息与权限', acc_act: '项目活动跟踪', acc_bill: '账单与支付', acc_sub_menu: '赞助与订阅', acc_manage: '管理账户',
+    acc_return: '← 返回 GitXplore'
+  },
+  ko: {
+    community: '커뮤니티', about: '소개', support: '고객지원', language: '언어', register: '회원가입', signin: '로그인', signout: '로그아웃',
+    welcome_sub: '▲ 새로운 경계를 향한 여정, 노토 자연공원으로',
+    welcome_title: '환영합니다',
+    welcome_desc: '대도시의 복잡함을 벗어나 고요한 노토 마을에서 만나는 매혹적인 여정.',
+    start_journey: '여정 시작 ▸',
+    experience_3d: '3D 체험',
+    tranquility: '평온',
+    tranquility_desc: '신비로운 폭포와 호수 속에 펼쳐진 오픈소스 유물의 세계를 경험하세요.',
+    learn_more: '— 더 알아보기',
+    profile_details: '프로필 상세', saved_repos: '저장된 저장소', history: '활동 기록',
+    all_repos: '모든 저장소', search_placeholder: '저장소 및 프레임워크 검색...',
+    quick_view: '빠른 보기 👁',
+    about_badge: '프로젝트 정보',
+    about_title: '고성능 오픈소스 큐레이션 포털',
+    about_sub: 'GitXplore는 개발자가 탁월한 코드에 즉시 접근할 수 있도록 돕는 비주얼 라이브러리입니다.',
+    stat_repos: '선정된 저장소', stat_domains: '기술 분야', stat_foss: '무료 오픈소스', stat_updates: '트렌드 업데이트',
+    cta_title: '소개하고 싶은 프로젝트가 있으신가요?',
+    cta_sub: '오픈소스 저장소를 기여하고 커뮤니티의 발전에 동참하세요.',
+    cta_btn: 'GitHub에서 기여 ↗',
+    acc_title: '계정 센터',
+    acc_sub: 'GitXplore 서비스 전반의 연결 환경 및 개발자 설정을 관리합니다.',
+    acc_profiles_title: '프로필 및 개인 정보',
+    acc_settings: '계정 설정',
+    acc_sec: '비밀번호 및 보안', acc_conn: '연결된 환경', acc_perm: '내 정보 및 권한', acc_act: '프로젝트 활동 및 추적', acc_bill: '결제 및 청구', acc_sub_menu: '후원 및 구독', acc_manage: '계정 관리',
+    acc_return: '← GitXplore로 돌아가기'
+  },
+  fr: {
+    community: 'Communauté', about: 'À propos', support: 'Assistance', language: 'Langue', register: "S'inscrire", signin: 'Connexion', signout: 'Déconnexion',
+    welcome_sub: '▲ VOYAGE VERS DE NOUVELLES FRONTIÈRES, PARC NATUREL DE NOTO',
+    welcome_title: 'BIENVENUE',
+    welcome_desc: 'Loin du tumulte des métropoles japonaises, découvrez le paisible village de Noto.',
+    start_journey: 'Commencer le voyage ▸',
+    experience_3d: 'EXPÉRIENCE 3D',
+    tranquility: 'Tranquillité',
+    tranquility_desc: 'Plongez au cœur des cascades éthérées et découvrez un univers open-source légendaire.',
+    learn_more: '— En savoir plus',
+    profile_details: 'Détails du profil', saved_repos: 'Dépôts enregistrés', history: 'Historique',
+    all_repos: 'Tous les dépôts', search_placeholder: 'Rechercher des dépôts, frameworks...',
+    quick_view: 'Aperçu 👁',
+    about_badge: "À PROPOS DE L'INITIATIVE",
+    about_title: 'Portail Sélectif pour Projets Open-Source',
+    about_sub: 'GitXplore sert de bibliothèque visuelle guidant directement les développeurs vers un code exceptionnel.',
+    stat_repos: 'Dépôts sélectionnés', stat_domains: 'Domaines techniques', stat_foss: 'Open-Source Libre', stat_updates: 'Tendances du jour',
+    cta_title: 'Vous avez un projet à mettre en avant ?',
+    cta_sub: 'Contribuez avec votre dépôt pour renforcer la communauté.',
+    cta_btn: 'Contribuer sur GitHub ↗',
+    acc_title: 'Espace Comptes',
+    acc_sub: 'Gérez vos expériences connectées et paramètres de profil.',
+    acc_profiles_title: 'Profils et données personnelles',
+    acc_settings: 'Paramètres du compte',
+    acc_sec: 'Mot de passe et sécurité', acc_conn: 'Expériences connectées', acc_perm: 'Vos informations et autorisations', acc_act: 'Activité du projet', acc_bill: 'Facturation et paiements', acc_sub_menu: 'Parrainages et abonnements', acc_manage: 'Gérer les comptes',
+    acc_return: '← Retour à GitXplore'
+  },
+  de: {
+    community: 'Community', about: 'Über uns', support: 'Support', language: 'Sprache', register: 'Registrieren', signin: 'Anmelden', signout: 'Abmelden',
+    welcome_sub: '▲ REISE ZU NEUEN HORIZONTEN, NOTO-NATURPARK',
+    welcome_title: 'WILLKOMMEN',
+    welcome_desc: 'Fernab der Hektik japanischer Metropolen liegt das historische Dorf Noto.',
+    start_journey: 'Reise beginnen ▸',
+    experience_3d: '3D-ERLEBNIS',
+    tranquility: 'Ruhe',
+    tranquility_desc: 'Tauchen Sie ein in geheimnisvolle Wasserfälle und legendäre Open-Source-Schätze.',
+    learn_more: '— Mehr erfahren',
+    profile_details: 'Profildetails', saved_repos: 'Gespeicherte Repositories', history: 'Aktivitätsverlauf',
+    all_repos: 'Alle Repositories', search_placeholder: 'Repositories, Frameworks suchen...',
+    quick_view: 'Schnellansicht 👁',
+    about_badge: 'ÜBER DIE INITIATIVE',
+    about_title: 'Kuratierte Plattform für Open-Source-Artefakte',
+    about_sub: 'GitXplore führt Entwickler direkt zu außergewöhnlichem Quellcode.',
+    stat_repos: 'Ausgewählte Repos', stat_domains: 'Fachbereiche', stat_foss: 'Kostenlos & Open-Source', stat_updates: 'Trend-Updates',
+    cta_title: 'Möchten Sie ein Projekt vorstellen?',
+    cta_sub: 'Bringen Sie Ihr Repository ein und stärken Sie die Community.',
+    cta_btn: 'Auf GitHub beitragen ↗',
+    acc_title: 'Kontenübersicht',
+    acc_sub: 'Verwalten Sie Ihre Einstellungen und Profile auf GitXplore.',
+    acc_profiles_title: 'Profile und persönliche Daten',
+    acc_settings: 'Kontoeinstellungen',
+    acc_sec: 'Passwort & Sicherheit', acc_conn: 'Verbundene Erlebnisse', acc_perm: 'Ihre Informationen & Berechtigungen', acc_act: 'Projektaktivitäten', acc_bill: 'Abrechnung & Zahlungen', acc_sub_menu: 'Sponsoring & Abonnements', acc_manage: 'Konten verwalten',
+    acc_return: '← Zurück zu GitXplore'
+  },
+  es: {
+    community: 'Comunidad', about: 'Acerca de', support: 'Soporte', language: 'Idioma', register: 'Registrarse', signin: 'Iniciar sesión', signout: 'Cerrar sesión',
+    welcome_sub: '▲ VIAJE HACIA NUEVAS FRONTERAS, PARQUE NATURAL DE NOTO',
+    welcome_title: 'BIENVENIDO',
+    welcome_desc: 'Lejos del bullicio de las metrópolis japonesas, descubra la tranquilidad de Noto.',
+    start_journey: 'Comenzar viaje ▸',
+    experience_3d: 'EXPERIENCIA 3D',
+    tranquility: 'Tranquilidad',
+    tranquility_desc: 'Sumérjase en cascadas místicas que albergan un vasto reino de código abierto.',
+    learn_more: '— Más información',
+    profile_details: 'Detalles del perfil', saved_repos: 'Repositorios guardados', history: 'Historial',
+    all_repos: 'Todos los repositorios', search_placeholder: 'Buscar repositorios, frameworks...',
+    quick_view: 'Vista previa 👁',
+    about_badge: 'ACERCA DE LA INICIATIVA',
+    about_title: 'Portal Curado para Artefactos de Código Abierto',
+    about_sub: 'GitXplore guía a los desarrolladores directamente al código excepcional.',
+    stat_repos: 'Repositorios selectos', stat_domains: 'Áreas técnicas', stat_foss: 'Código Abierto Libre', stat_updates: 'Tendencias al día',
+    cta_title: '¿Tienes un proyecto para destacar?',
+    cta_sub: 'Contribuye con tu repositorio para enriquecer el ecosistema global.',
+    cta_btn: 'Contribuir en GitHub ↗',
+    acc_title: 'Centro de Cuentas',
+    acc_sub: 'Administra tus experiencias conectadas y perfiles.',
+    acc_profiles_title: 'Perfiles y datos personales',
+    acc_settings: 'Configuración de la cuenta',
+    acc_sec: 'Contraseña y seguridad', acc_conn: 'Experiencias conectadas', acc_perm: 'Tu información y permisos', acc_act: 'Actividad del proyecto', acc_bill: 'Facturación y pagos', acc_sub_menu: 'Patrocinios y suscripciones', acc_manage: 'Administrar cuentas',
+    acc_return: '← Volver a GitXplore'
+  },
+  ru: {
+    community: 'Сообщество', about: 'О нас', support: 'Поддержка', language: 'Язык', register: 'Регистрация', signin: 'Вход', signout: 'Выход',
+    welcome_sub: '▲ ПУТЕШЕСТВИЕ К НОВЫМ ГОРИЗОНТАМ, ПРИРОДНЫЙ ПАРК НОТО',
+    welcome_title: 'ДОБРО ПОЖАЛОВАТЬ',
+    welcome_desc: 'Вдали от суеты японских мегаполисов лежит древняя деревня Ното.',
+    start_journey: 'Начать путешествие ▸',
+    experience_3d: '3D-ОПЫТ',
+    tranquility: 'Спокойствие',
+    tranquility_desc: 'Погрузитесь в мистическую атмосферу водопадов и легендарных проектов с открытым кодом.',
+    learn_more: '— Узнать больше',
+    profile_details: 'Данные профиля', saved_repos: 'Сохраненные репозитории', history: 'История активности',
+    all_repos: 'Все репозитории', search_placeholder: 'Поиск репозиториев, фреймворков...',
+    quick_view: 'Просмотр 👁',
+    about_badge: 'ОБ ИНИЦИАТИВЕ',
+    about_title: 'Кураторский портал решений с открытым кодом',
+    about_sub: 'GitXplore ведет разработчиков напрямую к передовому коду.',
+    stat_repos: 'Избранные проекты', stat_domains: 'Технологические сферы', stat_foss: 'Бесплатно и Open-Source', stat_updates: 'Актуальные тренды',
+    cta_title: 'Хотите добавить свой проект?',
+    cta_sub: 'Поделитесь своим репозиторием и внесите вклад в сообщество.',
+    cta_btn: 'Внести вклад на GitHub ↗',
+    acc_title: 'Центр аккаунтов',
+    acc_sub: 'Управляйте профилями и связанными сервисами.',
+    acc_profiles_title: 'Профили и личные данные',
+    acc_settings: 'Настройки аккаунта',
+    acc_sec: 'Пароль и безопасность', acc_conn: 'Связанные сервисы', acc_perm: 'Информация и разрешения', acc_act: 'Активность проектов', acc_bill: 'Оплата и счета', acc_sub_menu: 'Спонсорство и подписки', acc_manage: 'Управление аккаунтами',
+    acc_return: '← Вернуться в GitXplore'
+  },
+  pt: {
+    community: 'Comunidade', about: 'Sobre', support: 'Suporte', language: 'Idioma', register: 'Cadastre-se', signin: 'Entrar', signout: 'Sair',
+    welcome_sub: '▲ UMA JORNADA PARA NOVAS FRONTEIRAS, PARQUE NATURAL DE NOTO',
+    welcome_title: 'BEM-VINDO',
+    welcome_desc: 'Longe da energia agitada das metrópoles japonesas, repousa o vilarejo de Noto.',
+    start_journey: 'Iniciar jornada ▸',
+    experience_3d: 'EXPERIÊNCIA 3D',
+    tranquilidade: 'Tranquilidade',
+    tranquility_desc: 'Explore cachoeiras etéreas e lagos místicos repletos de artefatos open-source.',
+    learn_more: '— Saiba mais',
+    profile_details: 'Detalhes do perfil', saved_repos: 'Repositórios salvos', history: 'Histórico',
+    all_repos: 'Todos os repositórios', search_placeholder: 'Buscar repositórios, frameworks...',
+    quick_view: 'Ver detalhes 👁',
+    about_badge: 'SOBRE A INICIATIVA',
+    about_title: 'Portal Curado para Projetos de Código Aberto',
+    about_sub: 'GitXplore guia desenvolvedores diretamente para códigos excepcionais.',
+    stat_repos: 'Repositórios selecionados', stat_domains: 'Áreas de tecnologia', stat_foss: 'Livre e Open-Source', stat_updates: 'Tendências atuais',
+    cta_title: 'Tem um projeto para destacar?',
+    cta_sub: 'Contribua com seu repositório para fortalecer a comunidade.',
+    cta_btn: 'Contribuir no GitHub ↗',
+    acc_title: 'Central de Contas',
+    acc_sub: 'Gerencie suas preferências e contas conectadas.',
+    acc_profiles_title: 'Perfis e dados pessoais',
+    acc_settings: 'Configurações da conta',
+    acc_sec: 'Senha e segurança', acc_conn: 'Experiências conectadas', acc_perm: 'Suas informações e permissões', acc_act: 'Atividade do projeto', acc_bill: 'Faturamento e pagamentos', acc_sub_menu: 'Patrocínios e assinaturas', acc_manage: 'Gerenciar contas',
+    acc_return: '← Voltar para GitXplore'
+  },
+};
+
+const NEWS_LABEL = { 
+  vi: 'Tin tức', 
+  en: 'News', 
+  ja: 'ニュース', 
+  zh: '新闻', 
+  ko: '뉴스', 
+  fr: 'Actualités', 
+  de: 'News', 
+  es: 'Noticias', 
+  ru: 'Новости', 
+  pt: 'Notícias' 
+};
+Object.entries(NEWS_LABEL).forEach(([code, v]) => { 
+  if (TRANSLATIONS[code]) TRANSLATIONS[code].news = v; 
+});
+
+const LanguageContext = createContext();
+
+export function LanguageProvider({ children }) {
+  const [lang, setLang] = useState(() => localStorage.getItem('gxp_lang') || 'en');
+
+  const changeLanguage = (code) => {
+    setLang(code);
+    localStorage.setItem('gxp_lang', code);
+  };
+
+  const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS['en']?.[key] || key;
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
+  return ctx;
+}
+</file>
+
+<file path="src/hooks/useLenis.js">
+import { useEffect } from 'react';
+import Lenis from 'lenis';
+import { setLenis } from '../lib/scroll';
+
+/** Smooth scroll chỉ chạy ở trang dùng nó; unmount là dọn sạch (cleanup). */
+export function useLenis() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    setLenis(lenis);
+
+    let rafId = requestAnimationFrame(function raf(time) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+      setLenis(null);
+    };
+  }, []);
+}
+</file>
+
 <file path="src/main.jsx">
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -5808,13 +6455,16 @@ import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { UIProvider } from './context/UIContext.jsx';
+import { LanguageProvider } from './context/LanguageContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <UIProvider>
-          <App />
+          <LanguageProvider>
+            <App />
+          </LanguageProvider>
         </UIProvider>
       </AuthProvider>
     </BrowserRouter>
@@ -7322,6 +7972,13 @@ export default function SubNavBar() {
             Discussions
           </NavLink>
 
+          <NavLink
+            to="/news"
+            className={({ isActive }) => `av-item ${isActive ? 'active' : ''}`}
+          >
+            News
+          </NavLink>
+
           <button
             className={`av-item ${activeTab === 'support' ? 'active' : ''}`}
             onClick={() => {
@@ -7426,6 +8083,7 @@ import HomePage from './pages/HomePage.jsx';
 import CommunityForum from './Components/CommunityForum.jsx';
 import SavedDashboard from './Components/SavedDashboard.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+import NewsPage from './pages/NewsPage.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -7455,6 +8113,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/community" element={<CommunityForum />} />
+        <Route path="/news" element={<NewsPage />} />
 
         {/* /accountscenter/:section — mục menu nằm trên URL, không cần tự pushState */}
         <Route
@@ -7486,6 +8145,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+import { useLanguage } from '../context/LanguageContext';
 import { scrollToId } from '../lib/scroll';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -7526,6 +8186,7 @@ function createSequence(canvas, srcOf) {
 export default function HeroParallax() {
   const { user, logout } = useAuth();
   const { openModal: setModal } = useUI();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const containerRef = useRef(null);
@@ -7655,6 +8316,14 @@ export default function HeroParallax() {
         </span>
 
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/news')}
+            className="nav-link-btn"
+          >
+            {t('news')}
+          </button>
+
           <button
             type="button"
             onClick={() => navigate('/community')}
