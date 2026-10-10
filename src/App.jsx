@@ -50,6 +50,8 @@ export default function App() {
         <Route path="/community" element={<CommunityHub />} />
         {/* Diễn đàn cũ chuyển sang /community/forum (đặt TRƯỚC :section để không bị nuốt) */}
         <Route path="/community/forum" element={<CommunityForum />} />
+        {/* Link ngắn /forum chuyển về diễn đàn */}
+        <Route path="/forum" element={<Navigate to="/community/forum" replace />} />
         <Route path="/community/:section" element={<CommunityHub />} />
         <Route path="/news" element={<NewsPage />} />
         <Route path="/search" element={<SearchPage />} />
