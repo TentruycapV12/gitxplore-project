@@ -870,53 +870,14 @@
 }
 
 /* =====================================================================
-   OVERRIDE: nav + footer trông như MỘT khối chân trang, bỏ màu lime lệch tông,
+   OVERRIDE: footer rộng rãi hơn,
    chữ to hơn, canh lề thẳng hàng với nội dung About (max-width 1200px).
    ===================================================================== */
-
-/* --- Thanh nav cuối trang --- */
-.av-subnav {
-  height: 60px;
-  padding: 0 max(6vw, calc((100vw - 1200px) / 2));
-  border-bottom: none;
-  border-top: 1px solid rgba(251, 191, 36, 0.15);
-  background-color: #0b0708;
-}
-
-.av-logo { font-size: 26px; }
-
-.av-menu { gap: 26px; }
-
-.av-item {
-  font-size: 13px;
-  color: #d6d3d1;
-}
-
-.av-item.active::after {
-  background-color: #fbbf24;
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
-}
-
-.av-social-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  font-size: 16px;
-}
-
-.av-top-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background-color: #fbbf24;
-  color: #1a0e05;
-}
-.av-top-btn:hover { background-color: #fde047; }
 
 /* --- Footer --- */
 .custom-footer {
   background-color: #070304;
-  border-top: none;
+  border-top: 1px solid rgba(251, 191, 36, 0.15);
   padding: 56px max(6vw, calc((100vw - 1200px) / 2)) 64px;
   box-sizing: border-box;
 }
@@ -940,16 +901,3 @@
 .footer-right { padding-top: 12px; }
 
 .footer-copyright { font-size: 14px; }
-
-/* --- Màn hình nhỏ: nav xuống dòng thay vì tràn --- */
-@media (max-width: 1000px) {
-  .av-subnav {
-    height: auto;
-    flex-wrap: wrap;
-    gap: 8px 16px;
-    padding-top: 6px;
-    padding-bottom: 10px;
-  }
-  .av-left { flex-wrap: wrap; gap: 8px 24px; }
-  .av-menu { flex-wrap: wrap; gap: 4px 20px; }
-}

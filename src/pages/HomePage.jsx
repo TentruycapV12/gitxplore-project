@@ -6,7 +6,6 @@ import { useUI } from '../context/UIContext';
 import HeroParallax from '../Components/HeroParallax.jsx';
 import Component1 from '../Components/Component1.jsx';
 import Component2 from '../Components/Component2.jsx';
-import SubNavBar from '../Components/SubNavBar.jsx';
 import About from '../Components/About.jsx';
 import Footer from '../Components/Footer.jsx';
 
@@ -40,7 +39,6 @@ export default function HomePage() {
       </main>
 
       <About />
-      <SubNavBar />
       <Footer />
     </>
   );
