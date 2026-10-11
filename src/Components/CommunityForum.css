@@ -203,10 +203,11 @@
 }
 
 .cf-comment--self .cf-bubble {
-  background: linear-gradient(135deg, #7f1d1d, #991b1b);
-  border: 1px solid #b91c1c;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: 16px 16px 4px 16px;
-  color: #fff;
+  color: #fef3c7;
+  backdrop-filter: blur(10px);
 }
 
 .cf-comment--self .cf-comment-head {

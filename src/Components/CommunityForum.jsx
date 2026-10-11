@@ -960,52 +960,221 @@ export default function CommunityForum() {
                   </button>
                 </div>
 
-                {/* DANH SÁCH BÌNH LUẬN & FORM NHẬP KÈM NÚT GỬI FILE/ẢNH */}
-                <div style={{ padding: '16px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {comments.map((c) => (
-                    <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#3b1818', color: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
-                        {c.user_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div style={{ background: '#1c0f0f', padding: '10px 14px', borderRadius: '16px', border: '1px solid #2b1414', maxWidth: '85%' }}>
-                        <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '12.5px', display: 'flex', alignItems: 'center' }}>
-                          <span>{c.user_name}</span><UidTag id={idOf(c.user_public_id, c.user_name)} />
-                          {canModerate && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteComment(c)}
-                              title="Delete comment"
-                              style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', paddingLeft: '12px' }}
-                            >
-                              🗑️
-                            </button>
-                          )}
-                        </div>
-                        
-                        {/* Nội dung chữ */}
-                        {c.content && (
-                          <div style={{ fontSize: '13.5px', color: '#e5e7eb', marginTop: '3px', lineHeight: 1.5 }}>{c.content}</div>
-                        )}
+                {/* DANH SÁCH BÌNH LUẬN & KHUNG TRÒ CHUYỆN HIỆN ĐẠI */}
+                <div style={{ padding: '20px 18px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  
+                  {/* Tiêu đề & trạng thái luồng thảo luận */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #1f1010' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>💬 Trao đổi & Thảo luận</span>
+                      <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: '999px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                        {comments.length}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#78716c' }}>
+                      Tin nhắn của bạn: Bên phải (Cam hổ phách dịu) · Người khác: Bên trái
+                    </div>
+                  </div>
 
-                        {/* Ảnh đính kèm trong bình luận */}
-                        {c.media_url && (
-                          <div style={{ marginTop: '8px', borderRadius: '8px', overflow: 'hidden', maxWidth: '300px' }}>
-                            {c.media_url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
-                              <a href={c.media_url} target="_blank" rel="noopener noreferrer">
-                                <img src={c.media_url} alt="Attached" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '6px' }} />
-                              </a>
-                            ) : (
-                              <a href={c.media_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '12px', textDecoration: 'underline' }}>
-                                📎 View Attachment
-                              </a>
-                            )}
-                          </div>
-                        )}
-
-                        <div style={{ fontSize: '10.5px', color: '#78716c', marginTop: '6px' }}>{formatForumTime(c.created_at)}</div>
+                  {/* Trạng thái chưa có bình luận */}
+                  {comments.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '40px 16px', color: '#a8a29e', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ fontSize: '32px' }}>💬</div>
+                      <div style={{ fontWeight: 600, color: '#f5f5f4', fontSize: '14.5px' }}>Chưa có tin nhắn nào trong chủ đề này</div>
+                      <div style={{ fontSize: '12.5px', color: '#78716c', maxWidth: '380px' }}>
+                        Hãy là người đầu tiên tham gia cuộc trò chuyện, trao đổi quan điểm hoặc chia sẻ hình ảnh/tệp!
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Danh sách tin nhắn bình luận */}
+                  {comments.map((c) => {
+                    const myPublicId = user?.publicId;
+                    const myName = (user?.name || user?.identifier || '').trim().toLowerCase();
+                    const commentAuthor = (c.user_name || '').trim().toLowerCase();
+                    const isMyComment = Boolean(
+                      (myPublicId && c.user_public_id && myPublicId === c.user_public_id) ||
+                      (myName && commentAuthor && myName === commentAuthor)
+                    );
+
+                    return (
+                      <div 
+                        key={c.id} 
+                        style={{ 
+                          display: 'flex', 
+                          gap: '10px', 
+                          alignItems: 'flex-start',
+                          flexDirection: isMyComment ? 'row-reverse' : 'row',
+                          alignSelf: isMyComment ? 'flex-end' : 'flex-start',
+                          maxWidth: '85%',
+                          marginLeft: isMyComment ? 'auto' : '0',
+                          marginRight: isMyComment ? '0' : 'auto',
+                          transition: 'transform 0.15s ease'
+                        }}
+                      >
+                        {/* Avatar */}
+                        <div 
+                          style={{ 
+                            width: '36px', 
+                            height: '36px', 
+                            borderRadius: '50%', 
+                            background: isMyComment 
+                              ? 'linear-gradient(135deg, #d97706, #b45309)' 
+                              : '#2b1414', 
+                            color: isMyComment ? '#ffffff' : '#fef08a', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            fontWeight: 700, 
+                            fontSize: '12.5px', 
+                            flexShrink: 0,
+                            border: isMyComment 
+                              ? '1px solid rgba(254, 240, 138, 0.4)' 
+                              : '1px solid #4a2121',
+                            boxShadow: isMyComment 
+                              ? '0 2px 8px rgba(245, 158, 11, 0.3)' 
+                              : 'none'
+                          }}
+                        >
+                          {c.user_name.charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* Bong bóng tin nhắn (Bubble) */}
+                        <div 
+                          style={{ 
+                            background: isMyComment 
+                              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.12))' 
+                              : 'rgba(25, 15, 15, 0.94)', 
+                            border: isMyComment 
+                              ? '1px solid rgba(245, 158, 11, 0.35)' 
+                              : '1px solid #331919',
+                            borderRadius: isMyComment ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                            padding: '10px 14px', 
+                            maxWidth: '100%',
+                            boxShadow: isMyComment 
+                              ? '0 4px 16px rgba(0, 0, 0, 0.25)' 
+                              : '0 4px 14px rgba(0, 0, 0, 0.3)',
+                            backdropFilter: isMyComment ? 'blur(10px)' : 'none',
+                            WebkitBackdropFilter: isMyComment ? 'blur(10px)' : 'none',
+                            minWidth: '120px'
+                          }}
+                        >
+                          {/* Header tên tác giả + tag */}
+                          <div 
+                            style={{ 
+                              fontWeight: 600, 
+                              color: '#fef08a', 
+                              fontSize: '12.5px', 
+                              display: 'flex', 
+                              alignItems: 'center',
+                              gap: '6px',
+                              justifyContent: isMyComment ? 'flex-end' : 'flex-start'
+                            }}
+                          >
+                            {(canModerate || isMyComment) && isMyComment && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(c)}
+                                title="Xóa tin nhắn của bạn"
+                                style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0 4px', opacity: 0.8 }}
+                                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                            {isMyComment && (
+                              <span style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.25)', color: '#fef08a', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                Bạn
+                              </span>
+                            )}
+                            <span>{c.user_name}</span>
+                            <UidTag id={idOf(c.user_public_id, c.user_name)} />
+                            {canModerate && !isMyComment && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(c)}
+                                title="Delete comment"
+                                style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', paddingLeft: '8px' }}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                          
+                          {/* Nội dung chữ */}
+                          {c.content && (
+                            <div 
+                              style={{ 
+                                fontSize: '13.5px', 
+                                color: isMyComment ? '#ffffff' : '#e5e7eb', 
+                                marginTop: '4px', 
+                                lineHeight: 1.55,
+                                textAlign: 'left',
+                                wordBreak: 'break-word'
+                              }}
+                            >
+                              {c.content}
+                            </div>
+                          )}
+
+                          {/* Ảnh đính kèm trong bình luận */}
+                          {c.media_url && (
+                            <div style={{ marginTop: '8px', borderRadius: '8px', overflow: 'hidden', maxWidth: '300px' }}>
+                              {c.media_url.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                                <a href={c.media_url} target="_blank" rel="noopener noreferrer">
+                                  <img 
+                                    src={c.media_url} 
+                                    alt="Attached" 
+                                    style={{ 
+                                      width: '100%', 
+                                      maxHeight: '220px', 
+                                      objectFit: 'cover', 
+                                      borderRadius: '8px', 
+                                      border: isMyComment ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)' 
+                                    }} 
+                                  />
+                                </a>
+                              ) : (
+                                <a 
+                                  href={c.media_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  style={{ 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    gap: '6px', 
+                                    color: isMyComment ? '#fef08a' : '#60a5fa', 
+                                    fontSize: '12px', 
+                                    textDecoration: 'none',
+                                    background: 'rgba(0, 0, 0, 0.3)',
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    border: isMyComment ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #331919'
+                                  }}
+                                >
+                                  📎 Xem / Tải tệp đính kèm
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Thời gian gửi */}
+                          <div 
+                            style={{ 
+                              fontSize: '10px', 
+                              color: isMyComment ? '#fcd34d' : '#78716c', 
+                              opacity: isMyComment ? 0.75 : 1,
+                              marginTop: '6px',
+                              textAlign: isMyComment ? 'right' : 'left'
+                            }}
+                          >
+                            {formatForumTime(c.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                   <div ref={commentsEndRef} />
 
                   {/* KHUNG PREVIEW FILE ĐANG CHỌN TRƯỚC KHI BÌNH LUẬN */}
@@ -1031,18 +1200,31 @@ export default function CommunityForum() {
 
                   {/* KHUNG NHẬP BÌNH LUẬN KÈM NÚT ĐÍNH KÈM */}
                   {(!canPost || (activeTopic.is_locked && !canModerate)) ? (
-                    <div style={{ marginTop: '4px', padding: '10px 14px', borderRadius: '10px', background: '#1a0d0d', border: '1px dashed #381a1a', color: '#a8a29e', fontSize: '13px', textAlign: 'center' }}>
+                    <div style={{ marginTop: '6px', padding: '12px 16px', borderRadius: '12px', background: '#1a0d0d', border: '1px dashed #381a1a', color: '#a8a29e', fontSize: '13px', textAlign: 'center' }}>
                       {isBanned ? '🚫 Your account is suspended.' : isMuted ? '🔇 You are muted right now.' : '🔒 This topic is locked — no new comments.'}
                     </div>
                   ) : (
-                  <form onSubmit={handleSendComment} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                  <form 
+                    onSubmit={handleSendComment} 
+                    style={{ 
+                      display: 'flex', 
+                      gap: '10px', 
+                      alignItems: 'center', 
+                      marginTop: '8px',
+                      background: '#160b0b',
+                      padding: '6px 8px 6px 16px',
+                      borderRadius: '28px',
+                      border: '1px solid #351717',
+                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
                     <input
                       ref={commentInputRef}
                       type="text"
-                      placeholder="Write a comment..."
+                      placeholder={user ? "Nhập tin nhắn hoặc bình luận..." : "Đăng nhập để tham gia trò chuyện..."}
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
-                      style={{ flex: 1, background: '#180d0d', border: '1px solid #2d1414', borderRadius: '20px', padding: '10px 16px', color: '#fff', fontSize: '13.5px', outline: 'none' }}
+                      style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', outline: 'none' }}
                     />
 
                     {/* NÚT CHỌN ẢNH / TỆP ĐÍNH KÈM */}
@@ -1057,24 +1239,24 @@ export default function CommunityForum() {
                     <button
                       type="button"
                       onClick={() => commentFileInputRef.current?.click()}
-                      title="Attach photo or file"
+                      title="Đính kèm ảnh hoặc tệp"
                       style={{
-                        background: '#1e0e0e',
-                        border: '1px solid #3a1c1c',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         color: '#fef08a',
-                        width: '38px',
-                        height: '38px',
+                        width: '36px',
+                        height: '36px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '16px',
+                        fontSize: '15px',
                         cursor: 'pointer',
-                        transition: 'background 0.2s',
+                        transition: 'all 0.15s',
                         flexShrink: 0
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#2e1414')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = '#1e0e0e')}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.2)'; e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}
                     >
                       📎
                     </button>
@@ -1083,18 +1265,22 @@ export default function CommunityForum() {
                       type="submit"
                       disabled={isCommentUploading}
                       style={{ 
-                        background: isCommentUploading ? '#78716c' : '#dc2626', 
+                        background: isCommentUploading ? '#78716c' : 'linear-gradient(135deg, #ef4444, #dc2626)', 
                         color: '#fff', 
                         border: 'none', 
                         padding: '9px 20px', 
-                        borderRadius: '20px', 
-                        fontSize: '12.5px', 
+                        borderRadius: '22px', 
+                        fontSize: '13px', 
                         fontWeight: 600, 
                         cursor: isCommentUploading ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 2px 10px rgba(239, 68, 68, 0.35)',
+                        transition: 'transform 0.15s, box-shadow 0.15s',
                         flexShrink: 0
                       }}
+                      onMouseEnter={(e) => { if (!isCommentUploading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
-                      {isCommentUploading ? 'Uploading...' : 'Send'}
+                      {isCommentUploading ? 'Đang gửi...' : 'Gửi'}
                     </button>
                   </form>
                   )}
