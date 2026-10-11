@@ -1,0 +1,631 @@
+/* ========================================================
+   ARISU AI ASSISTANT (BLUE ARCHIVE)
+   Frameless Ultra-Glassmorphism Floating Widget
+   Prefix: arisu-
+======================================================== */
+
+.arisu-assistant-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: #f8fafc;
+}
+
+/* ==================== 1. LAUNCHER (CON ARISU) ==================== */
+.arisu-launcher-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Speech bubble tooltip */
+.arisu-speech-bubble {
+  position: absolute;
+  right: calc(100% + 14px);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7dd3fc;
+  white-space: nowrap;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.2);
+  cursor: pointer;
+  animation: arisuFloat 3s ease-in-out infinite;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.arisu-speech-bubble:hover {
+  transform: scale(1.05);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.arisu-speech-bubble::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  border-right: 1px solid rgba(56, 189, 248, 0.35);
+  border-top: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+/* Chibi character button */
+.arisu-chibi-button {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #38bdf8, #1e3a8a 70%, #090d16);
+  border: 2px solid rgba(125, 211, 252, 0.6);
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 25px rgba(56, 189, 248, 0.45);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+}
+
+.arisu-chibi-button:hover {
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.7);
+}
+
+.arisu-chibi-button.is-active {
+  transform: scale(0.95);
+  border-color: #f59e0b;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+}
+
+.arisu-aura-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px dashed rgba(56, 189, 248, 0.45);
+  animation: arisuRotate 12s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes arisuRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.arisu-chibi-avatar {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+}
+
+.arisu-badge-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 8px #10b981;
+}
+
+@keyframes arisuFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* ==================== 2. FRAMELESS CHAT WINDOW ==================== */
+.arisu-chat-modal {
+  position: absolute;
+  bottom: 84px;
+  right: 0;
+  width: 440px;
+  max-width: 92vw;
+  height: 620px;
+  max-height: 80vh;
+  /* Hiệu ứng không khuôn: nền siêu kính mờ, viền phát quang siêu mảnh */
+  background: rgba(11, 8, 16, 0.86);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 26px;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8),
+              0 0 45px rgba(56, 189, 248, 0.18),
+              inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: arisuChatEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+@keyframes arisuChatEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.arisu-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 13, 26, 0.55);
+}
+
+.arisu-header-avatar-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.arisu-avatar-wrap {
+  position: relative;
+  width: 42px;
+  height: 42px;
+}
+
+.arisu-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+}
+
+.arisu-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  background: #10b981;
+  border-radius: 50%;
+  border: 2px solid #0f172a;
+}
+
+.arisu-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.arisu-header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.arisu-header-sub {
+  font-size: 11.5px;
+  color: #7dd3fc;
+  font-weight: 500;
+}
+
+.arisu-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arisu-icon-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.arisu-icon-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  color: #ffffff;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.arisu-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+/* Quick Chips Bar */
+.arisu-chips-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 18px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 11, 22, 0.35);
+}
+
+.arisu-chips-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.arisu-chip {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.arisu-chip:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+  transform: translateY(-1px);
+}
+
+/* ==================== 3. MESSAGES FLOW ==================== */
+.arisu-messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.arisu-messages-area::-webkit-scrollbar {
+  width: 5px;
+}
+
+.arisu-messages-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.arisu-bubble-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 88%;
+}
+
+.arisu-bubble-row.is-user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.arisu-bubble-row.is-arisu {
+  margin-right: auto;
+}
+
+.arisu-msg-chibi {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.arisu-msg-chibi img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arisu-msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arisu-bubble-text {
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.is-user .arisu-bubble-text {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.is-arisu .arisu-bubble-text {
+  background: rgba(30, 27, 46, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.arisu-bubble-text p {
+  margin: 0 0 6px;
+}
+
+.arisu-bubble-text p:last-child {
+  margin-bottom: 0;
+}
+
+.arisu-msg-time {
+  font-size: 10.5px;
+  color: #64748b;
+  align-self: flex-start;
+  padding: 0 4px;
+}
+
+.is-user .arisu-msg-time {
+  align-self: flex-end;
+}
+
+/* Attachments inside bubble */
+.arisu-msg-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.arisu-att-img {
+  max-width: 240px;
+  max-height: 180px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.arisu-att-video {
+  max-width: 240px;
+  border-radius: 12px;
+}
+
+.arisu-att-file-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* Typing Indicator */
+.arisu-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 16px;
+  background: rgba(30, 27, 46, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+}
+
+.arisu-typing-indicator span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  animation: arisuPulse 1.4s infinite ease-in-out both;
+}
+
+.arisu-typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.arisu-typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes arisuPulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.15); opacity: 1; }
+}
+
+/* ==================== 4. PENDING & RECORDING ==================== */
+.arisu-pending-attachments {
+  display: flex;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+}
+
+.arisu-pending-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #7dd3fc;
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.arisu-pending-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arisu-pending-pill button {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.arisu-recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: rgba(239, 68, 68, 0.15);
+  border-top: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 12.5px;
+}
+
+.arisu-recording-wave {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: arisuWave 1s infinite alternate;
+}
+
+@keyframes arisuWave {
+  from { transform: scale(0.8); opacity: 0.6; }
+  to { transform: scale(1.4); opacity: 1; }
+}
+
+.arisu-recording-bar button {
+  margin-left: auto;
+  background: #ef4444;
+  border: none;
+  color: #ffffff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ==================== 5. INPUT PANEL ==================== */
+.arisu-input-panel {
+  padding: 12px 16px 16px;
+  background: rgba(15, 11, 24, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arisu-tools-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arisu-tool-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.arisu-tool-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.arisu-tool-btn.is-active-mic {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  animation: arisuPulse 1s infinite;
+}
+
+.arisu-input-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 6px 10px 6px 14px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.arisu-input-box:focus-within {
+  border-color: #38bdf8;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+}
+
+.arisu-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13.5px;
+  resize: none;
+  line-height: 1.4;
+  max-height: 80px;
+}
+
+.arisu-textarea::placeholder {
+  color: #64748b;
+}
+
+.arisu-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #64748b;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.arisu-send-btn.is-ready {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+}
+
+.arisu-send-btn.is-ready:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .arisu-chat-modal {
+    width: 95vw;
+    height: 75vh;
+    bottom: 80px;
+    right: 2.5vw;
+  }
+}

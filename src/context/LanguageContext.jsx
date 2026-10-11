@@ -314,9 +314,17 @@ export function LanguageProvider({ children }) {
     localStorage.setItem('gxp_lang', code);
   };
 
-  const t = (key) =>
-    TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] || EXTRA_STRINGS[lang]?.[key] ||
-    TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || EXTRA_STRINGS['en']?.[key] || key;
+  const t = (key, params) => {
+    let str =
+      TRANSLATIONS[lang]?.[key] || UI_STRINGS[lang]?.[key] || EXTRA_STRINGS[lang]?.[key] ||
+      TRANSLATIONS['en']?.[key] || UI_STRINGS['en']?.[key] || EXTRA_STRINGS['en']?.[key] || key;
+    if (params && typeof str === 'string') {
+      Object.entries(params).forEach(([k, v]) => {
+        str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+      });
+    }
+    return str;
+  };
 
   return (
     <LanguageContext.Provider value={{ lang, setLang: changeLanguage, t, languages: LANGUAGES }}>

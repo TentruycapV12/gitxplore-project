@@ -238,7 +238,7 @@ export default function TopNav() {
                   </span>
                 </button>
                 <hr />
-                <button type="button" className="tn-item" onClick={() => { setMenu(null); setShowOnboarding(true); }}>💡 {t('ui_onboarding_guide') || 'Hướng dẫn người mới'}</button>
+                <button type="button" className="tn-item" onClick={() => { setMenu(null); setShowOnboarding(true); }}>💡 {t('ui_onboarding_guide')}</button>
                 <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>{t('profile_details')}</button>
                 <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>{t('saved_repos')}</button>
                 <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>{t('history')}</button>

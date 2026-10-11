@@ -273,7 +273,7 @@ export default function VibePage() {
             onClick={() => setShowGeneratorModal(true)}
           >
             <Ico d={ICONS.sparkles} size={16} />
-            <span>Tạo Vibe Prompt Tùy Biến</span>
+            <span>{t('vb_btn_custom')}</span>
           </button>
           <button
             type="button"
@@ -281,7 +281,7 @@ export default function VibePage() {
             onClick={() => setShowSubmitModal(true)}
           >
             <Ico d={ICONS.plus} size={16} />
-            <span>Đóng Góp Mẫu Mới</span>
+            <span>{t('vb_btn_submit')}</span>
           </button>
           <a
             href="https://aitmpl.com/"
@@ -289,7 +289,7 @@ export default function VibePage() {
             rel="noopener noreferrer"
             className="vb-btn vb-btn-ghost"
           >
-            <span>Xem aitmpl.com Gốc</span>
+            <span>{t('vb_btn_original')}</span>
             <Ico d={ICONS.external} size={14} />
           </a>
         </div>
@@ -301,14 +301,14 @@ export default function VibePage() {
         <aside className="vb-sidebar">
           {/* Section: Workplace */}
           <div className="vb-side-group">
-            <span className="vb-side-title">WORKPLACE</span>
+            <span className="vb-side-title">{t('vb_workplace')}</span>
             <button
               type="button"
               className={`vb-side-link ${!showSavedOnly && category === 'all' ? 'is-active' : ''}`}
               onClick={() => { setShowSavedOnly(false); setCategory('all'); }}
             >
               <Ico d={ICONS.grid} size={16} />
-              <span>Tất cả thành phần</span>
+              <span>{t('vb_all_components')}</span>
               <span className="vb-side-count">{allTemplates.length}</span>
             </button>
             <button
@@ -317,7 +317,7 @@ export default function VibePage() {
               onClick={() => setShowSavedOnly(true)}
             >
               <Ico d={ICONS.bookmark} size={16} />
-              <span>Mục đã lưu của tôi</span>
+              <span>{t('vb_saved_items')}</span>
               <span className="vb-side-count">{savedIds.length}</span>
             </button>
             <button
@@ -326,14 +326,14 @@ export default function VibePage() {
               onClick={() => setShowGeneratorModal(true)}
             >
               <Ico d={ICONS.sparkles} size={16} />
-              <span>Bộ tạo Prompt</span>
+              <span>{t('vb_prompt_generator')}</span>
               <span className="vb-side-badge">AI</span>
             </button>
           </div>
 
           {/* Section: Categories */}
           <div className="vb-side-group">
-            <span className="vb-side-title">DANH MỤC THÀNH PHẦN</span>
+            <span className="vb-side-title">{t('vb_categories_title')}</span>
             {VIBE_CATEGORIES.filter((c) => c.id !== 'all').map((cat) => {
               const count = allTemplates.filter((t) => t.category === cat.id).length;
               return (
@@ -353,7 +353,7 @@ export default function VibePage() {
 
           {/* Section: Engine Compatibility */}
           <div className="vb-side-group">
-            <span className="vb-side-title">MÔI TRƯỜNG TƯƠNG THÍCH</span>
+            <span className="vb-side-title">{t('vb_engines_title')}</span>
             {VIBE_ENGINES.map((engine) => (
               <button
                 key={engine}
@@ -369,7 +369,7 @@ export default function VibePage() {
 
           {/* Section: Quick Links */}
           <div className="vb-side-group">
-            <span className="vb-side-title">TÀI NGUYÊN HỮU ÍCH</span>
+            <span className="vb-side-title">{t('vb_resources_title')}</span>
             <a
               href="https://github.com/davila7/claude-code-templates"
               target="_blank"
@@ -386,7 +386,7 @@ export default function VibePage() {
               className="vb-side-link"
             >
               <Ico d={ICONS.external} size={15} />
-              <span>Giao thức MCP Docs</span>
+              <span>MCP Protocol Docs</span>
             </a>
           </div>
         </aside>
@@ -401,7 +401,7 @@ export default function VibePage() {
                 className={`vb-tag-chip ${!selectedTag ? 'is-active' : ''}`}
                 onClick={() => setSelectedTag('')}
               >
-                Tất cả chủ đề
+                {t('vb_all_topics')}
               </button>
               {allTags.map((tag) => (
                 <button
@@ -417,17 +417,17 @@ export default function VibePage() {
 
             <div className="vb-toolbar-right">
               <div className="vb-sort-wrap">
-                <label htmlFor="vbSortSelect">Sắp xếp:</label>
+                <label htmlFor="vbSortSelect">{t('vb_sort_lbl')}</label>
                 <select
                   id="vbSortSelect"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="vb-sort-select"
                 >
-                  <option value="popular">Phổ biến nhất</option>
-                  <option value="stars">Nhiều sao nhất ⭐</option>
-                  <option value="downloads">Lượt cài đặt</option>
-                  <option value="newest">Mới cập nhật</option>
+                  <option value="popular">{t('vb_sort_popular')}</option>
+                  <option value="stars">{t('vb_sort_stars')}</option>
+                  <option value="downloads">{t('vb_sort_downloads')}</option>
+                  <option value="newest">{t('vb_sort_newest')}</option>
                 </select>
               </div>
 
@@ -436,7 +436,7 @@ export default function VibePage() {
                   type="button"
                   className={`vb-view-btn ${viewMode === 'grid' ? 'is-active' : ''}`}
                   onClick={() => setViewMode('grid')}
-                  title="Chế độ lưới"
+                  title="Grid view"
                 >
                   <Ico d={ICONS.grid} size={16} />
                 </button>
@@ -444,7 +444,7 @@ export default function VibePage() {
                   type="button"
                   className={`vb-view-btn ${viewMode === 'compact' ? 'is-active' : ''}`}
                   onClick={() => setViewMode('compact')}
-                  title="Chế độ danh sách gọn"
+                  title="List view"
                 >
                   <Ico d={ICONS.terminal} size={16} />
                 </button>
@@ -455,10 +455,10 @@ export default function VibePage() {
           {/* Active Filter Indicators */}
           {(category !== 'all' || selectedEngine !== 'All Engines' || selectedTag || searchQuery || showSavedOnly) && (
             <div className="vb-active-filters">
-              <span className="vb-filter-label">Bộ lọc đang áp dụng:</span>
+              <span className="vb-filter-label">{t('vb_active_filters')}</span>
               {showSavedOnly && (
                 <span className="vb-filter-pill">
-                  Đã lưu <button type="button" onClick={() => setShowSavedOnly(false)}>×</button>
+                  {t('vb_saved_items')} <button type="button" onClick={() => setShowSavedOnly(false)}>×</button>
                 </span>
               )}
               {category !== 'all' && (
@@ -492,9 +492,9 @@ export default function VibePage() {
                   setShowSavedOnly(false);
                 }}
               >
-                Xóa tất cả
+                {t('vb_clear_all')}
               </button>
-              <span className="vb-results-count">({filteredTemplates.length} kết quả)</span>
+              <span className="vb-results-count">({t('vb_results_count', { n: filteredTemplates.length })})</span>
             </div>
           )}
 
@@ -504,8 +504,8 @@ export default function VibePage() {
               <div className="vb-empty-icon">
                 <Ico d={ICONS.search} size={36} />
               </div>
-              <h3>Không tìm thấy mẫu phù hợp</h3>
-              <p>Hãy thử tìm với từ khoá khác hoặc bỏ bớt các bộ lọc danh mục và môi trường.</p>
+              <h3>{t('vb_empty_title')}</h3>
+              <p>{t('vb_empty_sub')}</p>
               <button
                 type="button"
                 className="vb-btn vb-btn-secondary"
@@ -517,7 +517,7 @@ export default function VibePage() {
                   setShowSavedOnly(false);
                 }}
               >
-                Xem tất cả mẫu
+                {t('vb_empty_btn')}
               </button>
             </div>
           )}
@@ -602,18 +602,18 @@ export default function VibePage() {
                       title="Copy lệnh cài đặt"
                     >
                       <Ico d={isCopied ? ICONS.check : ICONS.copy} size={14} />
-                      <span>{isCopied ? 'Đã copy!' : 'Copy'}</span>
+                      <span>{isCopied ? t('pm_copied') : t('pm_copy')}</span>
                     </button>
                   </div>
 
                   {/* Card Footer: Metrics & Details */}
                   <div className="vb-card-footer">
                     <div className="vb-metrics">
-                      <span className="vb-metric" title="Lượt sao">
+                      <span className="vb-metric" title="Stars">
                         <Ico d={ICONS.star} size={13} />
                         {item.stars}
                       </span>
-                      <span className="vb-metric" title="Lượt tải & sử dụng">
+                      <span className="vb-metric" title="Downloads">
                         <Ico d={ICONS.download} size={13} />
                         {item.downloads}
                       </span>
@@ -625,15 +625,15 @@ export default function VibePage() {
                         className="vb-act-btn vb-act-inspect"
                         onClick={(e) => { e.stopPropagation(); setInspectItem(item); }}
                       >
-                        Chi tiết 👁
+                        {t('vb_inspect_btn')}
                       </button>
                       <button
                         type="button"
                         className="vb-act-btn vb-act-prompt"
                         onClick={(e) => handleCopy(item.systemPrompt || item.installCommand, `${item.id}-prompt`, e)}
-                        title="Copy nội dung Prompt"
+                        title="Copy Prompt"
                       >
-                        {copiedId === `${item.id}-prompt` ? '✓ Đã copy Prompt' : 'Copy Prompt'}
+                        {copiedId === `${item.id}-prompt` ? t('vb_copied_prompt_btn') : t('vb_copy_prompt_btn')}
                       </button>
                     </div>
                   </div>
@@ -696,6 +696,7 @@ export default function VibePage() {
 
 // ==================== COMPONENT: MODAL CHI TIẾT TEMPLATE ====================
 function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy, onDownload, copiedId }) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('prompt'); // 'prompt' | 'install' | 'example'
   const catObj = VIBE_CATEGORIES.find((c) => c.id === item.category) || {};
 
@@ -748,21 +749,21 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
             className={`vb-modal-tab ${activeTab === 'prompt' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('prompt')}
           >
-            Nội dung System Prompt / Quy tắc
+            {t('vb_modal_tab_prompt')}
           </button>
           <button
             type="button"
             className={`vb-modal-tab ${activeTab === 'install' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('install')}
           >
-            Lệnh Cài Đặt (CLI & Config)
+            {t('vb_modal_tab_install')}
           </button>
           <button
             type="button"
             className={`vb-modal-tab ${activeTab === 'example' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('example')}
           >
-            Mã Mẫu / Kết Quả
+            {t('vb_modal_tab_example')}
           </button>
         </div>
 

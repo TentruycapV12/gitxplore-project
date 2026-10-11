@@ -45,22 +45,19 @@ export function useNotifications() {
     saveNotifications(notifications.filter((n) => n.id !== id));
   }, [notifications, saveNotifications]);
 
-  const respondFriendRequest = useCallback((id, accept) => {
-    saveNotifications(
-      notifications.map((n) => {
-        if (n.id === id) {
-          return {
-            ...n,
-            read: true,
-            status: accept ? 'accepted' : 'declined',
-            content: accept
-              ? `Bạn và ${n.actor.name} đã trở thành bạn bè!`
-              : `Bạn đã từ chối lời mời kết bạn từ ${n.actor.name}.`,
-          };
-        }
-        return n;
-      })
-    );
+  const clearAllNotifications = useCallback(() => {
+    saveNotifications([]);
+  }, [saveNotifications]);
+
+  const addNotification = useCallback((newItem) => {
+    const itemWithDefaults = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: Date.now(),
+      read: false,
+      category: 'system',
+      ...newItem,
+    };
+    saveNotifications([itemWithDefaults, ...notifications]);
   }, [notifications, saveNotifications]);
 
   return {
@@ -69,6 +66,7 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    respondFriendRequest,
+    clearAllNotifications,
+    addNotification,
   };
 }

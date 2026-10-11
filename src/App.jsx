@@ -15,7 +15,7 @@ import VibePage from './pages/VibePage.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
 import SupportModal from './Components/SupportModal.jsx';
-import QuickDock from './Components/QuickDock.jsx';
+import ArisuAIAssistant from './Components/ArisuAIAssistant.jsx';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -86,8 +86,8 @@ export default function App() {
       {modalType === 'support' && <SupportModal onClose={closeModal} />}
       {modalType && modalType !== 'support' && <NavModals />}
 
-      {/* Thanh tiện ích bên phải (cửa sổ lối tắt) */}
-      <QuickDock />
+      {/* Trợ lý AI Arisu (Blue Archive) thay thế thanh con nhộng cũ */}
+      <ArisuAIAssistant />
     </>
   );
 }

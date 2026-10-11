@@ -5,18 +5,25 @@ import { useLanguage } from '../context/LanguageContext';
 import './NotificationDropdown.css';
 
 const TYPE_ICONS = {
+  welcome: { icon: '🎉', bg: '#8b5cf6' },
+  vibe: { icon: '⚡', bg: '#f59e0b' },
+  security: { icon: '🛡️', bg: '#10b981' },
+  repo: { icon: '⭐', bg: '#3b82f6' },
+  system: { icon: '🔔', bg: '#6366f1' },
   like: { icon: '👍', bg: '#2563eb' },
   comment: { icon: '💬', bg: '#10b981' },
   reaction: { icon: '❤️', bg: '#ec4899' },
-  friend_request: { icon: '👥', bg: '#8b5cf6' },
-  friend_accept: { icon: '🤝', bg: '#10b981' },
-  birthday: { icon: '🎂', bg: '#f59e0b' },
-  mention: { icon: '🏷️', bg: '#f97316' },
-  tag: { icon: '📌', bg: '#06b6d4' },
-  group: { icon: '👥', bg: '#6366f1' },
-  page: { icon: '🚩', bg: '#3b82f6' },
-  security: { icon: '🛡️', bg: '#ef4444' },
-  trending: { icon: '⭐', bg: '#f59e0b' },
+};
+
+const formatRelTime = (ts, t) => {
+  if (!ts) return '';
+  const diff = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+  if (diff < 1) return t('nw_now');
+  if (diff < 60) return t('nw_ago_m', { n: diff });
+  const h = Math.floor(diff / 60);
+  if (h < 24) return t('nw_ago_h', { n: h });
+  const d = Math.floor(h / 24);
+  return t('nw_ago_d', { n: d });
 };
 
 export default function NotificationDropdown({ onClose }) {
@@ -28,12 +35,11 @@ export default function NotificationDropdown({ onClose }) {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    respondFriendRequest,
+    clearAllNotifications,
   } = useNotifications();
 
-  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread' | 'friends'
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread'
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [wishedIds, setWishedIds] = useState([]);
   const containerRef = useRef(null);
 
   // Đóng khi click ngoài
@@ -49,7 +55,6 @@ export default function NotificationDropdown({ onClose }) {
 
   const filteredList = notifications.filter((item) => {
     if (filterTab === 'unread') return !item.read;
-    if (filterTab === 'friends') return item.category === 'friends' || item.category === 'birthday';
     return true;
   });
 
@@ -68,22 +73,38 @@ export default function NotificationDropdown({ onClose }) {
         <div className="fb-notif-title-row">
           <div className="fb-notif-title-wrap">
             <h3 className="fb-notif-title">{t('notif_title')}</h3>
-            {unreadCount > 0 && <span className="fb-notif-count-badge">{unreadCount} {t('notif_new')}</span>}
+            {unreadCount > 0 && (
+              <span className="fb-notif-count-badge">
+                {unreadCount} {t('notif_new')}
+              </span>
+            )}
           </div>
 
           <div className="fb-notif-header-actions">
-            <button
-              type="button"
-              className="fb-notif-tool-btn"
-              onClick={markAllAsRead}
-              title={t('notif_mark_all')}
-            >
-              ✓ {t('notif_mark_all')}
-            </button>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="fb-notif-tool-btn"
+                onClick={markAllAsRead}
+                title={t('notif_mark_all')}
+              >
+                ✓ {t('notif_mark_all')}
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                className="fb-notif-tool-btn fb-notif-clear-btn"
+                onClick={clearAllNotifications}
+                title={t('notif_clear_all')}
+              >
+                ✕ {t('notif_clear_all')}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Tabs: Tất cả / Chưa đọc / Bạn bè */}
+        {/* Tabs: Tất cả / Chưa đọc */}
         <div className="fb-notif-tabs">
           <button
             type="button"
@@ -99,13 +120,6 @@ export default function NotificationDropdown({ onClose }) {
           >
             {t('notif_tab_unread')} {unreadCount > 0 && `(${unreadCount})`}
           </button>
-          <button
-            type="button"
-            className={`fb-notif-tab ${filterTab === 'friends' ? 'is-active' : ''}`}
-            onClick={() => setFilterTab('friends')}
-          >
-            {t('notif_tab_friends')}
-          </button>
         </div>
       </div>
 
@@ -114,11 +128,25 @@ export default function NotificationDropdown({ onClose }) {
         {filteredList.length === 0 ? (
           <div className="fb-notif-empty">
             <div className="fb-empty-bell">🔔</div>
-            <p>{t('notif_empty')}</p>
+            <h4>{t('notif_empty')}</h4>
+            <p>{t('notif_empty_desc')}</p>
+            <button
+              type="button"
+              className="fb-empty-action-btn"
+              onClick={() => {
+                navigate('/vibe');
+                onClose();
+              }}
+            >
+              {t('notif_empty_action')}
+            </button>
           </div>
         ) : (
           filteredList.map((item) => {
-            const typeConfig = TYPE_ICONS[item.type] || { icon: '🔔', bg: '#6b7280' };
+            const typeConfig = TYPE_ICONS[item.type] || { icon: '🔔', bg: '#6366f1' };
+            const titleText = item.titleKey ? t(item.titleKey) : item.title;
+            const contentText = item.contentKey ? t(item.contentKey) : item.content;
+            const timeText = item.timestamp ? formatRelTime(item.timestamp, t) : item.time || '';
 
             return (
               <div
@@ -128,15 +156,14 @@ export default function NotificationDropdown({ onClose }) {
               >
                 {/* Avatar with small type badge */}
                 <div className="fb-notif-avatar-wrap">
-                  {item.actor.avatar ? (
-                    <img src={item.actor.avatar} alt={item.actor.name} className="fb-notif-avatar" />
+                  {item.actor?.avatar ? (
+                    <img src={item.actor.avatar} alt="" className="fb-notif-avatar" />
                   ) : (
-                    <div className="fb-notif-avatar-fallback">{item.actor.avatarChar}</div>
+                    <div className="fb-notif-avatar-fallback">{item.actor?.avatarChar || 'G'}</div>
                   )}
                   <span
                     className="fb-notif-type-icon"
                     style={{ backgroundColor: typeConfig.bg }}
-                    title={item.type}
                   >
                     {typeConfig.icon}
                   </span>
@@ -145,47 +172,10 @@ export default function NotificationDropdown({ onClose }) {
                 {/* Content */}
                 <div className="fb-notif-content">
                   <p className="fb-notif-text">
-                    <strong>{item.actor.name}</strong> {item.title}
+                    <strong>{item.actor?.name || 'GitXplore'}</strong> {titleText}
                   </p>
-                  {item.content && <p className="fb-notif-subtext">{item.content}</p>}
-
-                  {/* Friend Request Action Buttons */}
-                  {item.type === 'friend_request' && item.status === 'pending' && (
-                    <div className="fb-notif-actions" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="fb-btn-confirm"
-                        onClick={() => respondFriendRequest(item.id, true)}
-                      >
-                        {t('notif_accept')}
-                      </button>
-                      <button
-                        type="button"
-                        className="fb-btn-delete"
-                        onClick={() => respondFriendRequest(item.id, false)}
-                      >
-                        {t('notif_decline')}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Birthday Action Button */}
-                  {item.type === 'birthday' && (
-                    <div className="fb-notif-actions" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="fb-btn-birthday"
-                        onClick={() => {
-                          setWishedIds((prev) => [...prev, item.id]);
-                          markAsRead(item.id);
-                        }}
-                      >
-                        {wishedIds.includes(item.id) ? t('notif_wished') : t('notif_wish_bday')}
-                      </button>
-                    </div>
-                  )}
-
-                  <span className="fb-notif-time">{item.time}</span>
+                  {contentText && <p className="fb-notif-subtext">{contentText}</p>}
+                  <span className="fb-notif-time">{timeText}</span>
                 </div>
 
                 {/* Unread dot & 3-dot options */}
@@ -196,7 +186,7 @@ export default function NotificationDropdown({ onClose }) {
                     type="button"
                     className="fb-more-btn"
                     onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
-                    title="Options"
+                    title="Tùy chọn"
                   >
                     •••
                   </button>
@@ -235,11 +225,11 @@ export default function NotificationDropdown({ onClose }) {
         <button
           type="button"
           onClick={() => {
-            navigate('/community');
+            navigate('/vibe');
             onClose();
           }}
         >
-          {t('community')} →
+          {t('vibe_nav') || 'Vibe Coding Hub'} →
         </button>
       </div>
     </div>
