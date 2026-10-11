@@ -45,7 +45,7 @@ const FORUM_LABEL = {
 
 export default function TopNav() {
   const { user, logout } = useAuth();
-  const { openModal } = useUI();
+  const { openModal, openPlayground, openCompare } = useUI();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
@@ -191,6 +191,38 @@ export default function TopNav() {
           <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#fef08a' }}>⌘K</kbd>
         </button>
 
+        {/* Quick Vibe Sandbox Pill */}
+        <button
+          type="button"
+          onClick={() => openPlayground()}
+          title="Vibe Coding Playground - Thử code 1-chạm"
+          style={{
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2))',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            borderRadius: '999px',
+            padding: '6px 12px',
+            color: '#fef08a',
+            fontSize: '12px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.35)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          <span>⚡</span>
+          <span>Sandbox</span>
+        </button>
+
         <div className="tn-wrap">
           <button
             type="button"
@@ -206,6 +238,12 @@ export default function TopNav() {
             <div className="tn-pop tn-apps" role="menu">
               <p className="tn-pop-title">{t('ui_shortcuts')}</p>
               <div className="tn-apps-grid">
+                <button type="button" onClick={() => { setMenu(null); openPlayground(); }}>
+                  <span style={{ fontSize: '18px' }}>⚡</span><span>Vibe Sandbox</span>
+                </button>
+                <button type="button" onClick={() => { setMenu(null); openCompare(); }}>
+                  <span style={{ fontSize: '18px' }}>⚖️</span><span>So sánh Repo</span>
+                </button>
                 <button type="button" onClick={() => go('/vibe')}>{ICONS.vibe}<span>{t('vibe_nav') || 'Vibe Coding'}</span></button>
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
                 <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>{t('community')}</span></button>

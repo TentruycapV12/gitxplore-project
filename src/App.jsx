@@ -20,6 +20,8 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 const NewsPage = lazy(() => import('./pages/NewsPage.jsx'));
 const SearchPage = lazy(() => import('./pages/SearchPage.jsx'));
 const VibePage = lazy(() => import('./pages/VibePage.jsx'));
+const VibePlaygroundModal = lazy(() => import('./Components/VibePlaygroundModal.jsx'));
+const RepoCompareModal = lazy(() => import('./Components/RepoCompareModal.jsx'));
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -78,7 +80,7 @@ function RouteLoadingFallback() {
 }
 
 export default function App() {
-  const { modalType, closeModal, selectedProject } = useUI();
+  const { modalType, closeModal, selectedProject, compareProjects, playgroundTemplate } = useUI();
 
   return (
     <>
@@ -118,7 +120,17 @@ export default function App() {
       {/* TẤT CẢ CÁC MODAL ĐƯỢC QUẢN LÝ Ở ĐÂY */}
       {selectedProject && <ProjectModal />}
       {modalType === 'support' && <SupportModal onClose={closeModal} />}
-      {modalType && modalType !== 'support' && <NavModals />}
+      {(modalType === 'signin' || modalType === 'signup') && <NavModals />}
+      {modalType === 'playground' && (
+        <Suspense fallback={null}>
+          <VibePlaygroundModal initialTemplateId={playgroundTemplate} onClose={closeModal} />
+        </Suspense>
+      )}
+      {modalType === 'compare' && (
+        <Suspense fallback={null}>
+          <RepoCompareModal initialPair={compareProjects} onClose={closeModal} />
+        </Suspense>
+      )}
 
       {/* Hộp lệnh tìm kiếm toàn năng ⌘K / Ctrl+K */}
       <GlobalCommandPalette />

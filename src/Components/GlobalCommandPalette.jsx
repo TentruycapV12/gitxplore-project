@@ -14,7 +14,7 @@ export default function GlobalCommandPalette() {
   const listRef = useRef(null);
   const navigate = useNavigate();
   const { lang, t } = useLanguage();
-  const { selectProject } = useUI();
+  const { selectProject, openPlayground, openCompare } = useUI();
 
   // Lắng nghe tổ hợp phím Ctrl+K / Cmd+K / Slash (/) và Custom Event
   useEffect(() => {
@@ -51,6 +51,8 @@ export default function GlobalCommandPalette() {
 
   // Danh sách mục điều hướng mặc định
   const navItems = useMemo(() => [
+    { id: 'nav-playground', type: 'action-playground', title: '⚡ Vibe Coding Playground (Thử Code Trực Tiếp)', sub: 'Code Sandbox 1-chạm: Chạy Cafe web, Game Snake, Pomodoro ngay', icon: '⚡' },
+    { id: 'nav-compare', type: 'action-compare', title: '⚖️ So sánh Dự án (Repo Battle Arena)', sub: 'Đối đầu trực diện 2 repo: React vs Vue, Supabase vs Firebase...', icon: '⚖️' },
     { id: 'nav-home', type: 'nav', title: 'Trang chủ (Home)', sub: '3D Iron Man, Kho mã nguồn & Vibe Coding', icon: '🏠', path: '/' },
     { id: 'nav-guide', type: 'guide', title: 'Nhập môn trong 3 phút (Beginner Guide)', sub: 'Hiểu ngay mã nguồn mở & Vibe Coding cho người mới', icon: '🌱', path: '/#beginner-guide' },
     { id: 'nav-vibe', type: 'nav', title: 'Vibe Coding Hub', sub: 'Mẫu .cursorrules, MCP Servers & AI Prompts', icon: '⚡', path: '/vibe' },
@@ -122,7 +124,11 @@ export default function GlobalCommandPalette() {
     setIsOpen(false);
     if (!item) return;
 
-    if (item.type === 'nav') {
+    if (item.type === 'action-playground') {
+      if (openPlayground) openPlayground();
+    } else if (item.type === 'action-compare') {
+      if (openCompare) openCompare();
+    } else if (item.type === 'nav') {
       navigate(item.path);
     } else if (item.type === 'guide') {
       if (window.location.pathname === '/') {

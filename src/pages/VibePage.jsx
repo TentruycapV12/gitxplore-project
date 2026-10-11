@@ -4,6 +4,7 @@ import TopNav from '../Components/TopNav.jsx';
 import Footer from '../Components/Footer.jsx';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
 import { VIBE_CATEGORIES, VIBE_ENGINES, VIBE_TEMPLATES } from '../data/vibeTemplatesData';
 import './VibePage.css';
 
@@ -65,6 +66,7 @@ export default function VibePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { lang, t } = useLanguage();
   const { user } = useAuth();
+  const { openPlayground, openCompare } = useUI();
 
   // State
   const [category, setCategory] = useState(() => searchParams.get('cat') || 'all');
@@ -313,6 +315,30 @@ export default function VibePage() {
           <button
             type="button"
             className="vb-btn vb-btn-primary"
+            onClick={() => openPlayground()}
+            style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
+              color: '#0a0a0c',
+              fontWeight: 800,
+              boxShadow: '0 0 20px rgba(245, 158, 11, 0.4)',
+              border: 'none',
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>⚡</span>
+            <span>{lang === 'vi' ? 'Thử Vibe Sandbox Trực Tiếp' : 'Try Live Sandbox'}</span>
+          </button>
+          <button
+            type="button"
+            className="vb-btn vb-btn-secondary"
+            onClick={() => openCompare()}
+            style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}
+          >
+            <span style={{ fontSize: '15px' }}>⚖️</span>
+            <span>{lang === 'vi' ? 'So sánh Repo' : 'Repo Battle'}</span>
+          </button>
+          <button
+            type="button"
+            className="vb-btn vb-btn-secondary"
             onClick={() => setShowGeneratorModal(true)}
           >
             <Ico d={ICONS.sparkles} size={16} />
@@ -697,6 +723,10 @@ export default function VibePage() {
           onCopy={handleCopy}
           onDownload={handleDownload}
           copiedId={copiedId}
+          onTryPlayground={(templateId) => {
+            setInspectItem(null);
+            openPlayground(templateId);
+          }}
         />
       )}
 
@@ -738,7 +768,7 @@ export default function VibePage() {
 }
 
 // ==================== COMPONENT: MODAL CHI TIẾT TEMPLATE ====================
-function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy, onDownload, copiedId }) {
+function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy, onDownload, copiedId, onTryPlayground }) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('prompt'); // 'prompt' | 'install' | 'example'
   const catObj = VIBE_CATEGORIES.find((c) => c.id === item.category) || {};
@@ -917,6 +947,21 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
           </div>
 
           <div className="vb-foot-right">
+            <button
+              type="button"
+              className="vb-btn vb-btn-primary"
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
+                color: '#0a0a0c',
+                fontWeight: 700,
+                border: 'none',
+              }}
+              onClick={() => onTryPlayground && onTryPlayground(item.id)}
+              title="Mở ngay trình giả lập Sandbox để thử nghiệm trực tiếp"
+            >
+              <span>⚡</span>
+              <span>Thử trong Sandbox</span>
+            </button>
             <button
               type="button"
               className="vb-btn vb-btn-secondary"

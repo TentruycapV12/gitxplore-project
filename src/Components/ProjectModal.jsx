@@ -3,7 +3,7 @@ import { useUI } from '../context/UIContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function ProjectModal() {
-  const { selectedProject: project, closeProject: closeProjectModal } = useUI();
+  const { selectedProject: project, closeProject: closeProjectModal, openCompare } = useUI();
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const timerRef = useRef(null);
@@ -27,6 +27,14 @@ export default function ProjectModal() {
     setCopied(true);
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCompare = () => {
+    const projToCompare = project;
+    closeProjectModal();
+    if (openCompare) {
+      openCompare([projToCompare, null]);
+    }
   };
 
   return (
@@ -64,6 +72,15 @@ export default function ProjectModal() {
           </div>
 
           <div className="modal-footer-btns">
+            <button
+              type="button"
+              onClick={handleCompare}
+              className="link-btn btn-secondary"
+              title="So sánh với dự án khác trong Repo Battle"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span>⚖️</span> So sánh Repo
+            </button>
             {project.demoUrl && (
               <a href={project.demoUrl} target="_blank" rel="noreferrer" className="link-btn btn-secondary">
                 {t('pm_demo')}
