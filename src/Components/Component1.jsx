@@ -4,6 +4,8 @@ import { useLanguage } from '../context/LanguageContext';
 
 const categories = [
   { id: 'all', key: 'all_repos' },
+  { id: 'beginner', key: 'cat_beginner' },
+  { id: 'apps', key: 'cat_apps' },
   { id: 'ai', key: 'cat_ai' },
   { id: 'gamedev', key: 'cat_gamedev' },
   { id: 'agents', key: 'cat_agents' },

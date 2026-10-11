@@ -238,6 +238,49 @@ export default function VibePage() {
           </div>
         </div>
 
+        {/* FAST 3-STEP BEGINNER GUIDE FOR VIBE CODING */}
+        <div style={{
+          maxWidth: '920px',
+          margin: '28px auto 0',
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          backdropFilter: 'blur(12px)',
+          textAlign: 'left'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', color: '#fef08a', fontWeight: 700, fontSize: '13.5px' }}>
+            <span>💡</span>
+            <span>{lang === 'vi' ? 'Cách sử dụng Vibe Coding trong 3 bước đơn giản (Dành cho người mới)' : 'How to use Vibe Coding in 3 Simple Steps'}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ color: '#10b981', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
+                {lang === 'vi' ? 'BƯỚC 1: CÀI ĐẶT TRÌNH SOẠN THẢO' : 'STEP 1: INSTALL EDITOR'}
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
+                {lang === 'vi' ? 'Tải Cursor IDE hoặc VS Code (có AI Copilot) miễn phí về máy tính.' : 'Download Cursor IDE or VS Code with AI Copilot.'}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ color: '#3b82f6', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
+                {lang === 'vi' ? 'BƯỚC 2: SAO CHÉP QUY TẮC (.cursorrules)' : 'STEP 2: COPY RULE (.cursorrules)'}
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
+                {lang === 'vi' ? 'Chọn 1 mẫu thẻ bên dưới và bấm nút 📋 Sao chép quy tắc.' : 'Choose a template below and click 📋 Copy Rule.'}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ color: '#f59e0b', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
+                {lang === 'vi' ? 'BƯỚC 3: DÁN VÀO DỰ ÁN & RA LỆNH' : 'STEP 3: PASTE & PROMPT'}
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
+                {lang === 'vi' ? 'Tạo file .cursorrules trong code và nói ý tưởng bằng tiếng Việt để AI làm!' : 'Create .cursorrules in your project and prompt AI in plain language!'}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Terminal Search Trigger */}
         <div className="vb-search-container">
           <div className="vb-search-box">

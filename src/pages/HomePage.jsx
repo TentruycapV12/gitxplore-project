@@ -4,6 +4,7 @@ import { useLenis } from '../hooks/useLenis';
 import { useProjectFilters } from '../hooks/useProjectFilters';
 import { useUI } from '../context/UIContext';
 import HeroParallax from '../Components/HeroParallax.jsx';
+import BeginnerQuickStart from '../Components/BeginnerQuickStart.jsx';
 import VibeFeaturedBanner from '../Components/VibeFeaturedBanner.jsx';
 import Component1 from '../Components/Component1.jsx';
 import Component2 from '../Components/Component2.jsx';
@@ -28,6 +29,7 @@ export default function HomePage() {
   return (
     <>
       <HeroParallax />
+      <BeginnerQuickStart />
 
       <main className="lusion-container" id="explore">
         <VibeFeaturedBanner />

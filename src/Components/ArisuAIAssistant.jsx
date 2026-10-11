@@ -207,6 +207,22 @@ export default function ArisuAIAssistant() {
     return () => el.removeEventListener('wheel', handleWheel);
   }, [isOpen]);
 
+  // Lắng nghe sự kiện mở trợ lý AI từ bất kỳ nút bấm nào trên toàn trang
+  useEffect(() => {
+    const handleOpenAI = (e) => {
+      setIsOpen(true);
+      const query = e.detail?.query;
+      if (query) {
+        setTimeout(() => {
+          handleSendMessage(query);
+        }, 120);
+      }
+    };
+
+    window.addEventListener('open-arisu-ai', handleOpenAI);
+    return () => window.removeEventListener('open-arisu-ai', handleOpenAI);
+  }, []);
+
   // Khởi tạo SpeechRecognition (Ghi âm)
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -501,6 +517,22 @@ export default function ArisuAIAssistant() {
 
           {/* Quick Action Chips */}
           <div className="arisu-chips-bar">
+            <button
+              type="button"
+              className="arisu-chip"
+              style={{ background: 'rgba(16, 185, 129, 0.22)', borderColor: 'rgba(16, 185, 129, 0.45)', color: '#6ee7b7' }}
+              onClick={() => handleChipClick(lang === 'vi' ? 'Mã nguồn mở là gì? Giải thích siêu đơn giản cho người chưa biết code!' : 'What is open source? Explain simply for beginners!')}
+            >
+              🌱 Mã nguồn mở là gì?
+            </button>
+            <button
+              type="button"
+              className="arisu-chip"
+              style={{ background: 'rgba(16, 185, 129, 0.22)', borderColor: 'rgba(16, 185, 129, 0.45)', color: '#6ee7b7' }}
+              onClick={() => handleChipClick(lang === 'vi' ? 'Tôi không biết code thì dùng trang web này làm gì?' : 'I do not know how to code, what can I do on this website?')}
+            >
+              🚀 Chưa biết code làm gì?
+            </button>
             {aiMode === 'dev' ? (
               <>
                 <button
@@ -524,13 +556,6 @@ export default function ArisuAIAssistant() {
                 >
                   🛠️ Khắc phục CORS
                 </button>
-                <button
-                  type="button"
-                  className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Cách cấu hình MCP Server cho Claude và Cursor?' : 'How to set up MCP Server for Claude & Cursor?')}
-                >
-                  🔌 Cấu hình MCP
-                </button>
               </>
             ) : (
               <>
@@ -540,13 +565,6 @@ export default function ArisuAIAssistant() {
                   onClick={() => handleChipClick(lang === 'vi' ? 'Làm sao để dùng các mẫu Vibe Coding?' : 'How to use Vibe Coding templates?')}
                 >
                   {t('arisu_chip_vibe')}
-                </button>
-                <button
-                  type="button"
-                  className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Hướng dẫn cách lưu và xuất repo yêu thích?' : 'How to save and export repositories?')}
-                >
-                  {t('arisu_chip_save')}
                 </button>
                 <button
                   type="button"

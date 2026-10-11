@@ -717,6 +717,57 @@ export default function CommunityForum() {
             </div>
           </div>
 
+          {/* BANNER PHÒNG TRÀ TÂN THỦ / BEGINNER WELCOME BANNER */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(20, 30, 25, 0.9) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '16px',
+              padding: '16px 24px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              flexWrap: 'wrap'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
+              <span style={{ fontSize: '26px', background: 'rgba(16, 185, 129, 0.2)', padding: '6px 10px', borderRadius: '12px' }}>🌱</span>
+              <div>
+                <strong style={{ color: '#6ee7b7', fontSize: '15px', display: 'block', marginBottom: '3px' }}>
+                  {lang === 'vi' ? 'Khu Vực Tân Thủ: Hỏi Đáp Mọi Thắc Mắc Về Lập Trình & Mã Nguồn Mở' : 'Beginner Friendly Zone: Ask Anything About Code & Open Source'}
+                </strong>
+                <p style={{ margin: 0, color: '#d1fae5', fontSize: '13px', opacity: 0.9 }}>
+                  {lang === 'vi'
+                    ? 'Bạn là người mới và chưa biết bắt đầu từ đâu? Hãy mạnh dạn đặt câu hỏi — ở đây không có câu hỏi nào là ngớ ngẩn!'
+                    : 'New to coding? Feel completely free to ask any questions — psychological safety guaranteed for every newcomer!'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setNewPrefix('Question');
+                setNewTopicTitle(lang === 'vi' ? '[Tân Thủ] ' : '[Beginner] ');
+                setShowCreateModal(true);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '9px 18px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '13px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              ✍️ {lang === 'vi' ? 'Đặt câu hỏi đầu tiên' : 'Ask First Question'}
+            </button>
+          </div>
+
           {/* 2. THANH TÌM KIẾM TỨC THÌ & BỘ LỌC 1-CHẠM (QUICK SEARCH & CATEGORY PILLS) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '22px' }}>
             

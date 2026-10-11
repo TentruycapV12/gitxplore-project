@@ -56,6 +56,25 @@ export const getDevExpertResponse = (text, attachments, userAppLang, user) => {
     }
   }
 
+  // --- B0. GIẢI THÍCH CHO NGƯỜI MỚI (BEGINNER CRASH COURSE) ---
+  if (
+    q.includes('mã nguồn mở') ||
+    q.includes('open source') ||
+    q.includes('người mới') ||
+    q.includes('chưa biết code') ||
+    q.includes('không biết code') ||
+    q.includes('web này là gì') ||
+    q.includes('web này làm gì') ||
+    q.includes('bắt đầu từ đâu') ||
+    q.includes('hướng dẫn sử dụng') ||
+    q.includes('tân thủ')
+  ) {
+    if (isVi) {
+      return `### 🌱 Chào mừng bạn đến với GitXplore! (Hướng dẫn dễ hiểu cho người mới)\n\nĐừng lo lắng nếu bạn chưa từng viết một dòng code nào! Dưới đây là 3 điều cốt lõi bạn cần biết:\n\n#### 1. Mã Nguồn Mở (Open Source) là gì?\nHãy tưởng tượng một đầu bếp tạo ra món ăn ngon nhất thế giới. Thay vì giấu bí quyết kinh doanh, họ **chia sẻ toàn bộ công thức và nguyên liệu miễn phí 100% lên mạng cho mọi người tự nấu và cải tiến**. Đó chính là Mã Nguồn Mở!\nHầu hết công nghệ bạn dùng hàng ngày (Android, trình duyệt Chrome, WordPress, Wikipedia) đều được xây dựng từ mã nguồn mở.\n\n#### 2. Bạn chưa biết code thì trang web này giúp gì cho bạn?\n• **Tìm phần mềm miễn phí chất lượng cao**: Thay vì mua bản quyền Photoshop hay Office đắt đỏ hoặc tải app bẻ khóa dính virus, bạn có thể tìm thấy phần mềm thay thế miễn phí tuyệt đối (như Blender, GIMP, OBS Studio, Ollama).\n• **Khám phá Vibe Coding**: Kỷ nguyên mới nơi bạn chỉ cần nói ý tưởng bằng tiếng Việt thông thường, AI sẽ biến nó thành website thật!\n• **Tự học công nghệ từ số 0**: Tiếp cận các kho tài liệu và dự án hướng dẫn từng bước hoàn toàn miễn phí.\n\n#### 3. Bắt đầu ngay tại đây:\n1. Đọc mục **"Nhập môn trong 3 phút"** ngay trang chủ.\n2. Chọn bộ lọc **"🌱 Dành cho người mới"** trong danh sách dự án bên dưới.\n3. Ghé thăm **Diễn đàn (${C}/forum${C})** để hỏi bất kỳ điều gì bạn muốn — không ai chê cười bạn cả!\n\nTôi luôn ở đây để đồng hành cùng bạn!`;
+    }
+    return `### 🌱 Welcome to GitXplore! (Beginner Guide)\n\nZero coding experience? No problem! Here is what you need to know:\n\n#### 1. What is Open Source?\nImagine top chefs sharing world-class recipes 100% free online for anyone to cook, customize, and improve. That is Open Source!\n\n#### 2. What can you do here without coding?\n- Discover free high-quality software replacing expensive paid subscriptions.\n- Learn Vibe Coding: Build web apps simply by prompting AI in plain English!\n- Explore beginner-friendly tutorials and projects.\n\n#### 3. Where to start:\n1. Check the **"3-Minute Crash Course"** section on the homepage.\n2. Click **"🌱 Beginner Friendly"** in the repository filters.\n3. Ask me anytime if you get stuck!`;
+  }
+
   // --- B. VIBE CODING, .CURSORRULES & MCP ---
   if (
     q.includes('vibe coding') ||
@@ -205,6 +224,24 @@ export const getArisuAnimeResponse = (text, attachments, userAppLang, user) => {
       ]);
     }
     return `Warning: Sensei's HP gauge is low! ⚠️💔 Please take a well-deserved rest at the Inn! Arisu will stand guard!`;
+  }
+
+  // Người mới / Mã nguồn mở
+  if (
+    q.includes('mã nguồn mở') ||
+    q.includes('open source') ||
+    q.includes('người mới') ||
+    q.includes('chưa biết code') ||
+    q.includes('không biết code') ||
+    q.includes('bắt đầu từ đâu') ||
+    q.includes('web này là gì') ||
+    q.includes('web này làm gì') ||
+    q.includes('tân thủ')
+  ) {
+    if (isVi) {
+      return `Panpakapan! Hoan nghênh ${caller} đã đặt chân tới vương quốc GitXplore! 🎮✨\n\n*ting! Cảm biến nhận diện: Nhà Thám Hiểm Tân Thủ đáng yêu!*\nSensei đừng sợ khi thấy nhiều chữ kỹ thuật nhé! Mã Nguồn Mở thực ra giống hệt một **Hòm Kho Báu Vĩ Đại** mà các pháp sư công nghệ mở toang cửa để tặng trang bị miễn phí cho tất cả mọi người!\n\nSensei chưa biết niệm ma pháp (code)? Đã có Arisu và các Trợ lý AI ở đây rồi! Sensei chỉ cần miêu tả ý tưởng trong đầu, AI sẽ rèn nên bảo kiếm và thành trì cho Sensei!\n\nSensei hãy cuộn chuột xem mục **"Nhập môn trong 3 phút"** hoặc hỏi Arisu bất kỳ điều gì Sensei tò mò nhé! ✨`;
+    }
+    return `Panpakapan! Welcome ${caller} to GitXplore! 🎮✨ Open Source is like a giant treasure chest where developers share magical tools for free! Even without coding skills, Arisu and AI will help Sensei create wondrous things!`;
   }
 
   // Câu hỏi chung Arisu

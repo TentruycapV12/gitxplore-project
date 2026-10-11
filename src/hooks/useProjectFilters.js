@@ -42,7 +42,24 @@ export function useProjectFilters() {
           item.language.toLowerCase().includes(term)
       );
     }
-    if (category === 'all') return openSourceProjects.slice(0, 4);
+    if (category === 'all') return openSourceProjects.slice(0, 12);
+    if (category === 'beginner') {
+      return openSourceProjects.filter(
+        (item) =>
+          item.isBeginner ||
+          item.category === 'beginner' ||
+          ['Ollama', 'Stable Diffusion WebUI', 'Godot Engine', 'vLLM', 'Transformers (Hugging Face)', 'Next.js', 'FastAPI'].includes(item.name) ||
+          item.category === 'web' ||
+          item.category === 'ai'
+      ).slice(0, 8);
+    }
+    if (category === 'apps') {
+      return openSourceProjects.filter(
+        (item) =>
+          Boolean(item.demoUrl) ||
+          ['Ollama', 'Stable Diffusion WebUI', 'Godot Engine'].includes(item.name)
+      ).slice(0, 8);
+    }
     return openSourceProjects.filter((item) => item.category === category);
   }, [category, search]);
 

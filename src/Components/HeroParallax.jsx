@@ -201,26 +201,48 @@ export default function HeroParallax() {
         >
           {t('welcome_desc')}
         </p>
-        <div style={{ pointerEvents: 'auto' }}>
+        <div style={{ pointerEvents: 'auto', display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => scrollToId('explore')}
+            onClick={() => scrollToId('beginner-guide')}
             style={{
-              background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
               color: '#ffffff',
               border: 'none',
-              padding: '12px 28px',
+              padding: '12px 24px',
               borderRadius: '24px',
               fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 4px 18px rgba(220, 38, 38, 0.4)',
+              boxShadow: '0 4px 18px rgba(16, 185, 129, 0.4)',
               transition: 'transform 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
             onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
             onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
           >
-            {t('start_journey')}
+            {t('hero_btn_newbie')}
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToId('explore')}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              padding: '12px 24px',
+              borderRadius: '24px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.1)')}
+          >
+            {t('hero_btn_dev')}
           </button>
         </div>
       </div>
@@ -281,12 +303,32 @@ export default function HeroParallax() {
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
+              onClick={() => scrollToId('beginner-guide')}
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '11px 22px',
+                borderRadius: '24px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(16, 185, 129, 0.4)',
+                transition: 'transform 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
+              onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
+            >
+              🌱 3 Phút Nhập Môn ↓
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/vibe')}
               style={{
                 background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
                 color: '#ffffff',
                 border: 'none',
-                padding: '11px 24px',
+                padding: '11px 22px',
                 borderRadius: '24px',
                 fontSize: '13px',
                 fontWeight: 700,
@@ -306,7 +348,7 @@ export default function HeroParallax() {
                 background: 'rgba(255, 255, 255, 0.08)',
                 color: '#fcd34d',
                 border: '1px solid rgba(252, 211, 77, 0.4)',
-                padding: '10px 20px',
+                padding: '10px 18px',
                 borderRadius: '24px',
                 fontSize: '13px',
                 fontWeight: 600,

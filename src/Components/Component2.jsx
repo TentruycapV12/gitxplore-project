@@ -87,14 +87,27 @@ function Component2({ project, onSelect }) {
           >
             {t('quick_view')}
           </button>
-          <a
-            href={project.githubUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="link-btn btn-primary"
-          >
-            GitHub ↗
-          </a>
+          {project.demoUrl ? (
+            <a
+              href={project.demoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="link-btn btn-primary"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#fff' }}
+              title="Trải nghiệm ứng dụng thực tế"
+            >
+              Trải nghiệm / Demo ↗
+            </a>
+          ) : (
+            <a
+              href={project.githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="link-btn btn-primary"
+            >
+              GitHub ↗
+            </a>
+          )}
         </div>
       </div>
     </article>

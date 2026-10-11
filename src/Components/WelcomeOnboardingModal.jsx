@@ -9,6 +9,7 @@ export default function WelcomeOnboardingModal({ onClose }) {
   const { t, lang, setLang, languages } = useLanguage();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
+  const [userMode, setUserMode] = useState('newbie'); // 'newbie' | 'dev'
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const handleFinish = () => {
@@ -17,6 +18,12 @@ export default function WelcomeOnboardingModal({ onClose }) {
     }
     localStorage.setItem('gx_onboard_done_global', 'true');
     onClose();
+    if (userMode === 'newbie') {
+      setTimeout(() => {
+        const el = document.getElementById('beginner-guide');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
+    }
   };
 
   const goTo = (path) => {
@@ -59,30 +66,104 @@ export default function WelcomeOnboardingModal({ onClose }) {
               {t('ob_step_1_sub')}
             </p>
 
+            {/* Quick Persona Selector */}
+            <div style={{ display: 'flex', gap: '8px', margin: '0 0 16px', background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setUserMode('newbie')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  background: userMode === 'newbie' ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent',
+                  color: userMode === 'newbie' ? '#ffffff' : '#9ca3af',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>🌱</span> {lang === 'vi' ? 'Người mới muốn tìm hiểu' : 'Beginner Explorer'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserMode('dev')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  background: userMode === 'dev' ? 'linear-gradient(135deg, #f59e0b, #dc2626)' : 'transparent',
+                  color: userMode === 'dev' ? '#ffffff' : '#9ca3af',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>⚡</span> {lang === 'vi' ? 'Lập trình viên / Pro' : 'Developer / Pro'}
+              </button>
+            </div>
+
             <div className="ob-highlights-grid">
-              <div className="ob-highlight-card">
-                <span className="ob-hl-icon">⚡</span>
-                <div>
-                  <strong>{t('ob_step_1_card1_t')}</strong>
-                  <p>{t('ob_step_1_card1_d')}</p>
-                </div>
-              </div>
-
-              <div className="ob-highlight-card">
-                <span className="ob-hl-icon">🤖</span>
-                <div>
-                  <strong>{t('ob_step_1_card2_t')}</strong>
-                  <p>{t('ob_step_1_card2_d')}</p>
-                </div>
-              </div>
-
-              <div className="ob-highlight-card">
-                <span className="ob-hl-icon">🤝</span>
-                <div>
-                  <strong>{t('ob_step_1_card3_t')}</strong>
-                  <p>{t('ob_step_1_card3_d')}</p>
-                </div>
-              </div>
+              {userMode === 'newbie' ? (
+                <>
+                  <div className="ob-highlight-card">
+                    <span className="ob-hl-icon">🎁</span>
+                    <div>
+                      <strong>{lang === 'vi' ? 'Kho báu phần mềm miễn phí' : 'Free Software Vault'}</strong>
+                      <p>{lang === 'vi' ? 'Hàng triệu công cụ, phần mềm đỉnh cao thay thế Office/Photoshop không tốn một đồng.' : 'High-quality free tools and apps without subscriptions.'}</p>
+                    </div>
+                  </div>
+                  <div className="ob-highlight-card">
+                    <span className="ob-hl-icon">🤖</span>
+                    <div>
+                      <strong>{lang === 'vi' ? 'Trợ lý AI hướng dẫn 24/7' : '24/7 AI Companion'}</strong>
+                      <p>{lang === 'vi' ? 'Không cần biết code, Trợ lý Arisu giải thích công nghệ bằng ngôn ngữ bình dân gần gũi.' : 'Ask Arisu anything in plain language with zero technical barrier.'}</p>
+                    </div>
+                  </div>
+                  <div className="ob-highlight-card">
+                    <span className="ob-hl-icon">🌱</span>
+                    <div>
+                      <strong>{lang === 'vi' ? 'Tự học từ con số 0' : 'Learn from Scratch'}</strong>
+                      <p>{lang === 'vi' ? 'Khám phá Vibe Coding: Tự làm website bằng cách trò chuyện với AI!' : 'Discover Vibe Coding: Build products simply by prompting AI!'}</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="ob-highlight-card">
+                    <span className="ob-hl-icon">⚡</span>
+                    <div>
+                      <strong>{t('ob_step_1_card1_t')}</strong>
+                      <p>{t('ob_step_1_card1_d')}</p>
+                    </div>
+                  </div>
+                  <div className="ob-highlight-card">
+                    <span className="ob-hl-icon">🤖</span>
+                    <div>
+                      <strong>{t('ob_step_1_card2_t')}</strong>
+                      <p>{t('ob_step_1_card2_d')}</p>
+                    </div>
+                  </div>
+                  <div className="ob-highlight-card">
+                    <span className="ob-hl-icon">🤝</span>
+                    <div>
+                      <strong>{t('ob_step_1_card3_t')}</strong>
+                      <p>{t('ob_step_1_card3_d')}</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -96,6 +177,16 @@ export default function WelcomeOnboardingModal({ onClose }) {
             </p>
 
             <div className="ob-tour-list">
+              {userMode === 'newbie' && (
+                <div className="ob-tour-item" onClick={() => goTo('/')}>
+                  <span className="ob-tour-icon is-emerald">🌱</span>
+                  <div className="ob-tour-text">
+                    <strong>{lang === 'vi' ? 'Nhập môn trong 3 phút' : '3-Minute Crash Course'}</strong>
+                    <p>{lang === 'vi' ? 'Tìm hiểu Mã nguồn mở & Vibe Coding ngay tại Trang chủ.' : 'Explore Open Source & Vibe Coding on Home.'}</p>
+                  </div>
+                  <span className="ob-tour-arrow">›</span>
+                </div>
+              )}
               <div className="ob-tour-item" onClick={() => goTo('/')}>
                 <span className="ob-tour-icon is-amber">🏠</span>
                 <div className="ob-tour-text">
