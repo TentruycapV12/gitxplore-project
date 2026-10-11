@@ -13,30 +13,80 @@ const FRAME_COUNT = 120;
 const frame1Src = (i) => `/frames/frame_${String(i + 1).padStart(4, '0')}.jpg`;
 const frame2Src = (i) => `/frames/frames2/frame_${String(i + 1).padStart(4, '0')}.jpg`;
 
-/** Tạo canvas sequence: nạp trước các frame và trả về hàm vẽ frame hiện tại. */
+/** Tạo canvas sequence: nạp trước lũy tiến các frame, chống nghẽn mạng và chống chớp trắng. */
 function createSequence(canvas, srcOf) {
   const ctx = canvas.getContext('2d');
   canvas.width = 1920;
   canvas.height = 1080;
 
-  const images = Array.from({ length: FRAME_COUNT }, (_, i) => {
-    const img = new Image();
-    img.src = srcOf(i);
-    return img;
-  });
+  const images = new Array(FRAME_COUNT);
   const state = { frame: 0 };
+  let lastDrawnFrame = -1;
 
   const render = () => {
-    const img = images[state.frame];
-    if (img?.complete) {
+    const target = state.frame;
+    let img = images[target];
+
+    // Chống chớp trắng: Nếu frame mục tiêu chưa nạp xong, dùng frame liền trước gần nhất
+    if (!img || !img.complete) {
+      for (let offset = 1; offset <= 10; offset++) {
+        const prev = images[target - offset];
+        if (prev?.complete) {
+          img = prev;
+          break;
+        }
+      }
+    }
+
+    if (img?.complete && target !== lastDrawnFrame) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      lastDrawnFrame = target;
     }
   };
 
-  // Frame đầu có thể đã tải xong (cache) → vẽ ngay, nếu chưa thì chờ onload.
-  if (images[0].complete) render();
-  else images[0].onload = render;
+  // 1. Nạp ưu tiên 15 khung hình đầu tiên để người dùng tương tác tức thì
+  const initialCount = Math.min(15, FRAME_COUNT);
+  for (let i = 0; i < initialCount; i++) {
+    const img = new Image();
+    img.src = srcOf(i);
+    images[i] = img;
+  }
+
+  // Khung hình đầu tiên nạp xong là vẽ ngay lên canvas
+  if (images[0]?.complete) render();
+  else if (images[0]) images[0].onload = render;
+
+  // 2. Nạp ngầm lũy tiến (Progressive Loading) các khung hình còn lại qua requestIdleCallback
+  const loadRemainingFrames = () => {
+    let index = initialCount;
+    const loadBatch = () => {
+      const end = Math.min(index + 12, FRAME_COUNT);
+      for (let i = index; i < end; i++) {
+        if (!images[i]) {
+          const img = new Image();
+          img.src = srcOf(i);
+          images[i] = img;
+        }
+      }
+      index = end;
+      if (index < FRAME_COUNT) {
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(loadBatch, { timeout: 350 });
+        } else {
+          setTimeout(loadBatch, 60);
+        }
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(loadBatch, { timeout: 500 });
+    } else {
+      setTimeout(loadBatch, 100);
+    }
+  };
+
+  loadRemainingFrames();
 
   return { state, render };
 }

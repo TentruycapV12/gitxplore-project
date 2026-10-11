@@ -158,6 +158,39 @@ export default function TopNav() {
 
       {/* ===== PHẢI: nút tròn + avatar ===== */}
       <div className="tn-right">
+        {/* Universal ⌘K Search Pill */}
+        <button
+          type="button"
+          className="tn-search-pill"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+          title="Tìm kiếm nhanh toàn cầu (Ctrl+K)"
+          style={{
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            borderRadius: '999px',
+            padding: '6px 14px',
+            color: '#d1d5db',
+            fontSize: '12.5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+            e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.14)';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+          }}
+        >
+          <span>🔍</span>
+          <span style={{ opacity: 0.85 }}>Tìm kiếm...</span>
+          <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#fef08a' }}>⌘K</kbd>
+        </button>
+
         <div className="tn-wrap">
           <button
             type="button"
