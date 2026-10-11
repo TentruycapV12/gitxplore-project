@@ -42,7 +42,13 @@ async function requestAIResponse(textToSend, currentAttachments, lang, user, aiM
       },
     });
 
-    if (!error && data?.reply) {
+    const isFailedReply = !data?.reply ||
+      typeof data.reply !== 'string' ||
+      data.reply.trim() === '' ||
+      data.reply.includes('chưa thể xử lý yêu cầu') ||
+      data.reply.includes('lỗi lúc này');
+
+    if (!error && !isFailedReply) {
       return data.reply;
     }
   } catch (err) {
