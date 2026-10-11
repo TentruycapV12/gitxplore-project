@@ -24,6 +24,8 @@ const ICONS = {
   volume: 'M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07',
   volumeMute: 'M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6',
   sparkles: 'm12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z',
+  expand: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7',
+  collapse: 'M4 14h6v6M20 10h-6V4M10 14l-7 7M14 10l7-7',
 };
 
 import { supabase } from '../supabaseClient';
@@ -117,10 +119,40 @@ function FormattedMessage({ text }) {
           return <CodeBlock key={idx} language={p.lang} code={p.code} />;
         }
         return p.content.split('\n').map((line, lineIdx) => {
-          if (!line.trim()) return <div key={lineIdx} style={{ height: '6px' }} />;
-          const inlineParts = line.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+          const trimmed = line.trim();
+          if (!trimmed) return <div key={lineIdx} style={{ height: '6px' }} />;
+          if (trimmed === '---') {
+            return (
+              <hr
+                key={lineIdx}
+                style={{
+                  border: 'none',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                  margin: '10px 0',
+                }}
+              />
+            );
+          }
+
+          const isH3 = line.startsWith('### ');
+          const isH2 = line.startsWith('## ');
+          const isH1 = line.startsWith('# ');
+          const cleanLine = isH3 ? line.slice(4) : isH2 ? line.slice(3) : isH1 ? line.slice(2) : line;
+          const inlineParts = cleanLine.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+
           return (
-            <p key={lineIdx} style={{ margin: '3px 0' }}>
+            <p
+              key={lineIdx}
+              style={{
+                margin: isH1 || isH2 || isH3 ? '10px 0 4px' : '4px 0',
+                fontWeight: isH1 || isH2 || isH3 ? 700 : 'normal',
+                fontSize: isH1 ? '15px' : isH2 ? '14px' : isH3 ? '13.5px' : 'inherit',
+                color: isH1 || isH2 || isH3 ? '#fef08a' : 'inherit',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+                lineHeight: 1.6,
+              }}
+            >
               {inlineParts.map((ip, ipIdx) => {
                 if (ip.startsWith('`') && ip.endsWith('`')) {
                   return (
@@ -133,6 +165,8 @@ function FormattedMessage({ text }) {
                         borderRadius: '4px',
                         fontSize: '12px',
                         fontFamily: 'Consolas, monospace',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
                       }}
                     >
                       {ip.slice(1, -1)}
@@ -160,6 +194,7 @@ export default function ArisuAIAssistant() {
 
   // State
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [attachments, setAttachments] = useState([]);
@@ -435,7 +470,7 @@ export default function ArisuAIAssistant() {
       {/* ===== 1. CỬA SỔ CHAT KHÔNG KHUÔN (FRAMELESS GLASS CHAT) ===== */}
       {isOpen && (
         <aside
-          className="arisu-chat-modal"
+          className={`arisu-chat-modal ${isExpanded ? 'is-expanded' : ''}`}
           role="dialog"
           aria-label={aiMode === 'dev' ? 'Dev Expert AI' : t('arisu_title')}
           data-lenis-prevent="true"
@@ -461,13 +496,21 @@ export default function ArisuAIAssistant() {
                   </h3>
                   <span className="arisu-header-sub">
                     {aiMode === 'dev'
-                      ? (lang === 'vi' ? 'Chuyên gia Full-Stack & Vibe Coding' : 'Senior Full-Stack & Vibe Assistant')
-                      : t('arisu_sub')}
+                        ? (lang === 'vi' ? 'Chuyên gia Full-Stack & Vibe Coding' : 'Senior Full-Stack & Vibe Assistant')
+                        : t('arisu_sub')}
                   </span>
                 </div>
               </div>
 
               <div className="arisu-header-actions">
+                <button
+                  type="button"
+                  className="arisu-icon-btn"
+                  onClick={() => setIsExpanded(v => !v)}
+                  title={isExpanded ? 'Thu nhỏ cửa sổ chat' : 'Phóng to cửa sổ chat'}
+                >
+                  <Ico d={isExpanded ? ICONS.collapse : ICONS.expand} size={15} />
+                </button>
                 <button
                   type="button"
                   className="arisu-icon-btn"
