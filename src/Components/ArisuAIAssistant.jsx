@@ -26,7 +26,35 @@ const ICONS = {
   sparkles: 'm12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z',
 };
 
+import { supabase } from '../supabaseClient';
 import { getDevExpertResponse, getArisuAnimeResponse, detectLanguage } from './arisuAiLogic';
+
+// Gọi Supabase Edge Function 'chat-ai' (LLM Gemini/Groq), tự động fallback về offline engine
+async function requestAIResponse(textToSend, currentAttachments, lang, user, aiMode) {
+  try {
+    const { data, error } = await supabase.functions.invoke('chat-ai', {
+      body: {
+        prompt: textToSend,
+        mode: aiMode,
+        appLang: lang,
+        userName: user?.name || user?.identifier || null,
+        attachments: currentAttachments?.map((a) => ({ name: a.name, type: a.type })) || [],
+      },
+    });
+
+    if (!error && data?.reply) {
+      return data.reply;
+    }
+  } catch (err) {
+    console.warn('Supabase Edge Function chưa cấu hình hoặc không kết nối được, chuyển về Offline Engine:', err);
+  }
+
+  // Fallback an toàn 100% về engine nội tại
+  if (aiMode === 'dev') {
+    return getDevExpertResponse(textToSend, currentAttachments, lang, user);
+  }
+  return getArisuAnimeResponse(textToSend, currentAttachments, lang, user);
+}
 
 function CodeBlock({ code, language }) {
   const [copied, setCopied] = useState(false);
@@ -214,7 +242,7 @@ export default function ArisuAIAssistant() {
       const query = e.detail?.query;
       if (query) {
         setTimeout(() => {
-          handleSendMessage(query);
+          handleSend(query);
         }, 120);
       }
     };
@@ -270,9 +298,9 @@ export default function ArisuAIAssistant() {
     }
   };
 
-  // Gửi tin nhắn
-  const handleSend = () => {
-    const textToSend = inputText.trim();
+  // Gửi tin nhắn (Hỗ trợ gọi LLM qua Supabase Edge Function và tự động fallback)
+  const handleSend = async (overrideText) => {
+    const textToSend = (typeof overrideText === 'string' ? overrideText : inputText).trim();
     if (!textToSend && attachments.length === 0) return;
 
     const userMsg = {
@@ -289,14 +317,8 @@ export default function ArisuAIAssistant() {
     setAttachments([]);
     setIsTyping(true);
 
-    // AI Phản hồi sau khoảng thời gian tự nhiên
-    setTimeout(() => {
-      let responseText;
-      if (aiMode === 'dev') {
-        responseText = getDevExpertResponse(textToSend, currentAttachments, lang, user);
-      } else {
-        responseText = getArisuAnimeResponse(textToSend, currentAttachments, lang, user);
-      }
+    try {
+      const responseText = await requestAIResponse(textToSend, currentAttachments, lang, user, aiMode);
 
       const aiMsg = {
         id: `ai-${Date.now()}`,
@@ -316,7 +338,9 @@ export default function ArisuAIAssistant() {
           category: 'system',
         });
       }
-    }, 600);
+    } catch {
+      setIsTyping(false);
+    }
   };
 
   // Xử lý gửi tệp tài liệu / code
@@ -390,7 +414,7 @@ export default function ArisuAIAssistant() {
   };
 
   const handleChipClick = (promptText) => {
-    setInputText(promptText);
+    handleSend(promptText);
   };
 
   const handleKeyDown = (e) => {
