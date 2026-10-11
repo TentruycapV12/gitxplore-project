@@ -66,9 +66,11 @@ export default function CommunityForum() {
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Bộ lọc
+  // Bộ lọc & Tìm kiếm tức thì
   const [filterMode, setFilterMode] = useState('newest');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   
   // Quyền & trạng thái của người đang đăng nhập (admin / editor / support / member)
   const [access, setAccess] = useState({ role: 'member', status: 'active', banReason: null, bannedUntil: null, mutedUntil: null });
@@ -413,15 +415,45 @@ export default function CommunityForum() {
     return `${(count / 1000).toFixed(1)}K`;
   };
 
-  const sortedTopics = [...topics].sort((a, b) => {
-    if (filterMode === 'pinned') return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
-    if (filterMode === 'replies') {
-      const countA = a.topic_messages?.[0]?.count || 0;
-      const countB = b.topic_messages?.[0]?.count || 0;
-      return countB - countA;
-    }
-    return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
-  });
+  const totalReplies = useMemo(() => {
+    return topics.reduce((acc, t) => acc + (t.topic_messages?.[0]?.count || 0), 0);
+  }, [topics]);
+
+  const filteredTopics = useMemo(() => {
+    return topics.filter((t) => {
+      if (searchQuery.trim()) {
+        const sq = searchQuery.toLowerCase().trim();
+        const titleMatch = (t.title || '').toLowerCase().includes(sq);
+        const descMatch = (t.description || '').toLowerCase().includes(sq);
+        const authorMatch = (t.author_name || '').toLowerCase().includes(sq);
+        if (!titleMatch && !descMatch && !authorMatch) return false;
+      }
+      if (selectedCategory !== 'All') {
+        if (selectedCategory === 'Pinned') {
+          if (!t.is_pinned) return false;
+        } else {
+          const resolved = resolvePrefix(t.prefix).label;
+          if (resolved.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+        }
+      }
+      return true;
+    });
+  }, [topics, searchQuery, selectedCategory]);
+
+  const sortedTopics = useMemo(() => {
+    return [...filteredTopics].sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return b.is_pinned ? 1 : -1;
+      if (filterMode === 'replies') {
+        const countA = a.topic_messages?.[0]?.count || 0;
+        const countB = b.topic_messages?.[0]?.count || 0;
+        return countB - countA;
+      }
+      if (filterMode === 'views') {
+        return (b.views_count || 0) - (a.views_count || 0);
+      }
+      return new Date(b.last_reply_time || b.created_at) - new Date(a.last_reply_time || a.created_at);
+    });
+  }, [filteredTopics, filterMode]);
 
   // Gom toàn bộ ảnh/file của bài viết và bình luận hiển thị trong tab Files[cite: 39]
   const mediaFiles = [];
@@ -514,451 +546,646 @@ export default function CommunityForum() {
         </div>
       )}
 
-      {/* TẦNG 1: BẢNG DANH SÁCH CHỦ ĐỀ */}
+      {/* TẦNG 1: BẢNG DANH SÁCH CHỦ ĐỀ HIỆN ĐẠI & TINH TẾ */}
       {!activeTopic ? (
-        <div style={{ flex: 1, padding: '24px 5vw', maxWidth: '1400px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ flex: 1, padding: '24px 5vw 48px', maxWidth: '1400px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+          
+          {/* 1. HERO SHOWCASE & QUICK ACTION BANNER */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.45) 0%, rgba(20, 10, 10, 0.95) 50%, rgba(245, 158, 11, 0.18) 100%)',
+              border: '1px solid #3d1b1b',
+              borderRadius: '20px',
+              padding: '28px 32px',
+              position: 'relative',
+              overflow: 'hidden',
+              marginBottom: '24px',
+              boxShadow: '0 10px 35px rgba(0, 0, 0, 0.4)'
+            }}
+          >
+            <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(#f59e0b 1px, transparent 1px)', backgroundSize: '18px 18px', pointerEvents: 'none' }} />
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h1 style={{ margin: 0, fontSize: '24px', color: '#fef08a' }}>Community Discussions</h1>
-                <p style={{ margin: '4px 0 0', color: '#a8a29e', fontSize: '13.5px' }}>
-                  {topics.length} discussions across all open-source repositories
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', position: 'relative', zIndex: 1 }}>
+              <div style={{ maxWidth: '650px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#fef08a', marginBottom: '12px' }}>
+                  ⚡ KIVOTOS DEVELOPER COMMUNITY
+                </div>
+                <h1 style={{ margin: '0 0 8px', fontSize: '28px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
+                  Diễn Đàn Công Nghệ <span style={{ color: '#f59e0b' }}>GitXplore</span>
+                </h1>
+                <p style={{ margin: 0, color: '#d1d5db', fontSize: '14.5px', lineHeight: 1.6 }}>
+                  Nơi trao đổi giải pháp lập trình, chia sẻ mã nguồn mở và kết nối với các nhà phát triển tài năng. Đặt câu hỏi và nhận trợ giúp tức thì!
                 </p>
+
+                {/* Micro Stats */}
+                <div style={{ display: 'flex', gap: '16px', marginTop: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#fef08a' }}>
+                    <span style={{ fontSize: '16px' }}>📁</span>
+                    <strong>{topics.length}</strong> <span style={{ color: '#9ca3af' }}>Chủ đề</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#fef08a' }}>
+                    <span style={{ fontSize: '16px' }}>💬</span>
+                    <strong>{totalReplies}</strong> <span style={{ color: '#9ca3af' }}>Phản hồi</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#fef08a' }}>
+                    <span style={{ fontSize: '16px' }}>🚀</span>
+                    <span style={{ color: '#a7f3d0' }}>Trực tuyến & Sôi nổi</span>
+                  </div>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
-                <div style={{ position: 'relative' }}>
+              {/* Nút Tạo Chủ Đề Nổi Bật */}
+              <button
+                type="button"
+                onClick={() => (canPost ? setShowCreateModal(true) : alert(isBanned ? 'Tài khoản của bạn đang bị khóa.' : 'Bạn đang bị tắt tiếng và không thể đăng bài.'))}
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444, #d97706)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '14px 28px',
+                  borderRadius: '14px',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  cursor: canPost ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  boxShadow: '0 6px 20px rgba(239, 68, 68, 0.45)',
+                  transition: 'all 0.2s',
+                  opacity: canPost ? 1 : 0.6
+                }}
+                onMouseEnter={(e) => { if (canPost) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <span style={{ fontSize: '18px' }}>✏️</span>
+                <span>+ Đăng Chủ Đề Mới</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. THANH TÌM KIẾM TỨC THÌ & BỘ LỌC 1-CHẠM (QUICK SEARCH & CATEGORY PILLS) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '22px' }}>
+            
+            {/* Search Input Bar */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: '280px',
+                  background: '#160b0b',
+                  border: '1px solid #351717',
+                  borderRadius: '14px',
+                  padding: '10px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.25)'
+                }}
+              >
+                <span style={{ fontSize: '16px', color: '#f59e0b' }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm chủ đề, câu hỏi, mã nguồn, tên tác giả..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#ffffff',
+                    fontSize: '14px',
+                  }}
+                />
+                {searchQuery && (
                   <button
-                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                    style={{
-                      background: '#1c0f0f',
-                      color: '#fef08a',
-                      border: '1px solid #381a1a',
-                      padding: '9px 14px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '14px' }}
+                    title="Xóa tìm kiếm"
                   >
-                    Filter ▾
+                    ✕
                   </button>
+                )}
+              </div>
 
-                  {showFilterDropdown && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        right: 0,
-                        top: '42px',
-                        background: '#160b0b',
-                        border: '1px solid #3d1b1b',
-                        borderRadius: '8px',
-                        padding: '6px 0',
-                        width: '170px',
-                        zIndex: 10,
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                      }}
-                    >
-                      <button
-                        onClick={() => { setFilterMode('newest'); setShowFilterDropdown(false); }}
-                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'newest' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
-                      >
-                        ● Latest Replies
-                      </button>
-                      <button
-                        onClick={() => { setFilterMode('replies'); setShowFilterDropdown(false); }}
-                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'replies' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
-                      >
-                        ● Most Active
-                      </button>
-                      <button
-                        onClick={() => { setFilterMode('pinned'); setShowFilterDropdown(false); }}
-                        style={{ width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: filterMode === 'pinned' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '12.5px' }}
-                      >
-                        ● Pinned Threads
-                      </button>
-                    </div>
-                  )}
-                </div>
-
+              {/* Sắp xếp dropdown */}
+              <div style={{ position: 'relative' }}>
                 <button
                   type="button"
-                  onClick={() => (canPost ? setShowCreateModal(true) : alert(isBanned ? 'Your account is suspended.' : 'You are muted and cannot post right now.'))}
-                  className="link-btn btn-primary"
-                  style={{ padding: '9px 18px', fontSize: '13.5px', opacity: canPost ? 1 : 0.5 }}
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                  style={{
+                    background: '#1c0f0f',
+                    color: '#fef08a',
+                    border: '1px solid #3d1b1b',
+                    padding: '11px 18px',
+                    borderRadius: '14px',
+                    cursor: 'pointer',
+                    fontSize: '13.5px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
                 >
-                  + Post New Topic
+                  <span>Sắp xếp: {filterMode === 'newest' ? 'Mới nhất' : filterMode === 'replies' ? 'Nhiều phản hồi' : filterMode === 'views' ? 'Lượt xem' : 'Đã ghim'}</span>
+                  <span>▾</span>
                 </button>
+
+                {showFilterDropdown && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '46px',
+                      background: '#190d0d',
+                      border: '1px solid #3d1b1b',
+                      borderRadius: '12px',
+                      padding: '6px 0',
+                      width: '180px',
+                      zIndex: 20,
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.6)',
+                    }}
+                  >
+                    <button
+                      onClick={() => { setFilterMode('newest'); setShowFilterDropdown(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'newest' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      ● Phản hồi mới nhất
+                    </button>
+                    <button
+                      onClick={() => { setFilterMode('replies'); setShowFilterDropdown(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'replies' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      ● Nhiều thảo luận nhất
+                    </button>
+                    <button
+                      onClick={() => { setFilterMode('views'); setShowFilterDropdown(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'views' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      ● Lượt xem cao nhất
+                    </button>
+                    <button
+                      onClick={() => { setFilterMode('pinned'); setShowFilterDropdown(false); }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'pinned' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      ● Ưu tiên bài đã ghim
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* BẢNG CHỦ ĐỀ */}
-            <div style={{ background: '#120909', border: '1px solid #2a1515', borderRadius: '10px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: GRID_COLS,
-                  padding: '12px 20px',
-                  background: '#190d0d',
-                  borderBottom: '1px solid #2a1515',
-                  color: '#fbbf24',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                }}
-              >
-                <span>TITLE / STARTED BY</span>
-                <span style={{ textAlign: 'center' }}>STATS</span>
-                <span style={{ textAlign: 'left', paddingLeft: '12px' }}>LATEST REPLY</span>
-                <span></span>
-              </div>
+            {/* Dải nút Category Pills (1-Chạm) */}
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {[
+                { id: 'All', label: 'Tất cả' },
+                { id: 'Discussion', label: '💬 Thảo luận' },
+                { id: 'Question', label: '💡 Hỏi đáp' },
+                { id: 'Showcase', label: '🚀 Chia sẻ' },
+                { id: 'Source Code', label: '📦 Mã nguồn' },
+                { id: 'Warning', label: '⚠️ Cảnh báo' },
+                { id: 'Pinned', label: '📌 Đã ghim' },
+              ].map((cat) => {
+                const isActive = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    style={{
+                      background: isActive ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25))' : 'rgba(255, 255, 255, 0.04)',
+                      color: isActive ? '#fef08a' : '#cbd5e1',
+                      border: isActive ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.09)',
+                      padding: '7px 16px',
+                      borderRadius: '999px',
+                      fontSize: '13px',
+                      fontWeight: isActive ? 700 : 500,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
+          {/* 3. BỐ CỤC 2 CỘT: FEED CHÍNH & BENTO TIỆN ÍCH */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '24px', alignItems: 'start' }}>
+            
+            {/* CỘT CHÍNH: DANH SÁCH THẺ BÀI VIẾT (FEED CARDS) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {sortedTopics.map((t) => {
                 const prefixConfig = resolvePrefix(t.prefix);
                 const replyCount = t.topic_messages?.[0]?.count || 0;
                 const lastUser = t.last_reply_user || t.author_name;
+                const hasImg = t.description && (t.description.startsWith('http://') || t.description.startsWith('https://'));
 
                 return (
                   <div
                     key={t.id}
                     onClick={() => handleOpenTopic(t)}
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: GRID_COLS,
-                      padding: '14px 20px',
-                      borderBottom: '1px solid #1f1010',
-                      alignItems: 'center',
+                      background: t.is_pinned ? 'linear-gradient(135deg, #1f0e0e, #140909)' : '#150a0a',
+                      border: t.is_pinned ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid #281414',
+                      borderRadius: '16px',
+                      padding: '18px 22px',
                       cursor: 'pointer',
-                      background: t.is_pinned ? '#1c0c0c' : 'transparent',
-                      transition: 'background 0.15s',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      position: 'relative'
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#1a0e0e')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = t.is_pinned ? '#1c0c0c' : 'transparent')}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.45)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = t.is_pinned ? 'rgba(245, 158, 11, 0.45)' : '#281414';
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.25)';
+                    }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #7f1d1d, #c2410c)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#fff',
-                          fontWeight: 700,
-                          fontSize: '15px',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {t.author_name.charAt(0).toUpperCase()}
-                      </div>
+                    {/* Hàng 1: Category Badge + Pinned + Creation Time */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            background: prefixConfig.bg,
+                            color: prefixConfig.color,
+                            border: `1px solid ${prefixConfig.border}`,
+                            padding: '3px 10px',
+                            borderRadius: '999px',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            letterSpacing: '0.02em',
+                            textTransform: 'uppercase'
+                          }}
+                        >
+                          {prefixConfig.label}
+                        </span>
 
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          {t.is_pinned && <span title="Pinned Topic" style={{ color: '#ef4444', fontSize: '13px' }}>📌</span>}
-                          {t.is_locked && <span title="Locked Topic" style={{ fontSize: '13px' }}>🔒</span>}
-
-                          <span
-                            style={{
-                              background: prefixConfig.bg,
-                              color: prefixConfig.color,
-                              border: `1px solid ${prefixConfig.border}`,
-                              padding: '1px 7px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              lineHeight: 1.4,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {prefixConfig.label}
+                        {t.is_pinned && (
+                          <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '999px', padding: '2px 9px', fontSize: '11px', fontWeight: 700 }}>
+                            📌 ĐÃ GHIM
                           </span>
+                        )}
 
-                          <span style={{ color: '#f3f4f6', fontSize: '14.5px', fontWeight: 600, wordBreak: 'break-word' }}>
-                            {t.title}
+                        {t.is_locked && (
+                          <span style={{ background: 'rgba(100, 116, 139, 0.2)', color: '#cbd5e1', border: '1px solid rgba(100, 116, 139, 0.4)', borderRadius: '999px', padding: '2px 9px', fontSize: '11px', fontWeight: 700 }}>
+                            🔒 ĐÃ KHÓA
                           </span>
-                        </div>
-
-                        <div style={{ fontSize: '12px', color: '#8c827a', marginTop: '4px' }}>
-                          <span style={{ color: '#fef08a' }}>{t.author_name}</span><UidTag id={idOf(t.author_public_id, t.author_name)} /> • {new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </div>
+                        )}
                       </div>
+
+                      <span style={{ fontSize: '12px', color: '#78716c' }}>
+                        {formatForumTime(t.created_at)}
+                      </span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#9ca3af' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span>Replies:</span>
-                        <strong style={{ color: '#fff' }}>{replyCount}</strong>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
-                        <span>Views:</span>
-                        <strong style={{ color: '#fff' }}>{formatViewCount(t.views_count)}</strong>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '12px' }}>
-                      <div
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          background: '#2b1414',
-                          border: '1px solid #4a1d1d',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#fbbf24',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {lastUser.charAt(0).toUpperCase()}
-                      </div>
-
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {formatForumTime(t.last_reply_time || t.created_at)}
-                        </div>
-                        <div style={{ fontSize: '11.5px', color: '#a8a29e', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {lastUser}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      {canModerate && (
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={(e) => handleTogglePin(e, t)}
-                            title={t.is_pinned ? 'Unpin' : 'Pin'}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}
-                          >
-                            📌
-                          </button>
-                          <button
-                            onClick={(e) => handleToggleLock(e, t)}
-                            title={t.is_locked ? 'Unlock' : 'Lock (no new comments)'}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}
-                          >
-                            {t.is_locked ? '🔓' : '🔒'}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id, t.title); }}
-                            title="Delete"
-                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
-                          >
-                            🗑️
-                          </button>
-                        </div>
+                    {/* Hàng 2: Tiêu đề & Tóm tắt */}
+                    <div>
+                      <h3 style={{ margin: '0 0 6px', fontSize: '17.5px', fontWeight: 700, color: '#f8fafc', lineHeight: 1.35, wordBreak: 'break-word' }}>
+                        {t.title}
+                      </h3>
+                      {t.description && !hasImg && (
+                        <p style={{ margin: 0, color: '#9ca3af', fontSize: '13.5px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {t.description}
+                        </p>
                       )}
+                    </div>
+
+                    {/* Hàng 3: Tác giả & Thống kê tương tác */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #7f1d1d, #c2410c)',
+                            color: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '12.5px',
+                            flexShrink: 0
+                          }}
+                        >
+                          {t.author_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
+                          <span style={{ fontWeight: 600, color: '#fef08a' }}>{t.author_name}</span>
+                          <UidTag id={idOf(t.author_public_id, t.author_name)} />
+                        </div>
+                      </div>
+
+                      {/* Thống kê tương tác */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12.5px', color: '#9ca3af' }}>
+                        <span title="Số phản hồi" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          💬 <strong style={{ color: '#fff' }}>{replyCount}</strong>
+                        </span>
+                        <span title="Lượt thích" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          👍 <strong style={{ color: '#fff' }}>{t.likes_count || 0}</strong>
+                        </span>
+                        <span title="Lượt xem" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          👁️ <strong style={{ color: '#fff' }}>{formatViewCount(t.views_count)}</strong>
+                        </span>
+
+                        {canModerate && (
+                          <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }} onClick={(e) => e.stopPropagation()}>
+                            <button onClick={(e) => handleTogglePin(e, t)} title={t.is_pinned ? 'Bỏ ghim' : 'Ghim'} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}>
+                              📌
+                            </button>
+                            <button onClick={(e) => handleToggleLock(e, t)} title={t.is_locked ? 'Mở khóa' : 'Khóa'} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px' }}>
+                              {t.is_locked ? '🔓' : '🔒'}
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id, t.title); }} title="Xóa" style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}>
+                              🗑️
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
 
+              {/* Trạng thái rỗng khi tìm kiếm không ra */}
               {sortedTopics.length === 0 && (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#78716c', fontSize: '14px' }}>
-                  No discussions found. Be the first to start a thread!
+                <div style={{ padding: '60px 20px', textAlign: 'center', background: '#120909', border: '1px dashed #351717', borderRadius: '16px' }}>
+                  <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
+                  <h3 style={{ margin: '0 0 6px', color: '#fef08a', fontSize: '18px' }}>Không tìm thấy chủ đề nào</h3>
+                  <p style={{ margin: '0 0 16px', color: '#9ca3af', fontSize: '14px' }}>
+                    {searchQuery ? `Không có kết quả nào phù hợp với từ khóa "${searchQuery}".` : 'Chưa có thảo luận nào trong danh mục này.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
+                    style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+                  >
+                    Xem tất cả chủ đề
+                  </button>
                 </div>
               )}
+            </div>
+
+            {/* CỘT PHỤ (BENTO RAIL TIỆN ÍCH NHANH) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Card 1: Hướng dẫn nhanh */}
+              <div style={{ background: '#140a0a', border: '1px solid #2b1414', borderRadius: '16px', padding: '18px 20px' }}>
+                <h4 style={{ margin: '0 0 12px', fontSize: '14.5px', color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>💡</span> <span>Mẹo đăng thảo luận</span>
+                </h4>
+                <ul style={{ margin: 0, paddingLeft: '18px', color: '#a8a29e', fontSize: '12.5px', lineHeight: 1.6 }}>
+                  <li>Đặt tiêu đề ngắn gọn, rõ ràng trọng tâm.</li>
+                  <li>Chọn đúng danh mục (Hỏi đáp, Thảo luận, Mã nguồn...).</li>
+                  <li>Đính kèm ảnh chụp màn hình lỗi để được giải đáp nhanh hơn.</li>
+                </ul>
+              </div>
+
+              {/* Card 2: Chủ đề sôi nổi nhất */}
+              <div style={{ background: '#140a0a', border: '1px solid #2b1414', borderRadius: '16px', padding: '18px 20px' }}>
+                <h4 style={{ margin: '0 0 12px', fontSize: '14.5px', color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🔥</span> <span>Thảo luận sôi nổi</span>
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {[...topics]
+                    .sort((a, b) => (b.topic_messages?.[0]?.count || 0) - (a.topic_messages?.[0]?.count || 0))
+                    .slice(0, 3)
+                    .map((top) => (
+                      <div
+                        key={top.id}
+                        onClick={() => handleOpenTopic(top)}
+                        style={{ padding: '8px 10px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', cursor: 'pointer', transition: 'background 0.15s' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
+                      >
+                        <div style={{ fontSize: '13px', color: '#f3f4f6', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {top.title}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#78716c', marginTop: '2px' }}>
+                          💬 {top.topic_messages?.[0]?.count || 0} phản hồi · bởi {top.author_name}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Card 3: Khám phá Vibe Coding */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(30, 27, 46, 0.6), rgba(14, 11, 24, 0.9))', border: '1px solid rgba(125, 211, 252, 0.25)', borderRadius: '16px', padding: '18px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>⚡</span>
+                  <strong style={{ color: '#7dd3fc', fontSize: '14px' }}>Vibe Coding Hub</strong>
+                </div>
+                <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+                  Khám phá các mẫu .cursorrules, MCP Servers & AI Skills lấy cảm hứng từ aitmpl.com.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/vibe')}
+                  style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#7dd3fc', padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', width: '100%' }}
+                >
+                  Xem Mẫu Vibe Coding →
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
       ) : (
-        /* TẦNG 2: CHI TIẾT BÀI VIẾT */
-        <div style={{ flex: 1, background: '#0b0606' }}>
-          
-          {/* BANNER COVER */}
-          <div style={{ background: '#130a0a', borderBottom: '1px solid #261414' }}>
-            <div style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
-              <div
+        /* TẦNG 2: CHI TIẾT BÀI VIẾT (TINH GỌN, KHÔNG TRÙNG LẶP TIÊU ĐỀ) */
+        <div style={{ flex: 1, background: '#0b0606', padding: '24px 5vw 48px' }}>
+          <div style={{ maxWidth: '980px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* THANH ĐIỀU HƯỚNG TRÊN CÙNG: QUAY LẠI & HÀNH ĐỘNG */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={handleBackToList}
                 style={{
-                  height: '220px',
-                  width: '100%',
-                  borderRadius: '0 0 12px 12px',
-                  background: 'linear-gradient(135deg, #450a0a 0%, #1c0a0a 50%, #1e1b4b 100%)',
-                  position: 'relative',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#fef08a',
+                  padding: '9px 18px',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
                   display: 'flex',
-                  alignItems: 'flex-end',
-                  padding: '24px',
-                  boxSizing: 'border-box',
-                  overflow: 'hidden'
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background 0.15s'
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.2)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
               >
-                <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(#f59e0b 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
-                <div style={{ position: 'relative', zIndex: 2 }}>
-                  <span style={{ background: '#dc2626', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                    {resolvePrefix(activeTopic.prefix).label} Thread
-                  </span>
-                  
-                  <h1 style={{ margin: '8px 0 4px', fontSize: '26px', fontWeight: 800, color: '#fff' }}>
-                    {activeTopic.title}
-                  </h1>
+                ← Quay lại danh sách chủ đề
+              </button>
 
-                  <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
-                    🌐 Thread created by <strong>{activeTopic.author_name}</strong><UidTag id={idOf(activeTopic.author_public_id, activeTopic.author_name)} /> · {formatForumTime(activeTopic.created_at)}
-                  </div>
-                </div>
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleToggleLike}
+                  style={{
+                    background: hasLiked ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                    border: hasLiked ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: hasLiked ? '#f59e0b' : '#d1d5db',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  👍 {hasLiked ? 'Đã thích' : 'Thích'} ({likesCount})
+                </button>
 
-              {/* TABS ĐIỀU HƯỚNG & NÚT SHARE */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', flexWrap: 'wrap', gap: '10px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => setThreadTab('Discussion')}
-                    style={{
-                      background: threadTab === 'Discussion' ? '#2b1414' : 'transparent',
-                      color: threadTab === 'Discussion' ? '#f59e0b' : '#9ca3af',
-                      border: 'none',
-                      borderBottom: threadTab === 'Discussion' ? '3px solid #f59e0b' : '3px solid transparent',
-                      padding: '10px 16px',
-                      fontWeight: 600,
-                      fontSize: '13.5px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Discussion
-                  </button>
-
-                  <button
-                    onClick={() => setThreadTab('Files')}
-                    style={{
-                      background: threadTab === 'Files' ? '#2b1414' : 'transparent',
-                      color: threadTab === 'Files' ? '#f59e0b' : '#9ca3af',
-                      border: 'none',
-                      borderBottom: threadTab === 'Files' ? '3px solid #f59e0b' : '3px solid transparent',
-                      padding: '10px 16px',
-                      fontWeight: 600,
-                      fontSize: '13.5px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    Files <span style={{ background: '#261212', padding: '2px 6px', borderRadius: '10px', fontSize: '11px', color: '#fef08a' }}>{mediaFiles.length}</span>
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={handleBackToList}
-                    style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
-                  >
-                    ← Back to Topics
-                  </button>
-
-                  <button
-                    onClick={handleShare}
-                    style={{ background: '#261414', color: '#fff', border: '1px solid #3d1b1b', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    ↗ Share
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#cbd5e1',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  ↗ Chia sẻ
+                </button>
               </div>
             </div>
-          </div>
 
-          {/* VÙNG NỘI DUNG CHÍNH (THEO TAB) */}
-          <div style={{ maxWidth: '960px', margin: '20px auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
-            {/* TAB 1: DISCUSSION */}
-            {threadTab === 'Discussion' && (
-              <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', overflow: 'hidden' }}>
-                
-                {/* TÁC GIẢ BÀI VIẾT */}
-                <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #7f1d1d, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
-                      {activeTopic.author_name.charAt(0).toUpperCase()}
+            {/* CARD BÀI VIẾT CHÍNH (MAIN POST HERO - DUY NHẤT 1 TIÊU ĐỀ) */}
+            <div style={{ background: '#140a0a', border: '1px solid #281414', borderRadius: '18px', padding: '24px', boxShadow: '0 8px 30px rgba(0,0,0,0.35)' }}>
+              
+              {/* Header tác giả & Danh mục */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #7f1d1d, #c2410c)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '16px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    {activeTopic.author_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#f3f4f6', fontSize: '15px' }}>
+                      {activeTopic.author_name}
+                      <UidTag id={idOf(activeTopic.author_public_id, activeTopic.author_name)} />
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: '14.5px' }}>
-                        {activeTopic.author_name}<UidTag id={idOf(activeTopic.author_public_id, activeTopic.author_name)} />
-                      </div>
-                      <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>
-                        {formatForumTime(activeTopic.created_at)} · 🌐
-                      </div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                      Đăng vào {formatForumTime(activeTopic.created_at)} · 🌐 Công khai
                     </div>
                   </div>
-
-                  <span style={{ fontSize: '11px', background: '#291818', color: '#fef08a', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f59e0b' }}>
-                    {resolvePrefix(activeTopic.prefix).label}
-                  </span>
                 </div>
 
-                {/* NỘI DUNG & HÌNH ẢNH CỦA BÀI VIẾT */}
-                <div style={{ padding: '0 16px 14px' }}>
-                  <h2 style={{ fontSize: '20px', margin: '0 0 10px', color: '#fff', fontWeight: 700 }}>
-                    {activeTopic.title}
-                  </h2>
+                <span
+                  style={{
+                    background: resolvePrefix(activeTopic.prefix).bg,
+                    color: resolvePrefix(activeTopic.prefix).color,
+                    border: `1px solid ${resolvePrefix(activeTopic.prefix).border}`,
+                    padding: '4px 12px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  {resolvePrefix(activeTopic.prefix).label}
+                </span>
+              </div>
 
-                  {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
-                    <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginTop: '10px' }}>
-                      <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '550px', objectFit: 'contain' }} />
-                    </div>
-                  ) : activeTopic.description ? (
-                    <div style={{ fontSize: '14.5px', color: '#d1d5db', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                      {activeTopic.description}
-                    </div>
-                  ) : null}
+              {/* Tiêu đề bài viết DUY NHẤT */}
+              <h1 style={{ margin: '0 0 12px', fontSize: '23px', fontWeight: 800, color: '#ffffff', lineHeight: 1.35 }}>
+                {activeTopic.title}
+              </h1>
+
+              {/* Mô tả & Phương tiện đính kèm */}
+              {activeTopic.description && (activeTopic.description.startsWith('http://') || activeTopic.description.startsWith('https://')) ? (
+                <div style={{ background: '#080404', borderRadius: '12px', overflow: 'hidden', marginTop: '12px', border: '1px solid #281414' }}>
+                  <img src={activeTopic.description} alt="Post Media" style={{ width: '100%', maxHeight: '500px', objectFit: 'contain' }} />
                 </div>
-
-                {/* THỐNG KÊ LIKES VÀ COMMENTS */}
-                <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#9ca3af', borderTop: '1px solid #201010', borderBottom: '1px solid #201010' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    👍 ❤️ <strong style={{ color: '#fff' }}>{likesCount}</strong>
-                  </span>
-                  <span>{comments.length} comments</span>
+              ) : activeTopic.description ? (
+                <div style={{ fontSize: '15px', color: '#e2e8f0', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                  {activeTopic.description}
                 </div>
+              ) : null}
+            </div>
 
-                {/* THANH 2 NÚT HÀNH ĐỘNG (LIKE & SHARE) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '4px 8px', borderBottom: '1px solid #201010' }}>
-                  <button
-                    onClick={handleToggleLike}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: hasLiked ? '#f59e0b' : '#d1d5db',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    👍 {hasLiked ? 'Liked' : 'Like'}
-                  </button>
+            {/* TABS CHUYỂN ĐỔI: CUỘC TRÒ CHUYỆN & TỆP ĐÍNH KÈM */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #281414', paddingBottom: '2px' }}>
+              <button
+                type="button"
+                onClick={() => setThreadTab('Discussion')}
+                style={{
+                  background: threadTab === 'Discussion' ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
+                  color: threadTab === 'Discussion' ? '#f59e0b' : '#9ca3af',
+                  border: 'none',
+                  borderBottom: threadTab === 'Discussion' ? '3px solid #f59e0b' : '3px solid transparent',
+                  padding: '10px 18px',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  borderRadius: '8px 8px 0 0'
+                }}
+              >
+                💬 Trò chuyện & Thảo luận ({comments.length})
+              </button>
 
-                  <button
-                    onClick={handleShare}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#d1d5db',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    ↗ Share
-                  </button>
-                </div>
+              <button
+                type="button"
+                onClick={() => setThreadTab('Files')}
+                style={{
+                  background: threadTab === 'Files' ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
+                  color: threadTab === 'Files' ? '#f59e0b' : '#9ca3af',
+                  border: 'none',
+                  borderBottom: threadTab === 'Files' ? '3px solid #f59e0b' : '3px solid transparent',
+                  padding: '10px 18px',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  borderRadius: '8px 8px 0 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                📁 Tệp & Ảnh ({mediaFiles.length})
+              </button>
+            </div>
+
+            {/* TAB 1: DISCUSSION - LUỒNG TRÒ CHUYỆN */}
+            {threadTab === 'Discussion' && (
+              <div style={{ background: '#120808', border: '1px solid #281414', borderRadius: '18px', overflow: 'hidden' }}>
 
                 {/* DANH SÁCH BÌNH LUẬN & KHUNG TRÒ CHUYỆN HIỆN ĐẠI */}
                 <div style={{ padding: '20px 18px', background: '#0e0707', display: 'flex', flexDirection: 'column', gap: '16px' }}>
