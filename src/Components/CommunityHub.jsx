@@ -15,9 +15,10 @@ const SECTIONS = ['home', 'requests', 'suggestions', 'friends', 'birthdays', 'li
 const NEEDS_LOGIN = ['requests', 'suggestions', 'friends', 'birthdays', 'lists', 'search'];
 
 const Ico = ({ children }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
 );
+
 const ICON = {
   home: <Ico><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Ico>,
   requests: <Ico><circle cx="9" cy="8" r="3.2" /><path d="M3 20c.4-3.4 2.7-5.5 6-5.5 1.2 0 2.3.3 3.2.8M17 14v6m0 0-2.5-2.5M17 20l2.5-2.5" /></Ico>,
@@ -33,19 +34,42 @@ const ICON = {
 
 const NAV = [
   { id: 'home', key: 'nav_home' },
-  { id: 'requests', key: 'nav_requests', chev: true },
   { id: 'suggestions', key: 'nav_suggestions', chev: true },
   { id: 'friends', key: 'nav_friends', chev: true },
-  { id: 'birthdays', key: 'nav_birthdays' },
+  { id: 'requests', key: 'nav_requests', chev: true },
   { id: 'lists', key: 'nav_lists', chev: true },
+  { id: 'birthdays', key: 'nav_birthdays' },
 ];
 
 const initial = (name) => (name ? String(name).trim().charAt(0).toUpperCase() : '?');
 const hueOf = (s = '') => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-const coverStyle = (p) => {
-  const h = hueOf(p.email || p.name);
-  return { background: `linear-gradient(135deg, hsl(${h} 55% 28%), hsl(${(h + 45) % 360} 70% 42%))` };
-};
+
+const ROLES = [
+  '⚡ Vibe Coder',
+  '🚀 Fullstack Builder',
+  '🤖 AI Engineer',
+  '🎨 UI/UX Artisan',
+  '🦀 Systems Dev',
+  '🌱 Open Source Explorer',
+];
+
+const STACKS = [
+  ['React 19', 'Tailwind', 'Cursor AI'],
+  ['Next.js', 'TypeScript', 'Supabase'],
+  ['Python', 'FastAPI', 'LLM Agent'],
+  ['Node.js', 'PostgreSQL', 'Docker'],
+  ['Vue 3', 'Vite', 'GraphQL'],
+  ['Rust', 'WebAssembly', 'Tauri'],
+];
+
+function getDevProfile(p) {
+  const hash = Math.abs([...(p.email || p.name || 'dev')].reduce((acc, c) => acc + c.charCodeAt(0), 0));
+  const role = ROLES[hash % ROLES.length];
+  const stack = STACKS[hash % STACKS.length];
+  const rawHandle = p.public_id ? `uid_${p.public_id.slice(-4)}` : (p.email ? p.email.split('@')[0] : 'builder');
+  const handle = rawHandle.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 15);
+  return { role, stack, handle };
+}
 
 /** Số ngày tới sinh nhật kế tiếp + tuổi sẽ tròn. */
 function nextBirthday(iso) {
@@ -60,41 +84,82 @@ function nextBirthday(iso) {
 
 /* ---------------- Thành phần nhỏ ---------------- */
 
+function Avatar({ p, size = 'md' }) {
+  const h = hueOf(p.email || p.name);
+  const bg = `linear-gradient(135deg, hsl(${h} 65% 25%), hsl(${(h + 45) % 360} 70% 40%))`;
+  return p.avatar_url ? (
+    <img className={`ch-av ch-av--${size}`} src={p.avatar_url} alt={p.name || ''} referrerPolicy="no-referrer" />
+  ) : (
+    <span className={`ch-av ch-av--${size}`} style={{ background: bg }}>
+      {initial(p.name)}
+    </span>
+  );
+}
+
 function PersonCard({ p, sub, children }) {
+  const { role, stack, handle } = getDevProfile(p);
+  const h = hueOf(p.email || p.name);
+  const bannerBg = `linear-gradient(135deg, hsl(${h} 60% 16%), hsl(${(h + 45) % 360} 75% 26%))`;
+
   return (
-    <article className="ch-card">
-      <div className="ch-card-cover" style={p.avatar_url ? undefined : coverStyle(p)}>
-        {p.avatar_url
-          ? <img src={p.avatar_url} alt="" referrerPolicy="no-referrer" />
-          : <span>{initial(p.name)}</span>}
+    <article className="ch-dev-card">
+      <div className="ch-dev-banner" style={{ background: bannerBg }}>
+        <span className="ch-dev-role-badge">{role}</span>
       </div>
-      <div className="ch-card-body">
-        <h3 className="ch-card-title">{p.name}</h3>
-        <p className="ch-card-meta">{sub}</p>
-        {children}
+      <div className="ch-dev-body">
+        <div className="ch-dev-avatar-wrap">
+          <Avatar p={p} size="lg" />
+          <span className="ch-dev-beacon" title="Active on GitXplore Network" />
+        </div>
+        <div className="ch-dev-header">
+          <h3 className="ch-dev-name" title={p.name}>{p.name}</h3>
+          <span className="ch-dev-handle">@{handle}</span>
+        </div>
+
+        <p className="ch-dev-bio" title={p.bio || sub}>
+          {p.bio ? p.bio : (sub || 'Building open source projects & AI apps.')}
+        </p>
+
+        <div className="ch-dev-tags">
+          {stack.map((t) => (
+            <span key={t} className="ch-dev-tag">{t}</span>
+          ))}
+        </div>
+
+        <div className="ch-dev-actions">
+          {children}
+        </div>
       </div>
     </article>
   );
 }
 
-function Avatar({ p }) {
-  return p.avatar_url
-    ? <img className="ch-av" src={p.avatar_url} alt="" referrerPolicy="no-referrer" />
-    : <span className="ch-av" style={coverStyle(p)}>{initial(p.name)}</span>;
-}
-
 function TopicCard({ topic, label, onOpen, onHide }) {
   const replies = topic.topic_messages?.[0]?.count || 0;
+  const hash = Math.abs(hueOf(topic.title || ''));
+  const cats = ['💡 Thảo luận', '🚀 Show Repo', '🤖 AI Vibe Coding', '📚 Hướng dẫn Dev'];
+  const cat = cats[hash % cats.length];
+
   return (
-    <article className="ch-card">
-      <div className="ch-card-cover" style={coverStyle({ name: topic.author_name })}>
-        <span>{initial(topic.author_name)}</span>
+    <article className="ch-topic-card">
+      <div className="ch-topic-top">
+        <span className="ch-topic-pill">{cat}</span>
+        <span className="ch-topic-replies">💬 {replies} {label.replies}</span>
       </div>
-      <div className="ch-card-body">
-        <h3 className="ch-card-title">{topic.title}</h3>
-        <p className="ch-card-meta">{topic.author_name || '—'} · {replies} {label.replies}</p>
-        <button type="button" className="ch-btn ch-btn--primary" onClick={() => onOpen(topic)}>{label.view_topic}</button>
-        <button type="button" className="ch-btn" onClick={() => onHide(topic.id)}>{label.hide_topic}</button>
+      <h3 className="ch-topic-title" onClick={() => onOpen(topic)}>{topic.title}</h3>
+      <div className="ch-topic-foot">
+        <div className="ch-topic-author">
+          <Avatar p={{ name: topic.author_name }} size="sm" />
+          <span className="ch-topic-author-name">{topic.author_name || 'GitXplore Builder'}</span>
+        </div>
+        <div className="ch-topic-btns">
+          <button type="button" className="ch-btn ch-btn--primary ch-btn--sm" onClick={() => onOpen(topic)}>
+            {label.view_topic} →
+          </button>
+          <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => onHide(topic.id)} title={label.hide_topic}>
+            ✕
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -104,7 +169,7 @@ function ListMenu({ email, lists, label, onToggle }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="ch-pop-wrap">
-      <button type="button" className="ch-btn" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="ch-btn ch-btn--secondary" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {label.in_list} ▾
       </button>
       {open && (
@@ -131,72 +196,110 @@ function ListMenu({ email, lists, label, onToggle }) {
 /** Nút hành động theo quan hệ (dùng ở Gợi ý và Tìm kiếm). */
 function RelationActions({ p, c, label, onHide }) {
   const r = c.rel.get(p.email);
-  if (r?.state === 'friend') return <span className="ch-pill">{label.is_friend}</span>;
+  if (r?.state === 'friend') {
+    return <span className="ch-pill-connected">{label.is_friend}</span>;
+  }
   if (r?.state === 'incoming') {
     return (
-      <>
-        <button type="button" className="ch-btn ch-btn--primary" disabled={c.busy} onClick={() => c.accept(r.id)}>{label.confirm}</button>
-        <button type="button" className="ch-btn" disabled={c.busy} onClick={() => c.removeRequest(r.id)}>{label.delete}</button>
-      </>
+      <div className="ch-action-duo">
+        <button type="button" className="ch-btn ch-btn--primary" disabled={c.busy} onClick={() => c.accept(r.id)}>
+          {label.confirm}
+        </button>
+        <button type="button" className="ch-btn ch-btn--secondary" disabled={c.busy} onClick={() => c.removeRequest(r.id)}>
+          {label.delete}
+        </button>
+      </div>
     );
   }
   if (r?.state === 'outgoing') {
-    return <button type="button" className="ch-btn" disabled={c.busy} onClick={() => c.removeRequest(r.id)}>{label.cancel_req}</button>;
+    return (
+      <button type="button" className="ch-btn ch-btn--secondary" disabled={c.busy} onClick={() => c.removeRequest(r.id)}>
+        {label.cancel_req}
+      </button>
+    );
   }
   return (
-    <>
-      <button type="button" className="ch-btn ch-btn--primary" disabled={c.busy} onClick={() => c.sendRequest(p.email)}>{label.add}</button>
-      {onHide && <button type="button" className="ch-btn" onClick={() => onHide(p.email)}>{label.hide}</button>}
-    </>
+    <div className="ch-action-duo">
+      <button type="button" className="ch-btn ch-btn--primary" disabled={c.busy} onClick={() => c.sendRequest(p.email)}>
+        {label.add}
+      </button>
+      {onHide && (
+        <button type="button" className="ch-btn ch-btn--ghost" onClick={() => onHide(p.email)} title={label.hide}>
+          {label.hide}
+        </button>
+      )}
+    </div>
   );
 }
 
 const mutualText = (p, label) => (p.mutual > 0 ? fmt(label.mutual, { n: p.mutual }) : label.no_mutual);
 
-function Empty({ children }) { return <p className="ch-status">{children}</p>; }
+function Empty({ children }) {
+  return (
+    <div className="ch-empty-card">
+      <span className="ch-empty-icon">⚡</span>
+      <p className="ch-empty-text">{children}</p>
+    </div>
+  );
+}
 
-function SectionHead({ title, action, onAction, children }) {
+function SectionHead({ title, action, onAction, count, children }) {
   return (
     <div className="ch-section-head">
-      <h2 className="ch-h2">{title}</h2>
-      {action && <button type="button" className="ch-link" onClick={onAction}>{action}</button>}
+      <div className="ch-section-title-wrap">
+        <h2 className="ch-h2">{title}</h2>
+        {count !== undefined && <span className="ch-count-badge">{count}</span>}
+      </div>
+      {action && <button type="button" className="ch-link" onClick={onAction}>{action} →</button>}
       {children}
     </div>
   );
 }
 
-/* ---------------- Các mục ---------------- */
+/* ---------------- Các mục chi tiết ---------------- */
 
 function RequestsSection({ c, label, limit, go }) {
   const [tab, setTab] = useState('received');
   const received = tab === 'received';
   const list = received ? c.incoming : c.outgoing;
   const shown = limit ? list.slice(0, limit) : list;
+
   return (
     <section className="ch-section">
-      <SectionHead title={label.req_title} action={limit ? label.see_all : null} onAction={() => go('requests')}>
+      <SectionHead
+        title={label.req_title}
+        action={limit ? label.see_all : null}
+        onAction={() => go('requests')}
+        count={c.incoming.length > 0 ? c.incoming.length : undefined}
+      >
         {!limit && (
           <div className="ch-tabs" role="tablist">
             <button type="button" role="tab" aria-selected={received} className={`ch-tab ${received ? 'is-on' : ''}`} onClick={() => setTab('received')}>
-              {label.tab_received}{c.incoming.length > 0 && <b>{c.incoming.length}</b>}
+              {label.tab_received} {c.incoming.length > 0 && <b>{c.incoming.length}</b>}
             </button>
             <button type="button" role="tab" aria-selected={!received} className={`ch-tab ${!received ? 'is-on' : ''}`} onClick={() => setTab('sent')}>
-              {label.tab_sent}{c.outgoing.length > 0 && <b>{c.outgoing.length}</b>}
+              {label.tab_sent} {c.outgoing.length > 0 && <b>{c.outgoing.length}</b>}
             </button>
           </div>
         )}
       </SectionHead>
       {shown.length === 0 && <Empty>{received ? label.empty_req : label.empty_sent}</Empty>}
-      <div className="ch-grid">
+      <div className="ch-dev-grid">
         {shown.map((p) => (
           <PersonCard key={p.email} p={p} sub={mutualText(p, label)}>
             {received ? (
-              <>
-                <button type="button" className="ch-btn ch-btn--primary" disabled={c.busy} onClick={() => c.accept(p.requestId)}>{label.confirm}</button>
-                <button type="button" className="ch-btn" disabled={c.busy} onClick={() => c.removeRequest(p.requestId)}>{label.delete}</button>
-              </>
+              <div className="ch-action-duo">
+                <button type="button" className="ch-btn ch-btn--primary" disabled={c.busy} onClick={() => c.accept(p.requestId)}>
+                  {label.confirm}
+                </button>
+                <button type="button" className="ch-btn ch-btn--secondary" disabled={c.busy} onClick={() => c.removeRequest(p.requestId)}>
+                  {label.delete}
+                </button>
+              </div>
             ) : (
-              <button type="button" className="ch-btn" disabled={c.busy} onClick={() => c.removeRequest(p.requestId)}>{label.cancel_req}</button>
+              <button type="button" className="ch-btn ch-btn--secondary" disabled={c.busy} onClick={() => c.removeRequest(p.requestId)}>
+                {label.cancel_req}
+              </button>
             )}
           </PersonCard>
         ))}
@@ -205,13 +308,31 @@ function RequestsSection({ c, label, limit, go }) {
   );
 }
 
-function SuggestionsSection({ c, label, limit, go }) {
-  const shown = limit ? c.suggestions.slice(0, limit) : c.suggestions;
+function SuggestionsSection({ c, label, limit, go, filter = 'all' }) {
+  const filtered = useMemo(() => {
+    let list = c.suggestions;
+    if (filter === 'vibe') {
+      list = list.filter((p) => getDevProfile(p).role.includes('Vibe'));
+    } else if (filter === 'ai') {
+      list = list.filter((p) => getDevProfile(p).role.includes('AI'));
+    } else if (filter === 'fullstack') {
+      list = list.filter((p) => getDevProfile(p).role.includes('Fullstack') || getDevProfile(p).role.includes('Artisan'));
+    }
+    return list;
+  }, [c.suggestions, filter]);
+
+  const shown = limit ? filtered.slice(0, limit) : filtered;
+
   return (
     <section className="ch-section">
-      <SectionHead title={label.sug_title} action={limit ? label.see_all : null} onAction={() => go('suggestions')} />
+      <SectionHead
+        title={label.sug_title}
+        action={limit ? label.see_all : null}
+        onAction={() => go('suggestions')}
+        count={c.suggestions.length}
+      />
       {shown.length === 0 && <Empty>{label.empty_sug}</Empty>}
-      <div className="ch-grid">
+      <div className="ch-dev-grid">
         {shown.map((p) => (
           <PersonCard key={p.email} p={p} sub={mutualText(p, label)}>
             <RelationActions p={p} c={c} label={label} onHide={c.hideSuggestion} />
@@ -229,19 +350,24 @@ function FriendsSection({ c, label }) {
   const drop = (p) => {
     if (window.confirm(fmt(label.unfriend_confirm, { name: p.name }))) c.unfriend(p.requestId, p.email);
   };
+
   return (
     <section className="ch-section">
-      <SectionHead title={label.nav_friends}>
-        <span className="ch-count">{fmt(label.friends_count, { n: c.friends.length })}</span>
-      </SectionHead>
-      <input className="ch-input ch-input--wide" type="search" value={q} onChange={(e) => setQ(e.target.value)}
-        placeholder={label.filter_ph} aria-label={label.filter_ph} />
+      <SectionHead title={label.nav_friends} count={c.friends.length} />
+      <div className="ch-search-bar-wrap">
+        <input className="ch-input ch-input--search" type="search" value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder={label.filter_ph} aria-label={label.filter_ph} />
+      </div>
       {shown.length === 0 && <Empty>{c.friends.length === 0 ? label.empty_friends : label.empty_search}</Empty>}
-      <div className="ch-grid">
+      <div className="ch-dev-grid">
         {shown.map((p) => (
           <PersonCard key={p.email} p={p} sub={mutualText(p, label)}>
-            <ListMenu email={p.email} lists={c.lists} label={label} onToggle={toggle} />
-            <button type="button" className="ch-btn" disabled={c.busy} onClick={() => drop(p)}>{label.unfriend}</button>
+            <div className="ch-action-duo">
+              <ListMenu email={p.email} lists={c.lists} label={label} onToggle={toggle} />
+              <button type="button" className="ch-btn ch-btn--danger-ghost" disabled={c.busy} onClick={() => drop(p)}>
+                {label.unfriend}
+              </button>
+            </div>
           </PersonCard>
         ))}
       </div>
@@ -269,34 +395,44 @@ function BirthdaysSection({ c, label, lang }) {
   const when = (nb) => (nb.days === 1 ? label.bd_tomorrow : fmt(label.bd_in_days, { n: nb.days }));
   const age = (nb) => (nb.age > 0 && nb.age < 120 ? ` · ${fmt(label.bd_turning, { n: nb.age })}` : '');
 
-  const Row = ({ p, right }) => (
-    <li className="ch-row">
-      <Avatar p={p} />
-      <div className="ch-row-main">
-        <strong>{p.name}</strong>
-        <small>{p.nb ? `${dateText(p.nb)}${age(p.nb)}` : ''}</small>
-      </div>
-      {right && <span className="ch-pill ch-pill--accent">{right}</span>}
-    </li>
-  );
+  const Row = ({ p, right }) => {
+    const { role } = getDevProfile(p);
+    return (
+      <li className="ch-milestone-row">
+        <Avatar p={p} size="md" />
+        <div className="ch-milestone-main">
+          <div className="ch-milestone-name-wrap">
+            <strong>{p.name}</strong>
+            <span className="ch-milestone-badge">{role}</span>
+          </div>
+          <small>{p.nb ? `${dateText(p.nb)}${age(p.nb)}` : label.bd_missing}</small>
+        </div>
+        {right && <span className="ch-pill-accent">{right}</span>}
+      </li>
+    );
+  };
 
   return (
     <section className="ch-section">
       <SectionHead title={label.nav_birthdays} />
-      <h3 className="ch-h3">🎂 {label.bd_today}</h3>
-      {today.length === 0 ? <Empty>—</Empty> : (
-        <ul className="ch-rows">{today.map((p) => <Row key={p.email} p={p} right="🎉" />)}</ul>
-      )}
-      <h3 className="ch-h3">{label.bd_upcoming}</h3>
-      {upcoming.length === 0 ? <Empty>{label.bd_none}</Empty> : (
-        <ul className="ch-rows">{upcoming.map((p) => <Row key={p.email} p={p} right={when(p.nb)} />)}</ul>
-      )}
-      {missing.length > 0 && (
-        <>
-          <h3 className="ch-h3">{label.bd_missing}</h3>
-          <ul className="ch-rows">{missing.map((p) => <Row key={p.email} p={p} />)}</ul>
-        </>
-      )}
+      <div className="ch-milestone-block">
+        <h3 className="ch-h3">🎉 {label.bd_today}</h3>
+        {today.length === 0 ? <Empty>Hôm nay không có kỷ niệm nào</Empty> : (
+          <ul className="ch-milestone-list">{today.map((p) => <Row key={p.email} p={p} right="🎂 Chúc mừng!" />)}</ul>
+        )}
+
+        <h3 className="ch-h3">⏳ {label.bd_upcoming}</h3>
+        {upcoming.length === 0 ? <Empty>{label.bd_none}</Empty> : (
+          <ul className="ch-milestone-list">{upcoming.map((p) => <Row key={p.email} p={p} right={when(p.nb)} />)}</ul>
+        )}
+
+        {missing.length > 0 && (
+          <>
+            <h3 className="ch-h3">📝 {label.bd_missing}</h3>
+            <ul className="ch-milestone-list">{missing.map((p) => <Row key={p.email} p={p} />)}</ul>
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -332,18 +468,20 @@ function ListsSection({ c, label, params, setParams }) {
 
   return (
     <section className="ch-section">
-      <SectionHead title={label.lists_title} />
-      <form className="ch-inline" onSubmit={create}>
+      <SectionHead title={label.lists_title} count={c.lists.length} />
+      <form className="ch-inline-form" onSubmit={create}>
         <input className="ch-input" value={name} maxLength={40} onChange={(e) => setName(e.target.value)}
           placeholder={label.list_new_ph} aria-label={label.list_new_ph} />
-        <button type="submit" className="ch-btn ch-btn--primary ch-btn--auto" disabled={c.busy || !name.trim()}>{label.list_create}</button>
+        <button type="submit" className="ch-btn ch-btn--primary ch-btn--auto" disabled={c.busy || !name.trim()}>
+          {label.list_create}
+        </button>
       </form>
 
       {c.lists.length === 0 ? <Empty>{label.list_none}</Empty> : (
-        <div className="ch-chips">
+        <div className="ch-squad-chips">
           {c.lists.map((l) => (
-            <button key={l.id} type="button" className={`ch-chip ${sel?.id === l.id ? 'is-on' : ''}`} onClick={() => select(l.id)}>
-              {l.name} <b>{l.emails.length}</b>
+            <button key={l.id} type="button" className={`ch-squad-chip ${sel?.id === l.id ? 'is-on' : ''}`} onClick={() => select(l.id)}>
+              <span className="ch-squad-icon">👥</span> {l.name} <b>{l.emails.length}</b>
             </button>
           ))}
         </div>
@@ -354,26 +492,31 @@ function ListsSection({ c, label, params, setParams }) {
       {sel && (
         <div className="ch-panel">
           <div className="ch-panel-head">
-            <h3 className="ch-h3 ch-h3--flat">{sel.name}</h3>
+            <div>
+              <h3 className="ch-h3 ch-h3--flat">Squad: {sel.name}</h3>
+              <p className="ch-lead">{members.length} thành viên trong nhóm dự án</p>
+            </div>
             <div className="ch-inline ch-inline--tight">
-              <button type="button" className="ch-btn ch-btn--auto" onClick={rename} disabled={c.busy}>{label.list_rename}</button>
-              <button type="button" className="ch-btn ch-btn--auto ch-btn--danger" onClick={remove} disabled={c.busy}>{label.list_delete}</button>
+              <button type="button" className="ch-btn ch-btn--secondary ch-btn--auto" onClick={rename} disabled={c.busy}>{label.list_rename}</button>
+              <button type="button" className="ch-btn ch-btn--danger-ghost ch-btn--auto" onClick={remove} disabled={c.busy}>{label.list_delete}</button>
             </div>
           </div>
 
-          <div className="ch-inline">
+          <div className="ch-inline-form">
             <select className="ch-input" value={pick} onChange={(e) => setPick(e.target.value)} aria-label={label.list_add_pick}>
               <option value="">{label.list_add_pick}</option>
-              {candidates.map((f) => <option key={f.email} value={f.email}>{f.name}</option>)}
+              {candidates.map((f) => <option key={f.email} value={f.email}>{f.name} ({f.email})</option>)}
             </select>
             <button type="button" className="ch-btn ch-btn--primary ch-btn--auto" onClick={addPicked} disabled={c.busy || !pick}>{label.list_add}</button>
           </div>
 
           {members.length === 0 ? <Empty>{label.list_empty}</Empty> : (
-            <div className="ch-grid">
+            <div className="ch-dev-grid">
               {members.map((p) => (
-                <PersonCard key={p.email} p={p} sub={mutualText({ mutual: 0 }, label)}>
-                  <button type="button" className="ch-btn" disabled={c.busy} onClick={() => c.removeFromList(sel.id, p.email)}>{label.list_remove}</button>
+                <PersonCard key={p.email} p={p} sub={label.no_mutual}>
+                  <button type="button" className="ch-btn ch-btn--danger-ghost" disabled={c.busy} onClick={() => c.removeFromList(sel.id, p.email)}>
+                    {label.list_remove}
+                  </button>
                 </PersonCard>
               ))}
             </div>
@@ -394,11 +537,12 @@ function SearchSection({ c, label, q }) {
       .map((p) => ({ ...p, mutual: 0 }))
       .slice(0, 60);
   }, [c.byEmail, c.me, term, idq]);
+
   return (
     <section className="ch-section">
-      <SectionHead title={fmt(label.search_title, { q })} />
+      <SectionHead title={fmt(label.search_title, { q })} count={results.length} />
       {results.length === 0 && <Empty>{label.empty_search}</Empty>}
-      <div className="ch-grid">
+      <div className="ch-dev-grid">
         {results.map((p) => (
           <PersonCard key={p.email} p={p} sub={p.bio || label.no_mutual}>
             <RelationActions p={p} c={c} label={label} />
@@ -449,17 +593,20 @@ function ProfileForm({ c, label }) {
   }, [p?.name, p?.birthday, p?.bio]);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const submit = (e) => { e.preventDefault(); c.saveProfile(form); };
+
   return (
     <form className="ch-panel ch-form" onSubmit={submit}>
       <h3 className="ch-h3 ch-h3--flat">{label.profile}</h3>
       {p?.public_id && (
-        <div className="ch-uid">
-          <span className="ch-uid-label">{label.uid_label}</span>
-          <div className="ch-inline ch-inline--tight">
-            <code className="ch-uid-code">{p.public_id}</code>
-            <button type="button" className="ch-btn ch-btn--auto" onClick={copyId}>{copied ? label.uid_copied : label.uid_copy}</button>
+        <div className="ch-uid-card">
+          <div className="ch-uid-top">
+            <span className="ch-uid-badge">{label.uid_label}</span>
+            <button type="button" className="ch-btn ch-btn--sm ch-btn--secondary" onClick={copyId}>
+              {copied ? label.uid_copied : label.uid_copy}
+            </button>
           </div>
-          <small className="ch-uid-hint">{label.uid_hint}</small>
+          <code className="ch-uid-code">#{p.public_id}</code>
+          <p className="ch-uid-hint">{label.uid_hint}</p>
         </div>
       )}
       <label>{label.display_name}
@@ -484,14 +631,15 @@ export default function CommunityHub() {
   const [params, setParams] = useSearchParams();
   const { lang } = useLanguage();
   const { openModal } = useUI();
-  const label = { ...TEXT.en, ...(TEXT[lang] || {}) }; // thiếu khóa nào thì rơi về tiếng Anh
+  const label = { ...TEXT.en, ...(TEXT[lang] || {}) };
   const c = useCommunity();
   const loggedIn = Boolean(c.me);
 
   const [searchText, setSearchText] = useState(params.get('q') || '');
   const [topics, setTopics] = useState([]);
-  const [topicsState, setTopicsState] = useState('loading'); // loading | ok | failed
+  const [topicsState, setTopicsState] = useState('loading');
   const [hiddenTopics, setHiddenTopics] = useState(() => new Set());
+  const [hubFilter, setHubFilter] = useState('all');
 
   const active = section || 'home';
 
@@ -538,11 +686,11 @@ export default function CommunityHub() {
     const list = limit ? visibleTopics.slice(0, limit) : visibleTopics;
     return (
       <section className="ch-section">
-        <SectionHead title={label.topics_title} action={limit ? label.see_all : null} onAction={() => go('topics')} />
+        <SectionHead title={label.topics_title} action={limit ? label.see_all : null} onAction={() => go('topics')} count={visibleTopics.length} />
         {topicsState === 'loading' && <Empty>{label.loading}</Empty>}
         {topicsState === 'failed' && <Empty>{label.err_failed}</Empty>}
         {topicsState === 'ok' && list.length === 0 && <Empty>{label.empty_topics}</Empty>}
-        <div className="ch-grid">
+        <div className="ch-topic-grid">
           {list.map((t) => (
             <TopicCard key={t.id} topic={t} label={label} onOpen={openTopic}
               onHide={(id) => setHiddenTopics((prev) => new Set(prev).add(id))} />
@@ -553,9 +701,15 @@ export default function CommunityHub() {
   };
 
   const loginPrompt = (
-    <div className="ch-alert">
-      <p>{label.login_need}</p>
-      <button type="button" className="ch-btn ch-btn--primary ch-btn--auto" onClick={() => openModal('signin')}>{label.login_btn}</button>
+    <div className="ch-alert ch-alert--login">
+      <div className="ch-alert-icon">⚡</div>
+      <div className="ch-alert-body">
+        <h4>Tham gia Mạng Lưới GitXplore</h4>
+        <p>{label.login_need}</p>
+        <button type="button" className="ch-btn ch-btn--primary ch-btn--auto" onClick={() => openModal('signin')}>
+          {label.login_btn}
+        </button>
+      </div>
     </div>
   );
 
@@ -572,7 +726,7 @@ export default function CommunityHub() {
     if (c.error) return null;
     switch (active) {
       case 'requests': return <RequestsSection c={c} label={label} go={go} />;
-      case 'suggestions': return <SuggestionsSection c={c} label={label} go={go} />;
+      case 'suggestions': return <SuggestionsSection c={c} label={label} go={go} filter={hubFilter} />;
       case 'friends': return <FriendsSection c={c} label={label} />;
       case 'birthdays': return <BirthdaysSection c={c} label={label} lang={lang} />;
       case 'lists': return <ListsSection c={c} label={label} params={params} setParams={setParams} />;
@@ -583,25 +737,76 @@ export default function CommunityHub() {
 
   const homeContent = () => (
     <>
+      {/* ===== Hero Header Banner ===== */}
+      <div className="ch-hero">
+        <div className="ch-hero-content">
+          <div className="ch-hero-badge">
+            <span className="ch-hero-beacon" />
+            <span>GITXPLORE BUILDER NETWORK</span>
+          </div>
+          <h1 className="ch-hero-title">⚡ Mạng Lưới Kỹ Sư & Vibe Coders</h1>
+          <p className="ch-hero-desc">
+            Không gian kết nối kỹ sư mã nguồn mở, Vibe Coders và AI Builders toàn cầu. Trao đổi prompt, tìm đồng đội làm dự án và cùng nhau kiến tạo tương lai phần mềm.
+          </p>
+          <div className="ch-hero-stats">
+            <div className="ch-stat-pill">
+              <strong>{c.friends.length}</strong>
+              <span>Đã kết nối</span>
+            </div>
+            <div className="ch-stat-pill">
+              <strong>{c.suggestions.length}</strong>
+              <span>Builders đề xuất</span>
+            </div>
+            <div className="ch-stat-pill">
+              <strong>{visibleTopics.length}</strong>
+              <span>Chủ đề thảo luận</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Filter Buttons */}
+        <div className="ch-hero-filters">
+          {[
+            { id: 'all', label: '🌐 Tất cả Builders' },
+            { id: 'vibe', label: '⚡ Vibe Coders' },
+            { id: 'ai', label: '🤖 Trí tuệ AI' },
+            { id: 'fullstack', label: '🚀 Fullstack & Web' },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`ch-filter-btn ${hubFilter === f.id ? 'is-active' : ''}`}
+              onClick={() => setHubFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loggedIn && !c.loading && !c.error && todayBirthdays.length > 0 && (
-        <button type="button" className="ch-banner" onClick={() => go('birthdays')}>
-          {fmt(label.bd_banner, { names: todayBirthdays.map((p) => p.name).join(', ') })}
+        <button type="button" className="ch-celebrate-banner" onClick={() => go('birthdays')}>
+          <span className="ch-celebrate-icon">🎉</span>
+          <span>{fmt(label.bd_banner, { names: todayBirthdays.map((p) => p.name).join(', ') })}</span>
         </button>
       )}
+
       {!loggedIn && loginPrompt}
       {loggedIn && c.loading && <Empty>{label.loading}</Empty>}
+
       {loggedIn && !c.loading && !c.error && (
         <>
           {c.incoming.length > 0 && (
             <>
-              <RequestsSection c={c} label={label} limit={5} go={go} />
-              <hr className="ch-hr" />
+              <RequestsSection c={c} label={label} limit={4} go={go} />
+              <div className="ch-divider" />
             </>
           )}
-          <SuggestionsSection c={c} label={label} limit={6} go={go} />
-          <hr className="ch-hr" />
+          <SuggestionsSection c={c} label={label} limit={6} go={go} filter={hubFilter} />
+          <div className="ch-divider" />
         </>
       )}
+
       {topicsBlock(4)}
     </>
   );
@@ -611,56 +816,65 @@ export default function CommunityHub() {
       <TopNav />
 
       <div className="ch-shell">
-        {/* ===== SIDEBAR ===== */}
+        {/* ===== TECH SIDEBAR ===== */}
         <aside className="ch-side" aria-label={label.title}>
           <div className="ch-side-top">
-            <h1 className="ch-title">{label.title}</h1>
-            <button type="button" className="ch-gear" onClick={() => go('settings')} aria-label={label.nav_settings} title={label.nav_settings}>
+            <div className="ch-side-brand">
+              <span className="ch-side-pulse" />
+              <h2 className="ch-side-title">{label.title}</h2>
+            </div>
+            <button type="button" className="ch-gear-btn" onClick={() => go('settings')} aria-label={label.nav_settings} title={label.nav_settings}>
               {ICON.settings}
             </button>
           </div>
 
-          <form className="ch-search" onSubmit={onSearch} role="search">
+          <form className="ch-search-box" onSubmit={onSearch} role="search">
             <span className="ch-search-ico">{ICON.search}</span>
             <input type="search" value={searchText} onChange={(e) => setSearchText(e.target.value)}
               placeholder={label.search_ph} aria-label={label.search_ph} />
           </form>
 
-          <nav className="ch-nav" aria-label={label.title}>
-            {NAV.map((it) => {
-              const badge = it.id === 'requests' ? c.incoming.length : 0;
-              return (
-                <button key={it.id} type="button" className={`ch-item ${active === it.id ? 'is-on' : ''}`}
-                  aria-current={active === it.id ? 'page' : undefined} onClick={() => go(it.id)}>
-                  <span className="ch-ico">{ICON[it.id]}</span>
-                  <span className="ch-item-label">{label[it.key]}</span>
-                  {badge > 0 && <span className="ch-badge">{badge}</span>}
-                  {it.chev && <span className="ch-chev" aria-hidden="true">›</span>}
-                </button>
-              );
-            })}
-          </nav>
+          <div className="ch-side-section">
+            <p className="ch-side-label">KHÁM PHÁ & KẾT NỐI</p>
+            <nav className="ch-nav">
+              {NAV.map((it) => {
+                const badge = it.id === 'requests' ? c.incoming.length : (it.id === 'friends' ? c.friends.length : 0);
+                return (
+                  <button key={it.id} type="button" className={`ch-item ${active === it.id ? 'is-on' : ''}`}
+                    aria-current={active === it.id ? 'page' : undefined} onClick={() => go(it.id)}>
+                    <span className="ch-ico">{ICON[it.id]}</span>
+                    <span className="ch-item-label">{label[it.key]}</span>
+                    {badge > 0 && <span className={`ch-badge ${it.id === 'requests' ? 'ch-badge--red' : ''}`}>{badge}</span>}
+                    {it.chev && <span className="ch-chev" aria-hidden="true">›</span>}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
 
-          <div className="ch-zone">
-            <p className="ch-group">{label.group_forum}</p>
+          <div className="ch-side-section">
+            <p className="ch-side-label">{label.group_forum}</p>
             <nav className="ch-nav">
               <button type="button" className={`ch-item ${active === 'topics' ? 'is-on' : ''}`} onClick={() => go('topics')}>
-                <span className="ch-ico">{ICON.topics}</span><span className="ch-item-label">{label.nav_topics}</span>
+                <span className="ch-ico">{ICON.topics}</span>
+                <span className="ch-item-label">{label.nav_topics}</span>
+                {visibleTopics.length > 0 && <span className="ch-badge ch-badge--subtle">{visibleTopics.length}</span>}
               </button>
             </nav>
           </div>
 
-          <div className="ch-zone">
-            <p className="ch-group">{label.group_settings}</p>
+          <div className="ch-side-section">
+            <p className="ch-side-label">{label.group_settings}</p>
             <nav className="ch-nav">
               <button type="button" className={`ch-item ${active === 'settings' ? 'is-on' : ''}`} onClick={() => go('settings')}>
-                <span className="ch-ico">{ICON.settings}</span><span className="ch-item-label">{label.nav_settings}</span>
+                <span className="ch-ico">{ICON.settings}</span>
+                <span className="ch-item-label">{label.nav_settings}</span>
               </button>
             </nav>
           </div>
         </aside>
 
-        {/* ===== NỘI DUNG ===== */}
+        {/* ===== NỘI DUNG CHÍNH ===== */}
         <main className="ch-content">
           {NEEDS_LOGIN.includes(active) || active === 'home' ? dataProblem : null}
 
@@ -680,6 +894,7 @@ export default function CommunityHub() {
 
       {c.notice && (
         <div className={`ch-toast ${c.notice.type === 'err' ? 'is-err' : ''}`} role="status">
+          <span className="ch-toast-dot" />
           {c.notice.key ? label[c.notice.key] : c.notice.text}
         </div>
       )}
