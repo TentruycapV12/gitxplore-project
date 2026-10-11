@@ -6,7 +6,7 @@ import './WelcomeOnboardingModal.css';
 
 export default function WelcomeOnboardingModal({ onClose }) {
   const navigate = useNavigate();
-  const { lang, setLang, languages } = useLanguage();
+  const { t, lang, setLang, languages } = useLanguage();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [dontShowAgain, setDontShowAgain] = useState(false);
