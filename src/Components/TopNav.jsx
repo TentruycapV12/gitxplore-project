@@ -114,9 +114,10 @@ export default function TopNav() {
     <header className="tn" ref={rootRef}>
       {/* ===== TRÁI: logo + tìm kiếm ===== */}
       <div className="tn-left">
-        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label={`NOTOSAN - ${t('ui_home')}`}>
-          <span className="tn-logo-mark">N</span>
-          <span className="tn-logo-text">NOTOSAN</span>
+        <button type="button" className="tn-logo" onClick={() => go('/')} aria-label={`GitXplore - ${t('ui_home')}`}>
+          <span className="tn-logo-mark">⚡</span>
+          <span className="tn-logo-text">GitXplore</span>
+          <span className="tn-logo-pill">VIBE</span>
         </button>
 
         <form className={`tn-search ${searchOpen ? 'is-open' : ''}`} onSubmit={onSearch} role="search">

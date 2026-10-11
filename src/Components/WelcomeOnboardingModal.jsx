@@ -25,13 +25,13 @@ export default function WelcomeOnboardingModal({ onClose }) {
   };
 
   return (
-    <div className="ob-modal-overlay" role="dialog" aria-modal="true" aria-label="Hướng dẫn chào mừng">
-      <div className="ob-modal-card">
+    <div className="ob-modal-overlay" role="dialog" aria-modal="true" aria-label="Hướng dẫn chào mừng" data-lenis-prevent="true">
+      <div className="ob-modal-card" data-lenis-prevent="true">
         {/* Header with Step Indicator */}
         <div className="ob-modal-header">
           <div className="ob-brand-badge">
-            <span className="ob-brand-icon">N</span>
-            <span className="ob-brand-title">NOTOSAN • GITXPLORE</span>
+            <span className="ob-brand-icon">⚡</span>
+            <span className="ob-brand-title">GITXPLORE • DEVELOPER PLATFORM</span>
           </div>
 
           <div className="ob-steps-indicator">

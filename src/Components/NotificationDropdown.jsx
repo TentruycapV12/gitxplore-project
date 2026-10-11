@@ -67,7 +67,7 @@ export default function NotificationDropdown({ onClose }) {
   };
 
   return (
-    <div className="fb-notif-popover" ref={containerRef} role="dialog" aria-label={t('notif_title')}>
+    <div className="fb-notif-popover" ref={containerRef} role="dialog" aria-label={t('notif_title')} data-lenis-prevent="true">
       {/* Header */}
       <div className="fb-notif-header">
         <div className="fb-notif-title-row">

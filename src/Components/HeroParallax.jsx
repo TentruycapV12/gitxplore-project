@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { scrollToId } from '../lib/scroll';
@@ -41,6 +42,7 @@ function createSequence(canvas, srcOf) {
 }
 
 export default function HeroParallax() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
@@ -276,22 +278,47 @@ export default function HeroParallax() {
           >
             {t('tranquility_desc')}
           </p>
-          <button
-            type="button"
-            onClick={() => scrollToId('explore')}
-            style={{
-              background: 'transparent',
-              color: '#fcd34d',
-              border: 'none',
-              borderBottom: '1px solid #fcd34d',
-              paddingBottom: '4px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            {t('learn_more')}
-          </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/vibe')}
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b, #dc2626)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '11px 24px',
+                borderRadius: '24px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(220, 38, 38, 0.4)',
+                transition: 'transform 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
+              onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
+            >
+              ⚡ Vibe Coding Hub ↗
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToId('explore')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#fcd34d',
+                border: '1px solid rgba(252, 211, 77, 0.4)',
+                padding: '10px 20px',
+                borderRadius: '24px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.16)')}
+              onMouseLeave={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.08)')}
+            >
+              {t('learn_more')} ↓
+            </button>
+          </div>
         </div>
       </div>
     </div>
