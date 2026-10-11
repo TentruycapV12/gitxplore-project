@@ -4,8 +4,9 @@
  */
 export const UI_STRINGS = {
   vi: {
-    ui_home: 'Trang chủ', ui_shortcuts: 'Lối tắt', ui_notifications: 'Thông báo', ui_account: 'Tài khoản',
+    ui_home: 'Trang chủ', vibe_nav: 'Vibe', ui_shortcuts: 'Lối tắt', ui_notifications: 'Thông báo', ui_account: 'Tài khoản',
     ui_main_nav: 'Điều hướng chính', ui_dock_rail: 'Thanh tiện ích', ui_dock_notes: 'Ghi chú nhanh',
+    vibe_dock_desc: 'Mẫu Kỹ năng, Agent, MCPs & Prompt AI',
     ui_dock_news_desc: 'Tin mới về mã nguồn mở', ui_dock_comm_desc: 'Thảo luận, hỏi đáp, chia sẻ',
     ui_dock_acc_in: 'Repo đã lưu, hồ sơ, lịch sử', ui_dock_acc_out: 'Đăng nhập để sử dụng',
     ui_dock_support_desc: 'Câu hỏi thường gặp, gửi yêu cầu',
@@ -17,8 +18,9 @@ export const UI_STRINGS = {
     ui_current: 'Đang dùng', ui_active: 'Đang đăng nhập:', ui_quick_vault: 'Kho nhanh',
   },
   en: {
-    ui_home: 'Home', ui_shortcuts: 'Shortcuts', ui_notifications: 'Notifications', ui_account: 'Account',
+    ui_home: 'Home', vibe_nav: 'Vibe', ui_shortcuts: 'Shortcuts', ui_notifications: 'Notifications', ui_account: 'Account',
     ui_main_nav: 'Main navigation', ui_dock_rail: 'Quick tools', ui_dock_notes: 'Quick notes',
+    vibe_dock_desc: 'Skills, Agents, MCPs & AI Templates',
     ui_dock_news_desc: 'Latest open-source news', ui_dock_comm_desc: 'Discuss, ask, share',
     ui_dock_acc_in: 'Saved repos, profile, history', ui_dock_acc_out: 'Sign in to use',
     ui_dock_support_desc: 'FAQ and submit a request',

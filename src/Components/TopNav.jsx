@@ -14,6 +14,7 @@ const Svg = ({ children }) => (
 
 const ICONS = {
   home: <Svg><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Svg>,
+  vibe: <Svg><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z" /><path d="M5 3v4M3 5h4M19 17v4M17 19h4" /></Svg>,
   news: <Svg><rect x="3" y="4" width="14" height="16" rx="2" /><path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M7 8h6M7 12h6M7 16h4" /></Svg>,
   community: <Svg><circle cx="9" cy="8" r="3.2" /><path d="M2.8 20c.4-3.4 3-5.5 6.2-5.5s5.8 2.1 6.2 5.5" /><circle cx="17" cy="9" r="2.4" /><path d="M16.5 14.6c2.6.1 4.4 1.8 4.7 4.4" /></Svg>,
   forum: <Svg><path d="M4 5h16v11H9l-5 4z" /></Svg>,
@@ -27,6 +28,7 @@ const ICONS = {
 // Các tab giữa. `to` = chuyển trang, `modal` = mở popup.
 const TABS = [
   { id: 'home', label: 'Trang chủ', to: '/' },
+  { id: 'vibe', label: 'Vibe', to: '/vibe' },
   { id: 'news', label: 'Tin tức', to: '/news' },
   { id: 'community', label: 'Cộng đồng', to: '/community' },
   { id: 'forum', label: 'Diễn đàn', to: '/forum' },
@@ -69,13 +71,14 @@ export default function TopNav() {
   }, [menu]);
 
   const activeId =
+    pathname.startsWith('/vibe') ? 'vibe' :
     pathname.startsWith('/news') ? 'news' :
     pathname.startsWith('/forum') ? 'forum' :
     pathname.startsWith('/community') ? 'community' :
     pathname === '/' ? 'home' : null;
 
   const tabLabel = {
-    home: t('ui_home'), news: t('news'), community: t('community'),
+    home: t('ui_home'), vibe: t('vibe_nav') || 'Vibe Coding', news: t('news'), community: t('community'),
     forum: FORUM_LABEL[lang] || FORUM_LABEL.en, support: t('support'),
   };
 
@@ -157,6 +160,7 @@ export default function TopNav() {
             <div className="tn-pop tn-apps" role="menu">
               <p className="tn-pop-title">{t('ui_shortcuts')}</p>
               <div className="tn-apps-grid">
+                <button type="button" onClick={() => go('/vibe')}>{ICONS.vibe}<span>{t('vibe_nav') || 'Vibe Coding'}</span></button>
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
                 <button type="button" onClick={() => go('/community')}>{ICONS.community}<span>{t('community')}</span></button>
                 <button type="button" onClick={() => go('/accountscenter/saved')}>{ICONS.bookmark}<span>{t('saved_repos')}</span></button>

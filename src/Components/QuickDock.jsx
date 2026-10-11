@@ -39,6 +39,7 @@ function LinksPane({ go, openSupport }) {
   const { user } = useAuth();
   const { t: tr } = useLanguage();
   const items = [
+    { label: 'Vibe Coding', desc: tr('vibe_dock_desc') || 'Kỹ năng, Agent, MCPs & Prompt AI', onClick: () => go('/vibe') },
     { label: tr('news'), desc: tr('ui_dock_news_desc'), onClick: () => go('/news') },
     { label: tr('community'), desc: tr('ui_dock_comm_desc'), onClick: () => go('/community') },
     {

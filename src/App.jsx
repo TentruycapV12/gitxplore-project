@@ -11,6 +11,7 @@ import SavedDashboard from './Components/SavedDashboard.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import NewsPage from './pages/NewsPage.jsx';
 import SearchPage from './pages/SearchPage.jsx';
+import VibePage from './pages/VibePage.jsx';
 import ProjectModal from './Components/ProjectModal.jsx';
 import NavModals from './Components/NavModals.jsx';
 import SupportModal from './Components/SupportModal.jsx';
@@ -60,6 +61,8 @@ export default function App() {
         <Route path="/community/:section" element={<CommunityHub />} />
         <Route path="/news" element={<NewsPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/vibe" element={<VibePage />} />
+        <Route path="/vibe/:category" element={<VibePage />} />
 
         {/* /accountscenter/:section */}
         <Route
