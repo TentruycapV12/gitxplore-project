@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { FORUM_TEXT, formatForumStr } from './forumText';
 import AdminDashboardModal from './AdminDashboardModal';
 import UidTag from './UidTag';
 
@@ -19,7 +21,16 @@ const PREFIX_MAP = {
   'Mã nguồn': { label: 'Source Code', bg: '#4c1d95', color: '#c4b5fd', border: '#8b5cf6' },
 };
 
-const resolvePrefix = (prefix) => PREFIX_MAP[prefix] || PREFIX_MAP['Discussion'];
+const resolvePrefix = (prefix, ft = {}) => {
+  const p = PREFIX_MAP[prefix] || PREFIX_MAP['Discussion'];
+  let translatedLabel = p.label;
+  if (prefix === 'Discussion' || prefix === 'Thảo luận') translatedLabel = ft.cat_discussion || 'Discussion';
+  else if (prefix === 'Question' || prefix === 'Hỏi đáp') translatedLabel = ft.cat_question || 'Question';
+  else if (prefix === 'Showcase' || prefix === 'Chia sẻ') translatedLabel = ft.cat_showcase || 'Showcase';
+  else if (prefix === 'Source Code' || prefix === 'Mã nguồn') translatedLabel = ft.cat_source || 'Source Code';
+  else if (prefix === 'Warning' || prefix === 'Cảnh báo') translatedLabel = ft.cat_warning || 'Warning';
+  return { ...p, label: translatedLabel };
+};
 
 const GRID_COLS = '1fr 140px 220px 112px';
 const stillActive = (until) => !until || new Date(until) > new Date();
@@ -37,6 +48,11 @@ const insertWithFallback = async (table, row, optionalKeys) => {
 
 export default function CommunityForum() {
   const { user } = useAuth();
+  const { lang, setLang, languages } = useLanguage();
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const ft = FORUM_TEXT[lang] || FORUM_TEXT['en'];
+  const currentLang = languages?.find((l) => l.code === lang) || { code: 'en', label: 'English', flag: '🇺🇸' };
+
   const navigate = useNavigate();
   const onBack = () => navigate('/');            // <-- dòng mới: về thẳng trang chủ
   const [topics, setTopics] = useState([]);
@@ -490,7 +506,7 @@ export default function CommunityForum() {
             className="link-btn btn-secondary"
             style={{ padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}
           >
-            ← {activeTopic ? 'All Topics' : 'Home'}
+            ← {activeTopic ? ft.nav_all_topics : ft.nav_home}
           </button>
           <div style={{ fontSize: '20px', fontWeight: 700, color: '#fef08a', letterSpacing: '1px' }}>
             GIT<span style={{ color: '#ef4444' }}>XPLORE</span> FORUM
@@ -498,6 +514,84 @@ export default function CommunityForum() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* NÚT CHỌN NGÔN NGỮ (LANGUAGE SELECTOR) TRỰC TIẾP TRÊN HEADER DIỄN ĐÀN */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowLangDropdown((v) => !v)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
+                color: '#fef08a',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'background 0.15s, border-color 0.15s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
+              title="Đổi ngôn ngữ / Change Language"
+            >
+              <span>{currentLang.flag}</span>
+              <span>{currentLang.label.split(' ')[0]}</span>
+              <span style={{ fontSize: '9px', opacity: 0.7 }}>▼</span>
+            </button>
+
+            {showLangDropdown && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '6px',
+                  background: '#190d0d',
+                  border: '1px solid #4a2121',
+                  borderRadius: '10px',
+                  padding: '6px',
+                  minWidth: '160px',
+                  boxShadow: '0 12px 30px rgba(0, 0, 0, 0.8)',
+                  zIndex: 250,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}
+              >
+                {languages.map((l) => (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => {
+                      setLang(l.code);
+                      setShowLangDropdown(false);
+                    }}
+                    style={{
+                      background: l.code === lang ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                      color: l.code === lang ? '#fef08a' : '#cbd5e1',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '7px 10px',
+                      fontSize: '12.5px',
+                      fontWeight: l.code === lang ? 700 : 500,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span>{l.flag}</span>
+                    <span>{l.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {isStaff && (
             <button
               onClick={() => setShowAdminModal(true)}
@@ -517,8 +611,8 @@ export default function CommunityForum() {
           )}
           <div style={{ fontSize: '13px', color: '#a8a29e' }}>
             {user ? (
-              <span>Welcome, <strong style={{ color: isStaff ? '#ef4444' : '#fef08a' }}>{user.name}</strong><UidTag id={user.publicId} /></span>
-            ) : 'Guest Mode'}
+              <span>{ft.welcome_user} <strong style={{ color: isStaff ? '#ef4444' : '#fef08a' }}>{user.name}</strong><UidTag id={user.publicId} /></span>
+            ) : ft.guest_mode}
           </div>
         </div>
       </header>
@@ -568,28 +662,28 @@ export default function CommunityForum() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', position: 'relative', zIndex: 1 }}>
               <div style={{ maxWidth: '650px' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#fef08a', marginBottom: '12px' }}>
-                  ⚡ KIVOTOS DEVELOPER COMMUNITY
+                  {ft.forum_badge}
                 </div>
                 <h1 style={{ margin: '0 0 8px', fontSize: '28px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
-                  Diễn Đàn Công Nghệ <span style={{ color: '#f59e0b' }}>GitXplore</span>
+                  {ft.forum_title}
                 </h1>
                 <p style={{ margin: 0, color: '#d1d5db', fontSize: '14.5px', lineHeight: 1.6 }}>
-                  Nơi trao đổi giải pháp lập trình, chia sẻ mã nguồn mở và kết nối với các nhà phát triển tài năng. Đặt câu hỏi và nhận trợ giúp tức thì!
+                  {ft.forum_subtitle}
                 </p>
 
                 {/* Micro Stats */}
                 <div style={{ display: 'flex', gap: '16px', marginTop: '16px', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#fef08a' }}>
                     <span style={{ fontSize: '16px' }}>📁</span>
-                    <strong>{topics.length}</strong> <span style={{ color: '#9ca3af' }}>Chủ đề</span>
+                    <strong>{topics.length}</strong> <span style={{ color: '#9ca3af' }}>{ft.stat_topics}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#fef08a' }}>
                     <span style={{ fontSize: '16px' }}>💬</span>
-                    <strong>{totalReplies}</strong> <span style={{ color: '#9ca3af' }}>Phản hồi</span>
+                    <strong>{totalReplies}</strong> <span style={{ color: '#9ca3af' }}>{ft.stat_replies}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#fef08a' }}>
                     <span style={{ fontSize: '16px' }}>🚀</span>
-                    <span style={{ color: '#a7f3d0' }}>Trực tuyến & Sôi nổi</span>
+                    <span style={{ color: '#a7f3d0' }}>{ft.stat_online}</span>
                   </div>
                 </div>
               </div>
@@ -618,7 +712,7 @@ export default function CommunityForum() {
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 <span style={{ fontSize: '18px' }}>✏️</span>
-                <span>+ Đăng Chủ Đề Mới</span>
+                <span>{ft.btn_new_topic}</span>
               </button>
             </div>
           </div>
@@ -645,7 +739,7 @@ export default function CommunityForum() {
                 <span style={{ fontSize: '16px', color: '#f59e0b' }}>🔍</span>
                 <input
                   type="text"
-                  placeholder="Tìm kiếm chủ đề, câu hỏi, mã nguồn, tên tác giả..."
+                  placeholder={ft.search_ph}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
@@ -688,7 +782,7 @@ export default function CommunityForum() {
                     gap: '8px',
                   }}
                 >
-                  <span>Sắp xếp: {filterMode === 'newest' ? 'Mới nhất' : filterMode === 'replies' ? 'Nhiều phản hồi' : filterMode === 'views' ? 'Lượt xem' : 'Đã ghim'}</span>
+                  <span>{filterMode === 'newest' ? ft.sort_newest : filterMode === 'replies' ? ft.sort_replies : filterMode === 'views' ? ft.sort_likes : ft.cat_pinned}</span>
                   <span>▾</span>
                 </button>
 
@@ -702,7 +796,7 @@ export default function CommunityForum() {
                       border: '1px solid #3d1b1b',
                       borderRadius: '12px',
                       padding: '6px 0',
-                      width: '180px',
+                      width: '200px',
                       zIndex: 20,
                       boxShadow: '0 10px 25px rgba(0,0,0,0.6)',
                     }}
@@ -711,25 +805,25 @@ export default function CommunityForum() {
                       onClick={() => { setFilterMode('newest'); setShowFilterDropdown(false); }}
                       style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'newest' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
                     >
-                      ● Phản hồi mới nhất
+                      ● {ft.sort_newest}
                     </button>
                     <button
                       onClick={() => { setFilterMode('replies'); setShowFilterDropdown(false); }}
                       style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'replies' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
                     >
-                      ● Nhiều thảo luận nhất
+                      ● {ft.sort_replies}
                     </button>
                     <button
                       onClick={() => { setFilterMode('views'); setShowFilterDropdown(false); }}
                       style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'views' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
                     >
-                      ● Lượt xem cao nhất
+                      ● {ft.sort_likes}
                     </button>
                     <button
                       onClick={() => { setFilterMode('pinned'); setShowFilterDropdown(false); }}
                       style={{ width: '100%', textAlign: 'left', padding: '9px 16px', background: 'transparent', border: 'none', color: filterMode === 'pinned' ? '#f59e0b' : '#d1d5db', cursor: 'pointer', fontSize: '13px' }}
                     >
-                      ● Ưu tiên bài đã ghim
+                      ● {ft.cat_pinned}
                     </button>
                   </div>
                 )}
@@ -739,13 +833,13 @@ export default function CommunityForum() {
             {/* Dải nút Category Pills (1-Chạm) */}
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
               {[
-                { id: 'All', label: 'Tất cả' },
-                { id: 'Discussion', label: '💬 Thảo luận' },
-                { id: 'Question', label: '💡 Hỏi đáp' },
-                { id: 'Showcase', label: '🚀 Chia sẻ' },
-                { id: 'Source Code', label: '📦 Mã nguồn' },
-                { id: 'Warning', label: '⚠️ Cảnh báo' },
-                { id: 'Pinned', label: '📌 Đã ghim' },
+                { id: 'All', label: ft.cat_all },
+                { id: 'Discussion', label: `💬 ${ft.cat_discussion}` },
+                { id: 'Question', label: `💡 ${ft.cat_question}` },
+                { id: 'Showcase', label: `🚀 ${ft.cat_showcase}` },
+                { id: 'Source Code', label: `📦 ${ft.cat_source}` },
+                { id: 'Warning', label: `⚠️ ${ft.cat_warning}` },
+                { id: 'Pinned', label: `📌 ${ft.cat_pinned}` },
               ].map((cat) => {
                 const isActive = selectedCategory === cat.id;
                 return (
@@ -779,7 +873,7 @@ export default function CommunityForum() {
             {/* CỘT CHÍNH: DANH SÁCH THẺ BÀI VIẾT (FEED CARDS) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {sortedTopics.map((t) => {
-                const prefixConfig = resolvePrefix(t.prefix);
+                const prefixConfig = resolvePrefix(t.prefix, ft);
                 const replyCount = t.topic_messages?.[0]?.count || 0;
                 const lastUser = t.last_reply_user || t.author_name;
                 const hasImg = t.description && (t.description.startsWith('http://') || t.description.startsWith('https://'));
@@ -833,13 +927,13 @@ export default function CommunityForum() {
 
                         {t.is_pinned && (
                           <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '999px', padding: '2px 9px', fontSize: '11px', fontWeight: 700 }}>
-                            📌 ĐÃ GHIM
+                            📌 {ft.cat_pinned.toUpperCase()}
                           </span>
                         )}
 
                         {t.is_locked && (
                           <span style={{ background: 'rgba(100, 116, 139, 0.2)', color: '#cbd5e1', border: '1px solid rgba(100, 116, 139, 0.4)', borderRadius: '999px', padding: '2px 9px', fontSize: '11px', fontWeight: 700 }}>
-                            🔒 ĐÃ KHÓA
+                            🔒 LOCKED
                           </span>
                         )}
                       </div>
@@ -922,16 +1016,16 @@ export default function CommunityForum() {
               {sortedTopics.length === 0 && (
                 <div style={{ padding: '60px 20px', textAlign: 'center', background: '#120909', border: '1px dashed #351717', borderRadius: '16px' }}>
                   <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-                  <h3 style={{ margin: '0 0 6px', color: '#fef08a', fontSize: '18px' }}>Không tìm thấy chủ đề nào</h3>
+                  <h3 style={{ margin: '0 0 6px', color: '#fef08a', fontSize: '18px' }}>{ft.empty_title}</h3>
                   <p style={{ margin: '0 0 16px', color: '#9ca3af', fontSize: '14px' }}>
-                    {searchQuery ? `Không có kết quả nào phù hợp với từ khóa "${searchQuery}".` : 'Chưa có thảo luận nào trong danh mục này.'}
+                    {searchQuery ? formatForumStr(ft.empty_query, { q: searchQuery }) : ft.empty_cat}
                   </p>
                   <button
                     type="button"
                     onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
                     style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
                   >
-                    Xem tất cả chủ đề
+                    {ft.empty_all_btn}
                   </button>
                 </div>
               )}
@@ -943,19 +1037,19 @@ export default function CommunityForum() {
               {/* Card 1: Hướng dẫn nhanh */}
               <div style={{ background: '#140a0a', border: '1px solid #2b1414', borderRadius: '16px', padding: '18px 20px' }}>
                 <h4 style={{ margin: '0 0 12px', fontSize: '14.5px', color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>💡</span> <span>Mẹo đăng thảo luận</span>
+                  <span>💡</span> <span>{ft.tips_title}</span>
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '18px', color: '#a8a29e', fontSize: '12.5px', lineHeight: 1.6 }}>
-                  <li>Đặt tiêu đề ngắn gọn, rõ ràng trọng tâm.</li>
-                  <li>Chọn đúng danh mục (Hỏi đáp, Thảo luận, Mã nguồn...).</li>
-                  <li>Đính kèm ảnh chụp màn hình lỗi để được giải đáp nhanh hơn.</li>
+                  <li>{ft.tips_1}</li>
+                  <li>{ft.tips_2}</li>
+                  <li>{ft.tips_3}</li>
                 </ul>
               </div>
 
               {/* Card 2: Chủ đề sôi nổi nhất */}
               <div style={{ background: '#140a0a', border: '1px solid #2b1414', borderRadius: '16px', padding: '18px 20px' }}>
                 <h4 style={{ margin: '0 0 12px', fontSize: '14.5px', color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🔥</span> <span>Thảo luận sôi nổi</span>
+                  <span>🔥</span> <span>{ft.trending_title}</span>
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {[...topics]
@@ -973,7 +1067,7 @@ export default function CommunityForum() {
                           {top.title}
                         </div>
                         <div style={{ fontSize: '11px', color: '#78716c', marginTop: '2px' }}>
-                          💬 {top.topic_messages?.[0]?.count || 0} phản hồi · bởi {top.author_name}
+                          💬 {top.topic_messages?.[0]?.count || 0} {ft.stat_replies} · {ft.by_author} {top.author_name}
                         </div>
                       </div>
                     ))}
@@ -984,17 +1078,17 @@ export default function CommunityForum() {
               <div style={{ background: 'linear-gradient(135deg, rgba(30, 27, 46, 0.6), rgba(14, 11, 24, 0.9))', border: '1px solid rgba(125, 211, 252, 0.25)', borderRadius: '16px', padding: '18px 20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                   <span style={{ fontSize: '20px' }}>⚡</span>
-                  <strong style={{ color: '#7dd3fc', fontSize: '14px' }}>Vibe Coding Hub</strong>
+                  <strong style={{ color: '#7dd3fc', fontSize: '14px' }}>{ft.vibe_title}</strong>
                 </div>
                 <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-                  Khám phá các mẫu .cursorrules, MCP Servers & AI Skills lấy cảm hứng từ aitmpl.com.
+                  {ft.vibe_desc}
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate('/vibe')}
                   style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#7dd3fc', padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', width: '100%' }}
                 >
-                  Xem Mẫu Vibe Coding →
+                  {ft.vibe_btn}
                 </button>
               </div>
 
@@ -1028,7 +1122,7 @@ export default function CommunityForum() {
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.2)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
               >
-                ← Quay lại danh sách chủ đề
+                {ft.back_to_list}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1049,7 +1143,7 @@ export default function CommunityForum() {
                     gap: '6px'
                   }}
                 >
-                  👍 {hasLiked ? 'Đã thích' : 'Thích'} ({likesCount})
+                  👍 {hasLiked ? (ft.liked_btn || ft.like_btn) : ft.like_btn} ({likesCount})
                 </button>
 
                 <button
@@ -1069,7 +1163,7 @@ export default function CommunityForum() {
                     gap: '6px'
                   }}
                 >
-                  ↗ Chia sẻ
+                  ↗ {ft.share_btn}
                 </button>
               </div>
             </div>
@@ -1158,7 +1252,7 @@ export default function CommunityForum() {
                   borderRadius: '8px 8px 0 0'
                 }}
               >
-                💬 Trò chuyện & Thảo luận ({comments.length})
+                {ft.tab_discussion} ({comments.length})
               </button>
 
               <button
@@ -1179,7 +1273,7 @@ export default function CommunityForum() {
                   gap: '6px'
                 }}
               >
-                📁 Tệp & Ảnh ({mediaFiles.length})
+                {ft.tab_files} ({mediaFiles.length})
               </button>
             </div>
 
@@ -1193,13 +1287,13 @@ export default function CommunityForum() {
                   {/* Tiêu đề & trạng thái luồng thảo luận */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #1f1010' }}>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#fef08a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>💬 Trao đổi & Thảo luận</span>
+                      <span>{ft.tab_discussion}</span>
                       <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: '999px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
                         {comments.length}
                       </span>
                     </div>
                     <div style={{ fontSize: '11px', color: '#78716c' }}>
-                      Tin nhắn của bạn: Bên phải (Cam hổ phách dịu) · Người khác: Bên trái
+                      {ft.chat_stream_info}
                     </div>
                   </div>
 
@@ -1207,10 +1301,7 @@ export default function CommunityForum() {
                   {comments.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '40px 16px', color: '#a8a29e', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                       <div style={{ fontSize: '32px' }}>💬</div>
-                      <div style={{ fontWeight: 600, color: '#f5f5f4', fontSize: '14.5px' }}>Chưa có tin nhắn nào trong chủ đề này</div>
-                      <div style={{ fontSize: '12.5px', color: '#78716c', maxWidth: '380px' }}>
-                        Hãy là người đầu tiên tham gia cuộc trò chuyện, trao đổi quan điểm hoặc chia sẻ hình ảnh/tệp!
-                      </div>
+                      <div style={{ fontWeight: 600, color: '#f5f5f4', fontSize: '14.5px' }}>{ft.chat_empty}</div>
                     </div>
                   )}
 
@@ -1428,7 +1519,7 @@ export default function CommunityForum() {
                   {/* KHUNG NHẬP BÌNH LUẬN KÈM NÚT ĐÍNH KÈM */}
                   {(!canPost || (activeTopic.is_locked && !canModerate)) ? (
                     <div style={{ marginTop: '6px', padding: '12px 16px', borderRadius: '12px', background: '#1a0d0d', border: '1px dashed #381a1a', color: '#a8a29e', fontSize: '13px', textAlign: 'center' }}>
-                      {isBanned ? '🚫 Your account is suspended.' : isMuted ? '🔇 You are muted right now.' : '🔒 This topic is locked — no new comments.'}
+                      {isBanned ? ft.banned_msg : isMuted ? ft.muted_msg : ft.chat_locked}
                     </div>
                   ) : (
                   <form 
@@ -1448,7 +1539,7 @@ export default function CommunityForum() {
                     <input
                       ref={commentInputRef}
                       type="text"
-                      placeholder={user ? "Nhập tin nhắn hoặc bình luận..." : "Đăng nhập để tham gia trò chuyện..."}
+                      placeholder={user ? ft.chat_ph : ft.chat_login_ph}
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
                       style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', outline: 'none' }}
@@ -1466,7 +1557,7 @@ export default function CommunityForum() {
                     <button
                       type="button"
                       onClick={() => commentFileInputRef.current?.click()}
-                      title="Đính kèm ảnh hoặc tệp"
+                      title={ft.chat_attach_tooltip}
                       style={{
                         background: 'rgba(255, 255, 255, 0.05)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -1507,7 +1598,7 @@ export default function CommunityForum() {
                       onMouseEnter={(e) => { if (!isCommentUploading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
-                      {isCommentUploading ? 'Đang gửi...' : 'Gửi'}
+                      {isCommentUploading ? ft.chat_btn_sending : ft.chat_btn_send}
                     </button>
                   </form>
                   )}
@@ -1518,7 +1609,7 @@ export default function CommunityForum() {
             {/* TAB 2: FILES (XEM TOÀN BỘ TỆP VÀ HÌNH ẢNH CỦA CHỦ ĐỀ) */}
             {threadTab === 'Files' && (
               <div style={{ background: '#140a0a', border: '1px solid #261414', borderRadius: '10px', padding: '24px' }}>
-                <h3 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>Attached Files & Media</h3>
+                <h3 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>{ft.files_title}</h3>
                 
                 {mediaFiles.length > 0 ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
@@ -1532,7 +1623,7 @@ export default function CommunityForum() {
                           )}
                         </div>
                         <div style={{ padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ fontSize: '11px', color: '#a8a29e' }}>By {file.author}</div>
+                          <div style={{ fontSize: '11px', color: '#a8a29e' }}>{ft.by_author} {file.author}</div>
                           <a
                             href={file.url}
                             target="_blank"
@@ -1547,7 +1638,7 @@ export default function CommunityForum() {
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', color: '#78716c', padding: '40px 0', fontSize: '14px' }}>
-                    No files or media attachments uploaded in this thread yet.
+                    {ft.files_empty}
                   </div>
                 )}
               </div>
@@ -1565,7 +1656,7 @@ export default function CommunityForum() {
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '540px', width: '92%', padding: '24px', background: '#120909', border: '1px solid #381a1a', borderRadius: '12px' }}
           >
-            <h2 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>Create New Topic</h2>
+            <h2 style={{ margin: '0 0 16px', color: '#fef08a', fontSize: '18px' }}>{ft.modal_create_title}</h2>
             <form onSubmit={handleCreateTopic} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <select
@@ -1580,16 +1671,16 @@ export default function CommunityForum() {
                     fontSize: '13px',
                   }}
                 >
-                  <option value="Discussion">[Discussion]</option>
-                  <option value="Showcase">[Showcase]</option>
-                  <option value="Question">[Question]</option>
-                  <option value="Source Code">[Source Code]</option>
-                  <option value="Warning">[Warning]</option>
+                  <option value="Discussion">[{ft.cat_discussion}]</option>
+                  <option value="Showcase">[{ft.cat_showcase}]</option>
+                  <option value="Question">[{ft.cat_question}]</option>
+                  <option value="Source Code">[{ft.cat_source}]</option>
+                  <option value="Warning">[{ft.cat_warning}]</option>
                 </select>
 
                 <input
                   type="text"
-                  placeholder="Topic title..."
+                  placeholder={ft.modal_title_ph}
                   value={newTopicTitle}
                   onChange={(e) => setNewTopicTitle(e.target.value)}
                   className="lusion-search"
@@ -1599,7 +1690,7 @@ export default function CommunityForum() {
               </div>
 
               <textarea
-                placeholder="Topic description or message..."
+                placeholder={ft.modal_desc_ph}
                 value={newTopicDesc}
                 onChange={(e) => setNewTopicDesc(e.target.value)}
                 rows={3}
@@ -1625,7 +1716,7 @@ export default function CommunityForum() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
                 <label style={{ cursor: 'pointer', color: '#4ade80', fontSize: '13px', fontWeight: 600 }}>
-                  📷 Attach Image
+                  📷 {ft.modal_attach_label}
                   <input type="file" accept="image/*" onChange={handleSelectFile} style={{ display: 'none' }} />
                 </label>
 
@@ -1636,7 +1727,7 @@ export default function CommunityForum() {
                     className="link-btn btn-secondary"
                     style={{ padding: '8px 16px' }}
                   >
-                    Cancel
+                    {ft.modal_cancel}
                   </button>
                   <button
                     type="submit"
@@ -1644,7 +1735,7 @@ export default function CommunityForum() {
                     style={{ padding: '8px 20px' }}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting || uploading ? 'Posting...' : 'Post Topic'}
+                    {isSubmitting || uploading ? ft.modal_uploading : ft.modal_submit}
                   </button>
                 </div>
               </div>
