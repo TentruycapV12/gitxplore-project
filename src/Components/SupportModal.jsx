@@ -1,37 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import './SupportModal.css';
 
 // TODO: đổi sang link issues của repo thật, ví dụ https://github.com/<user>/<repo>/issues
 const GITHUB_ISSUES_URL = 'https://github.com';
 const SUPPORT_EMAIL = 'support@gitxplore.dev';
-
-const FAQS = [
-  {
-    q: 'Làm thế nào để lưu một repository vào danh sách cá nhân?',
-    a: 'Mở một dự án bất kỳ trong mục Khám phá (Explore), rồi bấm "Lưu Repo". Để xem lại, vào Accounts Center > Saved Repositories.',
-  },
-  {
-    q: 'Dự án trên GitXplore được đồng bộ như thế nào?',
-    a: 'Các dự án mã nguồn mở được cập nhật định kỳ từ GitHub API. Bạn có thể xem mã nguồn, số sao (stars), forks và lệnh git clone ngay trong cửa sổ chi tiết dự án.',
-  },
-  {
-    q: 'Làm sao để liên kết tài khoản GitHub hoặc Google?',
-    a: 'Đăng nhập, vào Accounts Center > Connected experiences, rồi chọn Link GitHub hoặc Google.',
-  },
-  {
-    q: 'Làm thế nào để xuất hoặc xóa dữ liệu của tôi?',
-    a: 'Vào "Your information and permissions" trong Accounts Center. Bấm "Export JSON" để tải toàn bộ dữ liệu cá nhân về máy bất cứ lúc nào.',
-  },
-];
-
-// id giữ nguyên như bản cũ để không ảnh hưởng dữ liệu trong bảng support_tickets
-const TYPES = [
-  { id: 'bug', label: 'Báo lỗi', hint: 'Bạn đang làm gì và điều gì đã xảy ra? Ghi rõ trang bị lỗi nếu có thể.' },
-  { id: 'feature', label: 'Góp ý', hint: 'Bạn muốn GitXplore làm được thêm điều gì?' },
-  { id: 'account', label: 'Tài khoản', hint: 'Mô tả vấn đề về đăng nhập, liên kết hoặc dữ liệu tài khoản của bạn.' },
-];
 
 // Chuyển lỗi Supabase thành gợi ý dễ hiểu (đồng thời log đầy đủ ra console)
 function getErrorHint(err) {
@@ -47,7 +22,21 @@ function getErrorHint(err) {
 
 export default function SupportModal({ onClose }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const panelRef = useRef(null);
+
+  const faqs = [
+    { q: t('faq_q1'), a: t('faq_a1') },
+    { q: t('faq_q2'), a: t('faq_a2') },
+    { q: t('faq_q3'), a: t('faq_a3') },
+    { q: t('faq_q4'), a: t('faq_a4') },
+  ];
+
+  const types = [
+    { id: 'bug', label: t('sp_bug'), hint: t('sp_bug_hint') },
+    { id: 'feature', label: t('sp_feature'), hint: t('sp_feature_hint') },
+    { id: 'account', label: t('sp_account'), hint: t('sp_account_hint') },
+  ];
 
   const [tab, setTab] = useState('faq'); // 'faq' | 'form'
   const [openFaq, setOpenFaq] = useState(null);
@@ -58,7 +47,7 @@ export default function SupportModal({ onClose }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [errorDetail, setErrorDetail] = useState('');
 
-  const currentType = TYPES.find((t) => t.id === ticketType);
+  const currentType = types.find((it) => it.id === ticketType) || types[0];
   const canSend = message.trim() && contact.trim() && status !== 'sending';
 
   // Khoá cuộn nền, đưa focus vào hộp thoại, trả focus khi đóng
@@ -143,10 +132,10 @@ export default function SupportModal({ onClose }) {
         {/* Header */}
         <header className="sp-head">
           <div>
-            <h2 id="sp-title" className="sp-title">Hỗ trợ</h2>
-            <p className="sp-sub">Tìm câu trả lời nhanh hoặc gửi yêu cầu cho đội ngũ GitXplore.</p>
+            <h2 id="sp-title" className="sp-title">{t('sp_title')}</h2>
+            <p className="sp-sub">{t('sp_sub')}</p>
           </div>
-          <button type="button" className="sp-close" onClick={onClose} aria-label="Đóng">
+          <button type="button" className="sp-close" onClick={onClose} aria-label={t('ui_close') || 'Close'}>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
@@ -157,10 +146,10 @@ export default function SupportModal({ onClose }) {
         <div className="sp-tabs">
           <div className="sp-segment">
             <button type="button" aria-pressed={tab === 'faq'} onClick={() => setTab('faq')}>
-              Câu hỏi thường gặp
+              {t('sp_faq')}
             </button>
             <button type="button" aria-pressed={tab === 'form'} onClick={() => setTab('form')}>
-              Gửi yêu cầu
+              {t('sp_submit')}
             </button>
           </div>
         </div>
@@ -170,7 +159,7 @@ export default function SupportModal({ onClose }) {
           {tab === 'faq' && (
             <div className="sp-fade">
               <ul className="sp-faq">
-                {FAQS.map((faq, i) => {
+                {faqs.map((faq, i) => {
                   const open = openFaq === i;
                   return (
                     <li key={faq.q} className="sp-faq-item">
@@ -195,9 +184,9 @@ export default function SupportModal({ onClose }) {
               </ul>
 
               <p className="sp-fallback">
-                Chưa thấy câu trả lời?{' '}
+                {t('sp_not_found')}
                 <button type="button" className="sp-link" onClick={() => setTab('form')}>
-                  Gửi yêu cầu cho chúng tôi
+                  {t('sp_send_us')}
                 </button>
               </p>
             </div>
@@ -210,11 +199,11 @@ export default function SupportModal({ onClose }) {
                   <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
-              <h3>Đã nhận yêu cầu của bạn</h3>
-              <p>Chúng tôi sẽ liên hệ qua <strong>{contact.trim()}</strong> khi có phản hồi.</p>
+              <h3>{t('sp_done_title')}</h3>
+              <p>{t('sp_done_msg', { contact: contact.trim() })}</p>
               <div className="sp-done-actions">
-                <button type="button" className="sp-btn" onClick={sendAnother}>Gửi yêu cầu khác</button>
-                <button type="button" className="sp-btn sp-btn--primary" onClick={onClose}>Đóng</button>
+                <button type="button" className="sp-btn" onClick={sendAnother}>{t('sp_done_another')}</button>
+                <button type="button" className="sp-btn sp-btn--primary" onClick={onClose}>{t('acc_btn_cancel') || 'Đóng'}</button>
               </div>
             </div>
           )}
@@ -222,31 +211,31 @@ export default function SupportModal({ onClose }) {
           {tab === 'form' && status !== 'sent' && (
             <form className="sp-fade sp-form" onSubmit={handleSubmit}>
               <fieldset className="sp-field sp-types">
-                <legend className="sp-label">Bạn muốn gửi gì?</legend>
+                <legend className="sp-label">{t('sp_type_label')}</legend>
                 <div className="sp-segment sp-segment--full">
-                  {TYPES.map((t) => (
-                    <label key={t.id}>
+                  {types.map((tItem) => (
+                    <label key={tItem.id}>
                       <input
                         type="radio"
                         name="sp-ticket-type"
-                        value={t.id}
-                        checked={ticketType === t.id}
-                        onChange={() => setTicketType(t.id)}
+                        value={tItem.id}
+                        checked={ticketType === tItem.id}
+                        onChange={() => setTicketType(tItem.id)}
                       />
-                      <span>{t.label}</span>
+                      <span>{tItem.label}</span>
                     </label>
                   ))}
                 </div>
               </fieldset>
 
               <div className="sp-field">
-                <label className="sp-label" htmlFor="sp-contact">Email hoặc số điện thoại</label>
+                <label className="sp-label" htmlFor="sp-contact">{t('sp_contact_label')}</label>
                 <input
                   id="sp-contact"
                   className="sp-input"
                   type="text"
                   autoComplete="email"
-                  placeholder="Để chúng tôi liên hệ lại với bạn"
+                  placeholder={t('sp_contact_ph')}
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
                   required
@@ -254,7 +243,7 @@ export default function SupportModal({ onClose }) {
               </div>
 
               <div className="sp-field">
-                <label className="sp-label" htmlFor="sp-message">Nội dung</label>
+                <label className="sp-label" htmlFor="sp-message">{t('sp_msg_label')}</label>
                 <textarea
                   id="sp-message"
                   className="sp-input sp-textarea"
@@ -269,7 +258,7 @@ export default function SupportModal({ onClose }) {
 
               {status === 'error' && (
                 <p className="sp-error" role="alert">
-                  Chưa gửi được yêu cầu. Nội dung của bạn vẫn còn nguyên, hãy thử lại hoặc gửi email tới{' '}
+                  {t('sp_error_msg')}
                   <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
                   {errorDetail && (
                     <>
@@ -282,7 +271,7 @@ export default function SupportModal({ onClose }) {
 
               <div className="sp-actions">
                 <button type="submit" className="sp-btn sp-btn--primary" disabled={!canSend}>
-                  {status === 'sending' ? 'Đang gửi…' : 'Gửi yêu cầu'}
+                  {status === 'sending' ? t('sp_sending') : t('sp_btn_submit')}
                 </button>
               </div>
             </form>
@@ -291,10 +280,10 @@ export default function SupportModal({ onClose }) {
 
         {/* Kênh khác — luôn nằm ở chân, không chiếm chỗ của nội dung chính */}
         <footer className="sp-foot">
-          <span>Kênh khác:</span>
+          <span>{t('sp_other_channels')}</span>
           <a href={GITHUB_ISSUES_URL} target="_blank" rel="noreferrer">GitHub Issues</a>
           <a href={`mailto:${SUPPORT_EMAIL}`}>Email</a>
-          <span className="sp-soon">Discord (sắp ra mắt)</span>
+          <span className="sp-soon">{t('sp_discord_soon')}</span>
         </footer>
       </div>
     </div>

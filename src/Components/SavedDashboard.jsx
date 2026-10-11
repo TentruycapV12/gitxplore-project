@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { openSourceProjects } from '../data/projectsData';
+import FeatureModal, { useAcStore, LinkedAccountsList } from './AccountsCenterFeatures';
 
 const SECTIONS = [
   'profiles', 'security', 'connected', 'permissions', 'activity',
@@ -19,6 +20,18 @@ export default function SavedDashboard() {
   // nên Back/Forward của trình duyệt tự đúng.
   const { section } = useParams();
   const activeMenu = SECTIONS.includes(section) ? section : 'profiles';
+
+  // Accounts Center store & Activity logger
+  const [acStore, patchAc] = useAcStore(user?.identifier);
+
+  const logAc = (action, details) => {
+    const item = { id: Date.now(), action, details, time: 'Just now' };
+    setHistoryList((prev) => [item, ...prev].slice(0, 50));
+    try {
+      const localHist = JSON.parse(localStorage.getItem(`hist_${user?.identifier}`) || '[]');
+      localStorage.setItem(`hist_${user?.identifier}`, JSON.stringify([item, ...localHist].slice(0, 50)));
+    } catch {}
+  };
 
   // Profile fields
   const [nameInput, setNameInput] = useState(user?.name || '');
@@ -42,16 +55,6 @@ export default function SavedDashboard() {
 
   // Sub-modal chức năng chi tiết
   const [subModal, setSubModal] = useState(null);
-
-  // States thao tác mẫu
-  const [oldPass, setOldPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
-  const [twoFactor, setTwoFactor] = useState(false);
-  const [syncAvatar, setSyncAvatar] = useState(true);
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExp, setCardExp] = useState('');
-  const [newAccountInput, setNewAccountInput] = useState('');
 
   // Saved Repos & History
   const [savedList, setSavedList] = useState([]);
@@ -396,30 +399,33 @@ export default function SavedDashboard() {
             {/* 1. PROFILES AND PERSONAL DETAILS */}
             {activeMenu === 'profiles' && (
               <>
-                <div style={{ background: '#180d0d', border: '1px solid #381a1a', borderRadius: '14px', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div 
+                  onClick={() => setSubModal({ title: tr('ac_roadmap_title'), type: 'roadmap' })}
+                  style={{ background: '#180d0d', border: '1px solid #381a1a', borderRadius: '14px', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #dc2626)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
                       🚀
                     </div>
                     <div>
-                      <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Explore upcoming updates to GitXplore Developer Accounts</div>
-                      <div style={{ color: '#8c827a', fontSize: '11.5px' }}>Unified workspace, repository synchronization, and real-time collaboration</div>
+                      <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{tr('ac_roadmap_sub')}</div>
+                      <div style={{ color: '#8c827a', fontSize: '11.5px' }}>{tr('ac_roadmap_desc')}</div>
                     </div>
                   </div>
                   <span style={{ color: '#9ca3af', fontSize: '16px' }}>›</span>
                 </div>
 
                 <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Profiles and personal details</h1>
+                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_profiles_title')}</h1>
                   <p style={{ margin: 0, fontSize: '13.5px', color: '#9ca3af', lineHeight: 1.5 }}>
-                    Review the profiles and personal details you've added to this Accounts Center. Add more profiles by linking your GitHub or OAuth accounts.
+                    {tr('acc_profiles_sub')}
                   </p>
                 </div>
 
                 {/* Profiles section */}
                 <div>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#fef08a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Profiles
+                    {tr('acc_profiles_group')}
                   </span>
                   
                   <div style={{ marginTop: '10px', background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
@@ -452,17 +458,17 @@ export default function SavedDashboard() {
                           placeholder="Change display name..."
                         />
                         <button type="submit" disabled={isSaving} className="link-btn btn-primary" style={{ padding: '8px 18px', fontSize: '12px' }}>
-                          {isSaving ? 'Saving...' : 'Save'}
+                          {isSaving ? '...' : tr('acc_btn_save')}
                         </button>
                       </form>
                     )}
 
                     <div style={{ padding: '12px 20px', borderTop: '1px solid #221212', background: '#140b0b' }}>
                       <button 
-                        onClick={() => setSubModal({ title: 'Add Accounts', type: 'add_account' })}
+                        onClick={() => setSubModal({ title: tr('acc_add_acc_btn'), type: 'add_account' })}
                         style={{ background: 'transparent', border: 'none', color: '#60a5fa', fontSize: '13px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                       >
-                        + Add accounts
+                        {tr('acc_add_acc_btn')}
                       </button>
                     </div>
                   </div>
@@ -471,7 +477,7 @@ export default function SavedDashboard() {
                 {/* Personal Details (Sửa thủ công) */}
                 <div>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#fef08a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Personal details
+                    {tr('acc_personal_details')}
                   </span>
 
                   <div style={{ marginTop: '10px', background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
@@ -480,7 +486,7 @@ export default function SavedDashboard() {
                       style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #241212', cursor: 'pointer' }}
                     >
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>Contact info</div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{tr('acc_contact_info')}</div>
                         <div style={{ fontSize: '12.5px', color: '#9ca3af', marginTop: '2px' }}>
                           {personalDetails.altEmail || user?.identifier}
                           {personalDetails.phone ? `, ${personalDetails.phone}` : ''}
@@ -494,9 +500,9 @@ export default function SavedDashboard() {
                       style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                     >
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>Birthday</div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{tr('acc_birthday')}</div>
                         <div style={{ fontSize: '12.5px', color: '#9ca3af', marginTop: '2px' }}>
-                          {personalDetails.birthday ? personalDetails.birthday : 'Not specified'}
+                          {personalDetails.birthday ? personalDetails.birthday : tr('acc_not_specified')}
                         </div>
                       </div>
                       <span style={{ color: '#9ca3af', fontSize: '18px' }}>›</span>
@@ -507,12 +513,15 @@ export default function SavedDashboard() {
                 {/* More from GitXplore */}
                 <div>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#fef08a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    More from GitXplore
+                    {tr('acc_more_from_gx')}
                   </span>
-                  <div style={{ marginTop: '10px', width: '220px', background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <div 
+                    onClick={() => setSubModal({ title: tr('ac_glasses_title'), type: 'ai_glasses' })}
+                    style={{ marginTop: '10px', width: '220px', background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  >
                     <div style={{ fontSize: '36px' }}>🕶️</div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>AI Glasses</div>
-                    <div style={{ fontSize: '11px', color: '#8c827a', textAlign: 'center' }}>Smart assistant integration</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{tr('ac_glasses_title')}</div>
+                    <div style={{ fontSize: '11px', color: '#8c827a', textAlign: 'center' }}>{tr('ac_glasses_sub')}</div>
                   </div>
                 </div>
               </>
@@ -522,29 +531,29 @@ export default function SavedDashboard() {
             {activeMenu === 'security' && (
               <>
                 <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Password and security</h1>
+                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_sec_title')}</h1>
                 </div>
 
                 <div>
-                  <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#fff' }}>Login & recovery</h3>
-                  <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#9ca3af' }}>Manage your passwords, login preferences and recovery methods.</p>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#fff' }}>{tr('acc_sec_login_rec')}</h3>
+                  <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#9ca3af' }}>{tr('acc_sec_login_rec_sub')}</p>
 
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ title: 'Change password', onClick: () => setSubModal({ title: 'Change password', type: 'password' }) })}
-                    {renderGroupItem({ title: 'Two-factor authentication', subtitle: 'Enhance your security checkpoint', onClick: () => setSubModal({ title: 'Two-factor authentication', type: '2fa' }) })}
-                    {renderGroupItem({ title: 'Saved login', subtitle: 'Remember active browsers', onClick: () => setSubModal({ title: 'Saved login', type: 'saved_login' }) })}
-                    {renderGroupItem({ title: 'Passkey', subtitle: 'Biometric and security key access', isLast: true, onClick: () => setSubModal({ title: 'Passkey Management', type: 'passkey' }) })}
+                    {renderGroupItem({ title: tr('acc_change_pw'), onClick: () => setSubModal({ title: tr('acc_change_pw'), type: 'password' }) })}
+                    {renderGroupItem({ title: tr('acc_2fa'), subtitle: tr('acc_2fa_sub'), onClick: () => setSubModal({ title: tr('acc_2fa'), type: '2fa' }) })}
+                    {renderGroupItem({ title: tr('acc_saved_login'), subtitle: tr('acc_saved_login_sub'), onClick: () => setSubModal({ title: tr('acc_saved_login'), type: 'saved_login' }) })}
+                    {renderGroupItem({ title: tr('acc_passkey'), subtitle: tr('acc_passkey_sub'), isLast: true, onClick: () => setSubModal({ title: tr('acc_passkey'), type: 'passkey' }) })}
                   </div>
                 </div>
 
                 <div>
-                  <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#fff' }}>Security checks</h3>
-                  <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#9ca3af' }}>Review security issues by running checks across apps, devices and emails sent.</p>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#fff' }}>{tr('acc_sec_checks')}</h3>
+                  <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#9ca3af' }}>{tr('acc_sec_checks_sub')}</p>
 
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ title: "Where you're logged in", subtitle: '1 active session on Windows PC', onClick: () => setSubModal({ title: "Where you're logged in", type: 'sessions' }) })}
-                    {renderGroupItem({ title: 'Recent emails', subtitle: 'Security and login notifications', onClick: () => setSubModal({ title: 'Recent emails', type: 'emails' }) })}
-                    {renderGroupItem({ title: 'Security Checkup', subtitle: 'Keep your account shielded', isLast: true, onClick: () => setSubModal({ title: 'Security Checkup', type: 'checkup' }) })}
+                    {renderGroupItem({ title: tr('acc_sessions'), subtitle: tr('acc_sessions_sub'), onClick: () => setSubModal({ title: tr('acc_sessions'), type: 'sessions' }) })}
+                    {renderGroupItem({ title: tr('acc_emails'), subtitle: tr('acc_emails_sub'), onClick: () => setSubModal({ title: tr('acc_emails'), type: 'emails' }) })}
+                    {renderGroupItem({ title: tr('acc_checkup'), subtitle: tr('acc_checkup_sub'), isLast: true, onClick: () => setSubModal({ title: tr('acc_checkup'), type: 'checkup' }) })}
                   </div>
                 </div>
               </>
@@ -554,34 +563,34 @@ export default function SavedDashboard() {
             {activeMenu === 'connected' && (
               <>
                 <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Connected experiences</h1>
+                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_conn_title')}</h1>
                   <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>
-                    Activities and features that work across two or more accounts you've added to the same Accounts Center.
+                    {tr('acc_conn_sub')}
                   </p>
                 </div>
 
                 <div>
-                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Content & Code Sync</h3>
+                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>{tr('acc_sync_header')}</h3>
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ icon: '🔄', title: 'Sharing across profiles', subtitle: 'Cross-post repository activities', onClick: () => alert('Sharing across profiles is enabled.') })}
-                    {renderGroupItem({ icon: '🐙', title: 'GitHub Stars and Repository Sync', subtitle: 'Keep bookmarked repositories up to date', onClick: () => alert('GitHub sync active.') })}
-                    {renderGroupItem({ icon: '📁', title: 'Developer commits & showcases', subtitle: 'Show latest project milestones in community', onClick: () => alert('Showcases are synced.') })}
-                    {renderGroupItem({ icon: '💻', title: 'Media on developer workstations', subtitle: 'Stream code snippets to connected devices', isLast: true, onClick: () => alert('Workstation streaming ready.') })}
+                    {renderGroupItem({ icon: '🔄', title: tr('acc_sharing'), subtitle: tr('acc_sharing_sub'), onClick: () => setSubModal({ title: tr('acc_sharing'), type: 'sharing' }) })}
+                    {renderGroupItem({ icon: '🐙', title: tr('acc_ghsync'), subtitle: tr('acc_ghsync_sub'), onClick: () => setSubModal({ title: tr('acc_ghsync'), type: 'ghsync' }) })}
+                    {renderGroupItem({ icon: '📁', title: tr('acc_showcases'), subtitle: tr('acc_showcases_sub'), onClick: () => setSubModal({ title: tr('acc_showcases'), type: 'showcases' }) })}
+                    {renderGroupItem({ icon: '💻', title: tr('acc_workstations'), subtitle: tr('acc_workstations_sub'), isLast: true, onClick: () => setSubModal({ title: tr('acc_workstations'), type: 'workstations' }) })}
                   </div>
                 </div>
 
                 <div>
-                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Profile info and access</h3>
+                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>{tr('acc_profile_access_hdr')}</h3>
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ icon: '🖼️', title: 'Syncing profile avatars', subtitle: syncAvatar ? 'Enabled' : 'Disabled', onClick: () => setSubModal({ title: 'Syncing profile avatars', type: 'sync_avatar' }) })}
-                    {renderGroupItem({ icon: '🔗', title: 'Showing links for your repositories', isLast: true, onClick: () => alert('Public repo links are shown.') })}
+                    {renderGroupItem({ icon: '🖼️', title: tr('acc_sync_avatar'), subtitle: acStore.syncAvatar !== false ? 'Enabled' : 'Disabled', onClick: () => setSubModal({ title: tr('acc_sync_avatar'), type: 'sync_avatar' }) })}
+                    {renderGroupItem({ icon: '🔗', title: tr('acc_repolinks'), subtitle: 'Public repository link toggles', isLast: true, onClick: () => setSubModal({ title: tr('acc_repolinks'), type: 'repolinks' }) })}
                   </div>
                 </div>
 
                 <div>
-                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Collaborators and network</h3>
+                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>{tr('acc_collab_network')}</h3>
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ icon: '👥', title: 'Following developers in GitXplore Network', isLast: true, onClick: () => alert('Following 14 community developers.') })}
+                    {renderGroupItem({ icon: '👥', title: tr('acc_following'), subtitle: 'Followed developers & contributors', isLast: true, onClick: () => setSubModal({ title: tr('acc_following'), type: 'following' }) })}
                   </div>
                 </div>
               </>
@@ -591,26 +600,26 @@ export default function SavedDashboard() {
             {activeMenu === 'permissions' && (
               <>
                 <div>
-                  <h1 style={{ margin: '0 0 12px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Your information and permissions</h1>
+                  <h1 style={{ margin: '0 0 12px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_perm_title')}</h1>
                   <div style={{ background: '#180d0d', border: '1px solid #381a1a', borderRadius: '24px', padding: '14px 20px', fontSize: '13px', color: '#d1d5db', marginBottom: '20px' }}>
-                    To download or transfer a copy of your developer data, go to Export your Information below.
+                    {tr('acc_perm_banner')}
                   </div>
                 </div>
 
                 <div>
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ title: 'Export your information', subtitle: 'Download JSON archive file', onClick: handleExportData })}
-                    {renderGroupItem({ title: 'Access your information', subtitle: 'Inspect data recorded across sessions', onClick: () => alert(`Identifier: ${user?.identifier}\nName: ${user?.name}`) })}
-                    {renderGroupItem({ title: 'Search history', subtitle: 'Manage search queries and cache', isLast: true, onClick: () => setSubModal({ title: 'Search History', type: 'search_history' }) })}
+                    {renderGroupItem({ title: tr('acc_export_info'), subtitle: tr('acc_export_info_sub'), onClick: handleExportData })}
+                    {renderGroupItem({ title: tr('acc_access_info'), subtitle: tr('acc_access_info_sub'), onClick: () => setSubModal({ title: tr('acc_access_info'), type: 'access_info' }) })}
+                    {renderGroupItem({ title: tr('acc_search_hist'), subtitle: tr('acc_search_hist_sub'), isLast: true, onClick: () => setSubModal({ title: tr('acc_search_hist'), type: 'search_history' }) })}
                   </div>
                 </div>
 
                 <div style={{ marginTop: '10px' }}>
                   <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                    {renderGroupItem({ title: 'Activity from open-source organizations', onClick: () => alert('Connected with 3 GitHub Organizations.') })}
-                    {renderGroupItem({ title: 'OAuth token connections', onClick: () => alert('Tokens are encrypted and healthy.') })}
-                    {renderGroupItem({ title: 'External accounts (GitHub, Discord)', onClick: () => alert('GitHub: Linked\nDiscord: Not linked') })}
-                    {renderGroupItem({ title: 'Identity confirmation', isLast: true, onClick: () => alert('Developer identity verified ✓') })}
+                    {renderGroupItem({ title: tr('acc_orgs'), subtitle: 'Connected GitHub organizations', onClick: () => setSubModal({ title: tr('acc_orgs'), type: 'orgs' }) })}
+                    {renderGroupItem({ title: tr('acc_tokens'), subtitle: 'Manage OAuth access tokens', onClick: () => setSubModal({ title: tr('acc_tokens'), type: 'tokens' }) })}
+                    {renderGroupItem({ title: tr('acc_external'), subtitle: 'GitHub, Discord, Google linked accounts', onClick: () => setSubModal({ title: tr('acc_external'), type: 'external' }) })}
+                    {renderGroupItem({ title: tr('acc_identity'), subtitle: 'Developer identity verification status', isLast: true, onClick: () => setSubModal({ title: tr('acc_identity'), type: 'identity' }) })}
                   </div>
                 </div>
               </>
@@ -620,8 +629,8 @@ export default function SavedDashboard() {
             {activeMenu === 'activity' && (
               <>
                 <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Project activity & tracking</h1>
-                  <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#9ca3af' }}>Track active development, pull requests, and releases across monitored GitHub projects.</p>
+                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_act_title')}</h1>
+                  <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#9ca3af' }}>{tr('acc_act_sub')}</p>
 
                   <div style={{ display: 'flex', borderBottom: '1px solid #2b1414', gap: '30px' }}>
                     <button
@@ -637,7 +646,7 @@ export default function SavedDashboard() {
                         cursor: 'pointer'
                       }}
                     >
-                      Recent Project Activity
+                      {tr('acc_act_tab_recent')}
                     </button>
                     <button
                       onClick={() => setActivitySubTab('topics')}
@@ -652,7 +661,7 @@ export default function SavedDashboard() {
                         cursor: 'pointer'
                       }}
                     >
-                      Monitored Topics & Tech
+                      {tr('acc_act_tab_topics')}
                     </button>
                   </div>
                 </div>
@@ -661,7 +670,7 @@ export default function SavedDashboard() {
                   <>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>Live Repository Updates</h3>
+                        <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>{tr('acc_act_live_updates')}</h3>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -701,22 +710,22 @@ export default function SavedDashboard() {
 
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>Organizations & Repositories you follow</h3>
+                        <h3 style={{ margin: 0, fontSize: '15px', color: '#fff' }}>{tr('acc_act_following_orgs')}</h3>
                       </div>
                       <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                        {renderGroupItem({ icon: '⚛️', title: 'React Open Source', subtitle: 'Latest core commits and compiler updates', onClick: () => alert('React tracker active.') })}
-                        {renderGroupItem({ icon: '🌐', title: 'Next.js Framework', subtitle: 'App router & server actions tracking', onClick: () => alert('Next.js tracker active.') })}
-                        {renderGroupItem({ icon: '⚡', title: 'GSAP Animations', subtitle: 'ScrollTrigger & animation timeline engine', isLast: true, onClick: () => alert('GSAP tracker active.') })}
+                        {renderGroupItem({ icon: '⚛️', title: 'React Open Source', subtitle: 'Latest core commits and compiler updates', onClick: () => setSubModal({ title: tr('acc_act_live_updates'), type: 'trackers' }) })}
+                        {renderGroupItem({ icon: '🌐', title: 'Next.js Framework', subtitle: 'App router & server actions tracking', onClick: () => setSubModal({ title: tr('acc_act_live_updates'), type: 'trackers' }) })}
+                        {renderGroupItem({ icon: '⚡', title: 'GSAP Animations', subtitle: 'ScrollTrigger & animation timeline engine', isLast: true, onClick: () => setSubModal({ title: tr('acc_act_live_updates'), type: 'trackers' }) })}
                       </div>
                     </div>
                   </>
                 ) : (
                   <div>
-                    <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>Technology Domains</h3>
+                    <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#fff' }}>{tr('acc_act_tech_domains')}</h3>
                     <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                      {renderGroupItem({ icon: '🤖', title: 'Artificial Intelligence & Neural Networks', onClick: () => alert('AI domain adjusted.') })}
-                      {renderGroupItem({ icon: '🎮', title: 'WebGL, WebGPU & 3D Shaders', onClick: () => alert('3D graphics domain adjusted.') })}
-                      {renderGroupItem({ icon: '☁️', title: 'Cloud Native & Edge Computing', isLast: true, onClick: () => alert('Cloud domain adjusted.') })}
+                      {renderGroupItem({ icon: '🤖', title: 'Artificial Intelligence & Neural Networks', onClick: () => setSubModal({ title: tr('acc_act_tech_domains'), type: 'topics' }) })}
+                      {renderGroupItem({ icon: '🎮', title: 'WebGL, WebGPU & 3D Shaders', onClick: () => setSubModal({ title: tr('acc_act_tech_domains'), type: 'topics' }) })}
+                      {renderGroupItem({ icon: '☁️', title: 'Cloud Native & Edge Computing', isLast: true, onClick: () => setSubModal({ title: tr('acc_act_tech_domains'), type: 'topics' }) })}
                     </div>
                   </div>
                 )}
@@ -728,7 +737,7 @@ export default function SavedDashboard() {
               <>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>
-                    <span>💳</span> Billing & Payments
+                    <span>💳</span> {tr('acc_bill_title')}
                   </div>
 
                   <div style={{ display: 'flex', borderBottom: '1px solid #2b1414', gap: '40px' }}>
@@ -745,7 +754,7 @@ export default function SavedDashboard() {
                         cursor: 'pointer'
                       }}
                     >
-                      Transactions
+                      {tr('acc_bill_tab_trans')}
                     </button>
                     <button
                       onClick={() => setPaySubTab('manage')}
@@ -760,7 +769,7 @@ export default function SavedDashboard() {
                         cursor: 'pointer'
                       }}
                     >
-                      Manage
+                      {tr('acc_bill_tab_manage')}
                     </button>
                   </div>
                 </div>
@@ -789,9 +798,9 @@ export default function SavedDashboard() {
 
                     <div style={{ textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
                       <div style={{ fontSize: '48px', color: '#6b7280' }}>👝</div>
-                      <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>Your transactions</h2>
+                      <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>{tr('acc_bill_tab_trans')}</h2>
                       <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af', maxWidth: '420px', lineHeight: 1.5 }}>
-                        Looks like you don't have any transactions from the last two years. Any sponsorship contributions or receipts will appear here.
+                        {tr('acc_bill_empty')}
                       </p>
                     </div>
                   </div>
@@ -807,23 +816,44 @@ export default function SavedDashboard() {
                       </div>
                     </div>
 
+                    {/* Saved Payment Cards if any */}
+                    {acStore.cards && acStore.cards.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#a8a29e', fontWeight: 600 }}>Saved Cards</span>
+                        {acStore.cards.map((c, i) => (
+                          <div key={i} style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '12px', padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <strong style={{ color: '#fff', fontSize: '13.5px' }}>{c.brand} •••• {c.last4}</strong>
+                              <div style={{ fontSize: '11.5px', color: '#9ca3af' }}>Expires {c.exp}</div>
+                            </div>
+                            <button 
+                              onClick={() => patchAc({ cards: acStore.cards.filter((_, idx) => idx !== i) })}
+                              style={{ background: '#261212', color: '#f87171', border: '1px solid #3d1b1b', padding: '4px 10px', borderRadius: '8px', fontSize: '11.5px', cursor: 'pointer' }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '16px', overflow: 'hidden' }}>
                       <div style={{ height: '140px', background: 'linear-gradient(135deg, #0284c7, #0f766e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px' }}>
                         💳
                       </div>
                       <div style={{ padding: '20px' }}>
-                        <strong style={{ color: '#fff', fontSize: '15px' }}>Add a payment method</strong>
-                        <p style={{ fontSize: '13px', color: '#9ca3af', margin: '6px 0 16px' }}>Save a card or link your PayPal to sponsor open-source maintainers easily.</p>
-                        <button onClick={() => setSubModal({ title: 'Add a payment method', type: 'add_payment' })} style={{ width: '100%', background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '10px', borderRadius: '24px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' }}>
-                          Add payment method
+                        <strong style={{ color: '#fff', fontSize: '15px' }}>{tr('acc_bill_add_method')}</strong>
+                        <p style={{ fontSize: '13px', color: '#9ca3af', margin: '6px 0 16px' }}>Save a card or link your wallet to sponsor open-source maintainers easily.</p>
+                        <button onClick={() => setSubModal({ title: tr('acc_bill_add_method'), type: 'add_payment' })} style={{ width: '100%', background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '10px', borderRadius: '24px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' }}>
+                          {tr('acc_bill_add_method')}
                         </button>
                       </div>
                     </div>
 
                     <div>
-                      <h4 style={{ margin: '0 0 8px', fontSize: '14px', color: '#fff' }}>Billing address & info</h4>
+                      <h4 style={{ margin: '0 0 8px', fontSize: '14px', color: '#fff' }}>{tr('acc_bill_address_hdr')}</h4>
                       <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
-                        {renderGroupItem({ title: 'Billing address', subtitle: 'Da Nang, Vietnam', onClick: () => alert('Billing address updated.') })}
+                        {renderGroupItem({ title: tr('acc_bill_address'), subtitle: acStore.address ? `${acStore.address.city}, ${acStore.address.country}` : 'Da Nang, Vietnam', onClick: () => setSubModal({ title: tr('acc_bill_address'), type: 'address' }) })}
                         {renderGroupItem({ title: 'Email address', subtitle: personalDetails.altEmail || user?.identifier, onClick: () => openEditDetails('contact') })}
                         {renderGroupItem({ title: 'Phone number', subtitle: personalDetails.phone || 'None', isLast: true, onClick: () => openEditDetails('contact') })}
                       </div>
@@ -837,19 +867,29 @@ export default function SavedDashboard() {
             {activeMenu === 'subscriptions' && (
               <>
                 <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Sponsorships & Subscriptions</h1>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>Find and manage your repository sponsorships and maintainer subscriptions in one place.</p>
+                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_sub_title')}</h1>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>{tr('acc_sub_desc')}</p>
                 </div>
 
                 <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden', marginTop: '10px' }}>
                   {renderGroupItem({
                     icon: '⭐',
-                    title: 'Open Source Creators & Maintainers',
-                    subtitle: 'Sponsor developers maintaining tools you use every day.',
+                    title: tr('acc_sub_creators'),
+                    subtitle: tr('acc_sub_creators_sub'),
                     isLast: true,
-                    onClick: () => setSubModal({ title: 'Sponsor a Creator', type: 'sponsor_creator' })
+                    onClick: () => setSubModal({ title: tr('acc_sub_creators'), type: 'sponsor_creator' })
                   })}
                 </div>
+
+                {acStore.tier && (
+                  <div style={{ background: '#180d0d', border: '1px solid #10b981', borderRadius: '14px', padding: '16px 20px', marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, textTransform: 'uppercase' }}>Active Tier</span>
+                      <h4 style={{ margin: '4px 0 0', color: '#fff', fontSize: '15px' }}>{acStore.tier.name} (${acStore.tier.amount}/mo)</h4>
+                    </div>
+                    <button onClick={() => setSubModal({ title: tr('acc_sub_creators'), type: 'sponsor_creator' })} style={{ background: '#261414', color: '#fef08a', border: '1px solid #3d1b1b', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer' }}>Change</button>
+                  </div>
+                )}
               </>
             )}
 
@@ -857,27 +897,27 @@ export default function SavedDashboard() {
             {activeMenu === 'manage' && (
               <>
                 <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>Manage accounts</h1>
+                  <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 700, color: '#fff' }}>{tr('acc_manage_title')}</h1>
                   <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>
-                    Control which accounts are linked to this GitXplore Accounts Center.
+                    {tr('acc_manage_desc')}
                   </p>
                 </div>
 
                 <div 
-                  onClick={() => setSubModal({ title: 'Add Accounts', type: 'add_account' })}
+                  onClick={() => setSubModal({ title: tr('acc_add_acc_btn'), type: 'add_account' })}
                   style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', padding: '14px 20px', color: '#38bdf8', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' }}
                 >
-                  + Add accounts
+                  {tr('acc_add_acc_btn')}
                 </div>
 
                 <div style={{ background: '#180d0d', border: '1px solid #2b1414', borderRadius: '14px', overflow: 'hidden' }}>
                   <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #241212' }}>
                     <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#fff' }}>GitXplore Core / GitHub</span>
                     <button 
-                      onClick={() => alert('Account session is healthy and active.')} 
+                      onClick={() => setSubModal({ title: tr('acc_manage_title'), type: 'account_manage' })} 
                       style={{ background: '#261212', color: '#fef08a', border: '1px solid #3d1b1b', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                     >
-                      Manage
+                      {tr('acc_manage_btn')}
                     </button>
                   </div>
 
@@ -888,6 +928,9 @@ export default function SavedDashboard() {
                     <strong style={{ color: '#fff', fontSize: '14px' }}>{user?.name}</strong>
                   </div>
                 </div>
+
+                {/* Render any linked accounts */}
+                <LinkedAccountsList store={acStore} open={setSubModal} />
               </>
             )}
 
@@ -1039,205 +1082,24 @@ export default function SavedDashboard() {
           <div 
             className="modal-card" 
             onClick={(e) => e.stopPropagation()} 
-            style={{ maxWidth: '500px', padding: '26px', background: '#120808', border: '1px solid #3d1b1b', borderRadius: '16px' }}
+            style={{ maxWidth: '520px', width: '92%', maxHeight: '88vh', overflowY: 'auto', padding: '26px', background: '#120808', border: '1px solid #3d1b1b', borderRadius: '16px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #261212', paddingBottom: '10px' }}>
               <h3 style={{ margin: 0, color: '#fef08a', fontSize: '18px' }}>{subModal.title}</h3>
               <button onClick={() => setSubModal(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '16px', cursor: 'pointer' }}>✕</button>
             </div>
 
-            {/* Change Password Form */}
-            {subModal.type === 'password' && (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                if (newPass !== confirmPass) {
-                  alert('New passwords do not match!');
-                  return;
-                }
-                alert('Password updated successfully.');
-                setSubModal(null);
-              }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', color: '#a8a29e' }}>Current Password</label>
-                  <input type="password" required value={oldPass} onChange={(e) => setOldPass(e.target.value)} className="lusion-search" style={{ width: '100%', borderRadius: '8px', marginTop: '4px' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', color: '#a8a29e' }}>New Password</label>
-                  <input type="password" required value={newPass} onChange={(e) => setNewPass(e.target.value)} className="lusion-search" style={{ width: '100%', borderRadius: '8px', marginTop: '4px' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', color: '#a8a29e' }}>Confirm New Password</label>
-                  <input type="password" required value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} className="lusion-search" style={{ width: '100%', borderRadius: '8px', marginTop: '4px' }} />
-                </div>
-                <button type="submit" className="link-btn btn-primary" style={{ marginTop: '10px' }}>Update Password</button>
-              </form>
-            )}
-
-            {/* 2FA */}
-            {subModal.type === '2fa' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <p style={{ fontSize: '13px', color: '#d1d5db', margin: 0 }}>
-                  We will require a security verification code whenever you log in from an unknown workstation.
-                </p>
-                <div style={{ background: '#1c0f0f', padding: '14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong style={{ color: '#fff', fontSize: '14px' }}>Two-Factor Security Code</strong>
-                    <div style={{ fontSize: '12px', color: '#10b981', marginTop: '2px' }}>{twoFactor ? 'Currently Active' : 'Disabled'}</div>
-                  </div>
-                  <button 
-                    onClick={() => setTwoFactor(!twoFactor)}
-                    className="link-btn btn-secondary" 
-                    style={{ padding: '6px 14px' }}
-                  >
-                    {twoFactor ? 'Turn off' : 'Turn on'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Saved Login */}
-            {subModal.type === 'saved_login' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Active browser sessions configured to remember authentication tokens:</p>
-                <div style={{ background: '#180d0d', padding: '12px 16px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong style={{ color: '#fff', fontSize: '13.5px' }}>Chrome on Windows</strong>
-                    <div style={{ fontSize: '11.5px', color: '#10b981' }}>Active right now</div>
-                  </div>
-                  <span style={{ fontSize: '12px', color: '#f59e0b' }}>Protected</span>
-                </div>
-                <button onClick={() => { alert('Saved login tokens purged.'); setSubModal(null); }} className="link-btn btn-secondary" style={{ marginTop: '8px' }}>
-                  Remove all saved browsers
-                </button>
-              </div>
-            )}
-
-            {/* Passkey */}
-            {subModal.type === 'passkey' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <p style={{ fontSize: '13px', color: '#d1d5db', margin: 0 }}>
-                  Passkeys allow you to securely sign in using your biometric face, fingerprint, or Windows Hello PIN.
-                </p>
-                <button onClick={() => { alert('Windows Hello / Biometric Passkey registered successfully.'); setSubModal(null); }} className="link-btn btn-primary">
-                  🔑 Register Windows Passkey
-                </button>
-              </div>
-            )}
-
-            {/* Active Sessions */}
-            {subModal.type === 'sessions' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ background: '#1a0d0d', padding: '12px', borderRadius: '8px', borderLeft: '3px solid #22c55e' }}>
-                  <strong style={{ color: '#fff', fontSize: '13.5px' }}>Windows PC (Da Nang, Vietnam)</strong>
-                  <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Chrome Browser • Current session</div>
-                </div>
-                <button onClick={() => { alert('All other remote devices signed out.'); setSubModal(null); }} className="link-btn btn-secondary" style={{ marginTop: '6px' }}>
-                  Log out of all other sessions
-                </button>
-              </div>
-            )}
-
-            {/* Recent Emails */}
-            {subModal.type === 'emails' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ background: '#160b0b', padding: '10px 14px', borderRadius: '8px' }}>
-                  <div style={{ color: '#fef08a', fontSize: '13px', fontWeight: 600 }}>Security alert: New login detected</div>
-                  <div style={{ color: '#78716c', fontSize: '11px', marginTop: '2px' }}>Sent to {user?.identifier} • 2 hours ago</div>
-                </div>
-                <div style={{ background: '#160b0b', padding: '10px 14px', borderRadius: '8px' }}>
-                  <div style={{ color: '#fef08a', fontSize: '13px', fontWeight: 600 }}>GitXplore Welcome Confirmation</div>
-                  <div style={{ color: '#78716c', fontSize: '11px', marginTop: '2px' }}>Sent to {user?.identifier} • Yesterday</div>
-                </div>
-              </div>
-            )}
-
-            {/* Security Checkup */}
-            {subModal.type === 'checkup' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'center', padding: '10px 0' }}>
-                <div style={{ fontSize: '42px' }}>🛡️</div>
-                <h4 style={{ margin: 0, color: '#22c55e', fontSize: '16px' }}>Your account is in good standing!</h4>
-                <p style={{ margin: '4px 0 14px', fontSize: '13px', color: '#9ca3af' }}>No compromised passwords or suspicious device sign-ins detected.</p>
-                <button onClick={() => setSubModal(null)} className="link-btn btn-primary">Done</button>
-              </div>
-            )}
-
-            {/* Sync Avatar */}
-            {subModal.type === 'sync_avatar' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Automatically use your primary GitHub avatar image across Forum and Explorer.</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#160b0b', padding: '12px', borderRadius: '8px' }}>
-                  <span style={{ color: '#fff', fontSize: '13.5px' }}>Avatar Synchronization</span>
-                  <input type="checkbox" checked={syncAvatar} onChange={(e) => setSyncAvatar(e.target.checked)} style={{ transform: 'scale(1.3)', cursor: 'pointer' }} />
-                </div>
-                <button onClick={() => setSubModal(null)} className="link-btn btn-primary">Save Preference</button>
-              </div>
-            )}
-
-            {/* Search History */}
-            {subModal.type === 'search_history' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Recent queries stored in client cache:</p>
-                <div style={{ background: '#160b0b', padding: '10px', borderRadius: '8px', fontSize: '13px', color: '#fef08a' }}>
-                  • "three.js shaders"
-                  <br />• "supabase realtime"
-                  <br />• "react lenis smooth scroll"
-                </div>
-                <button onClick={() => { alert('Search history cache cleared.'); setSubModal(null); }} className="link-btn btn-secondary">
-                  Clear Search History
-                </button>
-              </div>
-            )}
-
-            {/* Add Payment Method */}
-            {subModal.type === 'add_payment' && (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                alert('Card linked to GitXplore Developer Wallet.');
-                setSubModal(null);
-              }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', color: '#a8a29e' }}>Card Number</label>
-                  <input type="text" required placeholder="4242 •••• •••• 4242" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} className="lusion-search" style={{ width: '100%', borderRadius: '8px', marginTop: '4px' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', color: '#a8a29e' }}>Expiry Date (MM/YY)</label>
-                  <input type="text" required placeholder="12/28" value={cardExp} onChange={(e) => setCardExp(e.target.value)} className="lusion-search" style={{ width: '100%', borderRadius: '8px', marginTop: '4px' }} />
-                </div>
-                <button type="submit" className="link-btn btn-primary" style={{ marginTop: '6px' }}>Save Payment Card</button>
-              </form>
-            )}
-
-            {/* Sponsor Creator */}
-            {subModal.type === 'sponsor_creator' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Select an open-source tier to support repository development:</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div onClick={() => { alert('Tier 1 ($5/mo) selected.'); setSubModal(null); }} style={{ background: '#180d0d', border: '1px solid #3d1b1b', padding: '14px', borderRadius: '10px', textAlign: 'center', cursor: 'pointer' }}>
-                    <strong style={{ color: '#fbbf24', fontSize: '16px' }}>$5 / mo</strong>
-                    <div style={{ fontSize: '11px', color: '#a8a29e', marginTop: '4px' }}>Supporter Badge</div>
-                  </div>
-                  <div onClick={() => { alert('Tier 2 ($25/mo) selected.'); setSubModal(null); }} style={{ background: '#180d0d', border: '1px solid #3d1b1b', padding: '14px', borderRadius: '10px', textAlign: 'center', cursor: 'pointer' }}>
-                    <strong style={{ color: '#ef4444', fontSize: '16px' }}>$25 / mo</strong>
-                    <div style={{ fontSize: '11px', color: '#a8a29e', marginTop: '4px' }}>Gold Sponsor Tier</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Add Secondary Account */}
-            {subModal.type === 'add_account' && (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                alert(`Linking request dispatched to ${newAccountInput}.`);
-                setNewAccountInput('');
-                setSubModal(null);
-              }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>Enter username or email of the developer account you wish to link:</p>
-                <input type="text" required placeholder="github_handle or email" value={newAccountInput} onChange={(e) => setNewAccountInput(e.target.value)} className="lusion-search" style={{ width: '100%', borderRadius: '8px' }} />
-                <button type="submit" className="link-btn btn-primary">Authorize & Connect</button>
-              </form>
-            )}
-
+            <FeatureModal
+              type={subModal.type}
+              title={subModal.title}
+              user={user}
+              store={acStore}
+              patch={patchAc}
+              log={logAc}
+              close={() => setSubModal(null)}
+              arg={subModal.arg}
+              onExport={handleExportData}
+            />
           </div>
         </div>
       )}

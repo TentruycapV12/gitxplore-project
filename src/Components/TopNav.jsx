@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useLanguage } from '../context/LanguageContext';
+import NotificationDropdown from './NotificationDropdown.jsx';
+import WelcomeOnboardingModal from './WelcomeOnboardingModal.jsx';
+import { useNotifications } from '../hooks/useNotifications';
 import './TopNav.css';
 
 const Svg = ({ children }) => (
@@ -50,8 +53,17 @@ export default function TopNav() {
   // Trên trang /search thì ô tìm kiếm hiện đúng từ khóa đang tìm.
   const [query, setQuery] = useState(() => (pathname === '/search' ? new URLSearchParams(search).get('q') || '' : ''));
   const [searchOpen, setSearchOpen] = useState(false);
-  const [menu, setMenu] = useState(null); // 'apps' | 'user' | null
+  const [menu, setMenu] = useState(null); // 'apps' | 'user' | 'notif' | null
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { unreadCount } = useNotifications();
   const rootRef = useRef(null);
+
+  // Tự động hiển thị hướng dẫn lần đầu đăng nhập
+  useEffect(() => {
+    if (user?.identifier && !localStorage.getItem(`gx_onboard_done_${user.identifier}`)) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (pathname === '/search') setQuery(new URLSearchParams(search).get('q') || '');
@@ -171,10 +183,25 @@ export default function TopNav() {
         </div>
 
         {user && (
-          <button type="button" className="tn-circle tn-bell" onClick={() => go('/community')} aria-label={t('ui_notifications')}>
-            {ICONS.bell}
-            <i className="tn-badge" />
-          </button>
+          <div className="tn-wrap">
+            <button
+              type="button"
+              className={`tn-circle tn-bell ${menu === 'notif' ? 'is-on' : ''}`}
+              onClick={() => setMenu(menu === 'notif' ? null : 'notif')}
+              aria-label={t('ui_notifications')}
+              aria-expanded={menu === 'notif'}
+              title="Thông báo"
+            >
+              {ICONS.bell}
+              {unreadCount > 0 && (
+                <span className="tn-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
+            </button>
+
+            {menu === 'notif' && (
+              <NotificationDropdown onClose={() => setMenu(null)} />
+            )}
+          </div>
         )}
 
         {!user ? (
@@ -211,6 +238,7 @@ export default function TopNav() {
                   </span>
                 </button>
                 <hr />
+                <button type="button" className="tn-item" onClick={() => { setMenu(null); setShowOnboarding(true); }}>💡 {t('ui_onboarding_guide') || 'Hướng dẫn người mới'}</button>
                 <button type="button" className="tn-item" onClick={() => go('/accountscenter/profiles')}>{t('profile_details')}</button>
                 <button type="button" className="tn-item" onClick={() => go('/accountscenter/saved')}>{t('saved_repos')}</button>
                 <button type="button" className="tn-item" onClick={() => go('/accountscenter/history')}>{t('history')}</button>
@@ -222,6 +250,8 @@ export default function TopNav() {
           </div>
         )}
       </div>
+
+      {showOnboarding && <WelcomeOnboardingModal onClose={() => setShowOnboarding(false)} />}
     </header>
   );
 }

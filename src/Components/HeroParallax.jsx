@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { scrollToId } from '../lib/scroll';
 import TopNav from './TopNav.jsx';
+import { useLanguage } from '../context/LanguageContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -40,6 +41,7 @@ function createSequence(canvas, srcOf) {
 }
 
 export default function HeroParallax() {
+  const { t } = useLanguage();
   const containerRef = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
@@ -169,7 +171,7 @@ export default function HeroParallax() {
             fontWeight: 600,
           }}
         >
-          ▲ Journey to new frontiers, Journey to Noto Nature Park
+          {t('welcome_sub')}
         </p>
         <h1
           style={{
@@ -183,7 +185,7 @@ export default function HeroParallax() {
             textShadow: '0 4px 30px rgba(185, 28, 28, 0.35)',
           }}
         >
-          WELCOME
+          {t('welcome_title')}
         </h1>
         <p
           style={{
@@ -195,8 +197,7 @@ export default function HeroParallax() {
             opacity: 0.9,
           }}
         >
-          Away from the manic energy of Japan's famous metropolises lies the ancient hamlet of Noto. 
-          Surprising and captivating in equal measure.
+          {t('welcome_desc')}
         </p>
         <div style={{ pointerEvents: 'auto' }}>
           <button
@@ -217,7 +218,7 @@ export default function HeroParallax() {
             onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
             onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
           >
-            Start the journey ▸
+            {t('start_journey')}
           </button>
         </div>
       </div>
@@ -249,7 +250,7 @@ export default function HeroParallax() {
               fontWeight: 600,
             }}
           >
-            3D Experience
+            {t('experience_3d')}
           </p>
           <h2
             style={{
@@ -262,7 +263,7 @@ export default function HeroParallax() {
               textShadow: '0 4px 28px rgba(245, 158, 11, 0.3)',
             }}
           >
-            Tranquility
+            {t('tranquility')}
           </h2>
           <p
             style={{
@@ -273,8 +274,7 @@ export default function HeroParallax() {
               opacity: 0.9,
             }}
           >
-            Away from the manic energy of Japan's famous metropolises, soak into the ethereal waterfalls and mystic lakes 
-            harboring a vast realm of legendary open-source artifacts.
+            {t('tranquility_desc')}
           </p>
           <button
             type="button"
@@ -290,7 +290,7 @@ export default function HeroParallax() {
               cursor: 'pointer',
             }}
           >
-            — Learn more
+            {t('learn_more')}
           </button>
         </div>
       </div>

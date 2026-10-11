@@ -203,7 +203,7 @@ export default function VibePage() {
         <div className="vb-hero-glow" />
         <div className="vb-hero-badge">
           <Ico d={ICONS.sparkles} size={15} />
-          <span>VIBE CODING & AI TEMPLATES DIRECTORY</span>
+          <span>{t('vb_hero_badge')}</span>
           <span className="vb-badge-pill">aitmpl.com Inspired</span>
         </div>
 
@@ -212,30 +212,29 @@ export default function VibePage() {
         </h1>
 
         <p className="vb-hero-subtitle">
-          Khám phá hơn 1,000+ Skills, Autonomous Agents, Slash Commands, MCP Servers và quy tắc cấu hình hệ thống
-          được xây dựng tối ưu cho Claude Code, Cursor, Antigravity và thế hệ lập trình viên AI hiện đại.
+          {t('vb_hero_sub')}
         </p>
 
         {/* Live Counters */}
         <div className="vb-stats">
           <div className="vb-stat-item">
             <strong>1.38M+</strong>
-            <span>Lượt cài đặt CLI</span>
+            <span>{t('vb_stat_cli')}</span>
           </div>
           <div className="vb-stat-divider" />
           <div className="vb-stat-item">
             <strong>32+</strong>
-            <span>Mẫu cao cấp tuyển chọn</span>
+            <span>{t('vb_stat_templates')}</span>
           </div>
           <div className="vb-stat-divider" />
           <div className="vb-stat-item">
             <strong>100%</strong>
-            <span>Tương thích MCP & Rules</span>
+            <span>{t('vb_stat_mcp')}</span>
           </div>
           <div className="vb-stat-divider" />
           <div className="vb-stat-item">
-            <strong>Miễn phí</strong>
-            <span>Mã nguồn mở</span>
+            <strong>{lang === 'vi' ? 'Miễn phí' : 'Free'}</strong>
+            <span>{t('vb_stat_foss')}</span>
           </div>
         </div>
 
@@ -249,8 +248,8 @@ export default function VibePage() {
               className="vb-search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm kỹ năng, agents, lệnh slash, mcp, .cursorrules..."
-              aria-label="Tìm kiếm Vibe Templates"
+              placeholder={t('vb_search_ph')}
+              aria-label="Vibe Search"
             />
             {searchQuery && (
               <button

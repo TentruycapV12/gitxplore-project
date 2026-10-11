@@ -37,6 +37,9 @@ export default function NavModals() {
       provider: 'Local',
     };
 
+    if (authMode === 'signup') {
+      localStorage.removeItem(`gx_onboard_done_${identifier}`);
+    }
     setUser(userData); // AuthContext tự lưu localStorage
     closeModal();
   };
