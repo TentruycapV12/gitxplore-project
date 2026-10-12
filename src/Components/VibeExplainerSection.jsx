@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useUI } from '../context/UIContext';
+import VibeWizard from './VibeWizard.jsx';
 import './VibeExplainerSection.css';
 
 const VIBE_VIDEOS = [
@@ -161,6 +162,20 @@ export default function VibeExplainerSection({ onClose }) {
         >
           <span>💡</span>
           <span>{lang === 'vi' ? 'Vibe Coding Là Gì?' : 'What is Vibe Coding?'}</span>
+        </button>
+
+        <button
+          type="button"
+          className={`vbe-tab-btn ${activeTab === 'wizard' ? 'active' : ''}`}
+          onClick={() => setActiveTab('wizard')}
+          style={{
+            borderColor: activeTab === 'wizard' ? '#f59e0b' : 'rgba(245, 158, 11, 0.4)',
+            background: activeTab === 'wizard' ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2))' : undefined,
+          }}
+        >
+          <span>🪄</span>
+          <span>{lang === 'vi' ? 'Tạo Prompt 3 Bước' : '3-Step Vibe Wizard'}</span>
+          <span className="vbe-tab-pill" style={{ background: '#f59e0b', color: '#000', fontWeight: 800 }}>MỚI</span>
         </button>
 
         <button
@@ -434,6 +449,13 @@ export default function VibeExplainerSection({ onClose }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ===== TAB 5: TRÌNH TẠO PROMPT 3 BƯỚC (VIBE WIZARD) ===== */}
+      {activeTab === 'wizard' && (
+        <div className="vbe-panel" style={{ padding: 0, background: 'transparent', border: 'none' }}>
+          <VibeWizard />
         </div>
       )}
 

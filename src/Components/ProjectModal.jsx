@@ -82,11 +82,23 @@ export default function ProjectModal() {
               <span>⚖️</span> So sánh Repo
             </button>
             {project.demoUrl && (
-              <a href={project.demoUrl} target="_blank" rel="noreferrer" className="link-btn btn-secondary">
-                {t('pm_demo')}
+              <a
+                href={project.demoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="link-btn btn-primary"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  border: 'none',
+                  boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+                }}
+              >
+                🚀 {t('pm_demo')}
               </a>
             )}
-            <a href={project.githubUrl} target="_blank" rel="noreferrer" className="link-btn btn-primary">
+            <a href={project.githubUrl} target="_blank" rel="noreferrer" className="link-btn btn-secondary">
               {t('pm_open')}
             </a>
           </div>

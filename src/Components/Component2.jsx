@@ -62,6 +62,28 @@ function Component2({ project, onSelect }) {
             }}
           />
         )}
+        {project.demoUrl && (
+          <span style={{
+            position: 'absolute',
+            top: '18px',
+            left: '18px',
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            color: '#ffffff',
+            padding: '5px 12px',
+            borderRadius: '30px',
+            fontSize: '11px',
+            fontWeight: 800,
+            letterSpacing: '0.5px',
+            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            zIndex: 2,
+          }}>
+            <span>●</span>
+            <span>{lang === 'vi' ? 'DÙNG THỬ NGAY' : 'LIVE DEMO'}</span>
+          </span>
+        )}
         <span className="media-badge">{project.language}</span>
       </div>
 
@@ -93,10 +115,16 @@ function Component2({ project, onSelect }) {
               target="_blank"
               rel="noreferrer"
               className="link-btn btn-primary"
-              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#fff' }}
-              title="Trải nghiệm ứng dụng thực tế"
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                border: 'none',
+                color: '#ffffff',
+                fontWeight: 700,
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+              }}
+              title={lang === 'vi' ? 'Trải nghiệm ứng dụng thực tế' : 'Open live demo'}
             >
-              Trải nghiệm / Demo ↗
+              🚀 {lang === 'vi' ? 'Dùng Thử Ngay ↗' : 'Live Demo ↗'}
             </a>
           ) : (
             <a

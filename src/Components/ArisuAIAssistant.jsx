@@ -205,7 +205,8 @@ export default function ArisuAIAssistant() {
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [attachments, setAttachments] = useState([]);
-  const [aiMode, setAiMode] = useState(() => localStorage.getItem('gx_ai_mode') || 'dev'); // 'dev' | 'arisu'
+  const [aiMode, setAiMode] = useState(() => localStorage.getItem('gx_ai_mode') || 'arisu'); // 'arisu' (Friendly Companion) | 'dev'
+  const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [messages, setMessages] = useState(() => {
     try {
@@ -642,23 +643,26 @@ export default function ArisuAIAssistant() {
                 <button
                   type="button"
                   className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Vibe Coding là gì? Hướng dẫn người mới bắt đầu.' : 'What is Vibe Coding? Beginner guide.')}
+                  style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 78, 59, 0.3))', borderColor: 'rgba(16, 185, 129, 0.45)', color: '#6ee7b7' }}
+                  onClick={() => handleChipClick(lang === 'vi' ? 'Tôi không biết code, web này giúp gì cho tôi?' : 'I cannot code, what can this website do for me?')}
                 >
-                  💡 {lang === 'vi' ? 'Vibe Coding là gì?' : 'What is Vibe Coding?'}
+                  🐣 {lang === 'vi' ? 'Tôi chưa biết code, web này giúp gì?' : 'I cannot code, what can I do here?'}
                 </button>
                 <button
                   type="button"
                   className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Làm sao để dùng các mẫu Vibe Coding tại GitXplore?' : 'How to use Vibe Coding templates?')}
+                  style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2))', borderColor: 'rgba(245, 158, 11, 0.45)', color: '#fef08a' }}
+                  onClick={() => handleChipClick(lang === 'vi' ? 'Gợi ý 3 ứng dụng thú vị có thể dùng thử ngay' : 'Suggest 3 fun apps with live demos')}
                 >
-                  🚀 {lang === 'vi' ? 'Cách dùng mẫu Vibe' : 'How to use Vibe templates'}
+                  🎮 {lang === 'vi' ? 'Gợi ý 3 app dùng thử ngay' : '3 Fun Apps with Live Demos'}
                 </button>
                 <button
                   type="button"
                   className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Arisu có thể giúp mình những gì trên web này?' : 'How can Arisu help me on GitXplore?')}
+                  style={{ background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2))', borderColor: 'rgba(56, 189, 248, 0.45)', color: '#38bdf8' }}
+                  onClick={() => handleChipClick(lang === 'vi' ? 'Chỉ tôi cách tự làm 1 website bằng AI trong 5 phút' : 'How to build a website with AI in 5 minutes')}
                 >
-                  🌸 {lang === 'vi' ? 'Arisu giúp được gì?' : 'How can Arisu help?'}
+                  🤖 {lang === 'vi' ? 'Tự làm website bằng AI trong 5 phút' : 'Build website with AI in 5 mins'}
                 </button>
               </>
             )}
@@ -857,9 +861,32 @@ export default function ArisuAIAssistant() {
 
       {/* ===== 2. NÚT KÍCH HOẠT HÌNH ARISU (THAY THẾ CON NHỘNG) ===== */}
       <div className="arisu-launcher-wrapper">
-        {!isOpen && (
-          <div className="arisu-speech-bubble" onClick={() => setIsOpen(true)}>
-            <span>{t('arisu_floating_hint')}</span>
+        {!isOpen && !bubbleDismissed && (
+          <div
+            className="arisu-speech-bubble"
+            onClick={() => setIsOpen(true)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span>{lang === 'vi' ? '👋 Chưa biết bắt đầu từ đâu? Bấm vào mình hướng dẫn 30s nhé!' : '👋 New here? Click me for a 30s tour!'}</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBubbleDismissed(true);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '15px',
+                cursor: 'pointer',
+                padding: '0 2px',
+                lineHeight: 1,
+              }}
+              title={lang === 'vi' ? 'Đóng gợi ý' : 'Dismiss'}
+            >
+              ×
+            </button>
           </div>
         )}
 

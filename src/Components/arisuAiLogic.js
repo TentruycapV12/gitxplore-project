@@ -224,30 +224,95 @@ export const getArisuCompanionResponse = (text, attachments, userAppLang, user) 
     return `You have been working hard! Take a short break, drink some water, and relax your eyes. Whenever you are ready, I will be right here to support you! 🍵💖`;
   }
 
-  // Người mới / Mã nguồn mở / Vibe Coding cho người mới
+  // 1. NGƯỜI MỚI: TÔI KHÔNG BIẾT CODE, WEB NÀY GIÚP GÌ CHO TÔI?
   if (
-    q.includes('mã nguồn mở') ||
-    q.includes('open source') ||
-    q.includes('người mới') ||
-    q.includes('chưa biết code') ||
-    q.includes('không biết code') ||
-    q.includes('bắt đầu từ đâu') ||
-    q.includes('web này là gì') ||
-    q.includes('web này làm gì') ||
-    q.includes('tân thủ')
+    q.includes('không biết code, web này giúp gì') ||
+    q.includes('không biết code thì dùng') ||
+    q.includes('chưa biết code thì dùng') ||
+    q.includes('giúp gì cho tôi') ||
+    q.includes('web này giúp gì')
   ) {
     if (isVi) {
-      return `Chào bạn! Đừng lo lắng nếu bạn chưa từng viết code nhé, hãy để mình giải thích thật đơn giản nè:\n\n### 1. Mã Nguồn Mở (Open Source) là gì?\nBạn cứ tưởng tượng như **một công thức nấu ăn ngon** được các đầu bếp giỏi chia sẻ miễn phí 100% lên mạng. Mọi người đều có thể vào xem cách nấu, mang về tự nấu và thêm thắt gia vị cho riêng mình mà không phải trả tiền bản quyền!\n\n### 2. Người chưa biết code thì vào GitXplore làm gì?\n• **Dùng phần mềm miễn phí xịn xò:** Thay vì mua ứng dụng đắt tiền, bạn có thể tìm thấy các công cụ miễn phí tuyệt vời thay thế Photoshop, Office, công cụ dựng video.\n• **Khám phá Vibe Coding:** Cách làm web thời đại AI — bạn chỉ cần miêu tả mong muốn bằng tiếng Việt, AI sẽ tạo ra ứng dụng thật cho bạn!\n• **Học hỏi từng bước:** Đọc mục *"Nhập môn trong 3 phút"* ở trang chủ hoặc lọc dự án *"🌱 Dành cho người mới"*.\n\nBạn đang quan tâm đến chủ đề nào nhất? Cứ nói với mình, mình sẽ hướng dẫn bạn từng bước nhé! ✨`;
+      return `Chào bạn! Rất nhiều người khi mới vào GitXplore cũng từng nghĩ như bạn. Nhưng bạn hoàn toàn **không cần biết code** để tận hưởng những giá trị tuyệt vời này nè:
+
+### 🌟 3 Điều Tuyệt Vời GitXplore Dành Riêng Cho Bạn:
+1. **Kho Ứng Dụng Miễn Phí Xịn Xò (FOSS):**
+   Thay vì phải mua bản quyền phần mềm đắt đỏ hay tải các bản lậu dễ dính mã độc, bạn có thể tìm thấy hàng trăm phần mềm hàng đầu thế giới được cộng đồng chia sẻ 100% miễn phí (như công cụ vẽ, làm video, chạy AI, game giải trí).
+2. **Trải Nghiệm "Làm App Không Cần Code" (Vibe Coding):**
+   Bạn có một ý tưởng trong đầu? Chỉ cần miêu tả bằng tiếng Việt (ví dụ: *"Tạo cho tôi web bán hoa tươi có giỏ hàng"*), AI sẽ viết toàn bộ mã nguồn cho bạn. Bạn có thể thử ngay trên web mà không cần cài đặt gì!
+3. **Cộng Đồng Học Tập Thân Thiện:**
+   Mọi thắc mắc công nghệ đều có thể hỏi tại Diễn đàn hoặc hỏi trực tiếp mình. Không ai chê cười bạn là người mới đâu nhé!
+
+👉 **Bước đầu tiên:** Bạn có thể bấm vào nút **"🌱 Dành cho người mới"** trên trang chủ để xem các ứng dụng có thể bấm dùng thử trực tiếp ngay nhé!`;
     }
-    return `Welcome to GitXplore! No coding skills required. Open Source is like world-class recipes shared 100% free for everyone to use and learn from. With Vibe Coding, you can build software simply by talking to AI. Feel free to explore the **3-Minute Crash Course** on the home page or ask me anything!`;
+    return `Welcome! You do **not need any coding background** to benefit from GitXplore:
+1. **Free High-Quality Apps:** Discover 100% free open-source software replacing expensive subscriptions.
+2. **Build Software with AI (Vibe Coding):** Describe your app idea in plain English, and AI builds it for you.
+3. **Interactive Demos:** Most curated projects have live web demos you can test in one click!
+
+Check out the **Beginner Mode** on the home page to start exploring!`;
   }
 
-  // Vibe Coding
-  if (q.includes('vibe coding') || q.includes('vibe') || q.includes('aitmpl')) {
+  // 2. GỢI Ý 3 ỨNG DỤNG THÚ VỊ DÙNG THỬ NGAY
+  if (
+    q.includes('gợi ý 3 ứng dụng') ||
+    q.includes('3 ứng dụng thú vị') ||
+    q.includes('ứng dụng thú vị') ||
+    q.includes('dùng thử ngay') ||
+    q.includes('3 apps')
+  ) {
     if (isVi) {
-      return `### ⚡ Vibe Coding là gì vậy bạn?\n\n**Vibe Coding** là cách lập trình hiện đại cực kỳ tự nhiên: Bạn không cần phải ghi nhớ cú pháp code phức tạp hay ngồi gõ từng dấu chấm phẩy nữa.\n\n• Bạn chỉ việc giữ **ý tưởng và cảm xúc sáng tạo (Vibe)** trong đầu.\n• Bạn trò chuyện với các công cụ AI (như Cursor, Claude Code) bằng ngôn ngữ bình thường (ví dụ: *"Làm cho mình trang web bán hoa tươi có giỏ hàng tính tiền"*).\n• AI sẽ tự động viết mã và dựng nên ứng dụng chạy được ngay trong tích tắc!\n\nBạn có thể vào tab **Vibe (\`/vibe\`)** trên thanh điều hướng để xem các video ngắn minh họa và copy các mẫu lệnh có sẵn nhé!`;
+      return `Dưới đây là **3 ứng dụng thú vị nhất** bạn có thể trải nghiệm ngay hôm nay mà không tốn một đồng nào nè:
+
+### 🎮 1. Ollama — Chạy Trí Tuệ Nhân Tạo (AI) Riêng Tư Trên Máy
+• **Công dụng:** Cho phép bạn trò chuyện với các mô hình AI thông minh như Llama 3, Gemma hoàn toàn miễn phí trên máy tính của bạn, không cần mạng Internet và bảo mật 100%.
+• **Trải nghiệm ngay:** [ollama.com](https://ollama.com)
+
+### 🎨 2. Stable Diffusion WebUI — Họa Sĩ AI Vẽ Tranh
+• **Công dụng:** Biến mọi ý tưởng mô tả của bạn thành bức tranh nghệ thuật tuyệt đẹp chỉ trong vài giây ngay trên trình duyệt web.
+• **Trải nghiệm ngay:** [stability.ai](https://stability.ai)
+
+### 🕹️ 3. Godot Engine — Tự Làm Game 2D & 3D Vui Nhộn
+• **Công dụng:** Bộ công cụ làm game mã nguồn mở siêu nhẹ, miễn phí vĩnh viễn. Rất nhiều bạn trẻ đã tự làm ra game Flappy Bird hay game nhập vai đầu tay nhờ công cụ này!
+• **Trải nghiệm ngay:** [godotengine.org](https://godotengine.org)
+
+Bạn thích thử ứng dụng nào nhất trong 3 app trên nè? Nói cho mình biết nha! ✨`;
     }
-    return `### ⚡ What is Vibe Coding?\n\nVibe Coding is creating software at the speed of thought. Instead of typing syntax line by line, you describe your product in plain language to AI models (like Cursor and Claude Code), and the AI builds it for you! Visit **/vibe** to explore ready-to-run templates!`;
+    return `Here are **3 fun apps with live demos** you can try right away:
+1. **Ollama:** Run open-source LLMs (Llama 3, Gemma) privately on your computer ([ollama.com](https://ollama.com)).
+2. **Stable Diffusion:** AI text-to-image generator directly in your browser ([stability.ai](https://stability.ai)).
+3. **Godot Engine:** Lightweight, 100% free game development engine ([godotengine.org](https://godotengine.org)).`;
+  }
+
+  // 3. CHỈ TÔI CÁCH TỰ LÀM 1 WEBSITE BẰNG AI TRONG 5 PHÚT
+  if (
+    q.includes('tự làm 1 website') ||
+    q.includes('tự làm website') ||
+    q.includes('làm web trong 5 phút') ||
+    q.includes('làm website bằng ai') ||
+    q.includes('trong 5 phút')
+  ) {
+    if (isVi) {
+      return `Dễ lắm bạn ơi! Thời nay ai cũng có thể tự tạo một trang web đẹp mắt chỉ trong **3 bước cực nhanh** này nè:
+
+### 🚀 3 Bước Làm Website Bằng AI Trong 5 Phút:
+
+1. **Bước 1 — Nghĩ ý tưởng bạn muốn làm:**
+   Ví dụ: *"Một trang web quán cà phê Cyberpunk có danh sách đồ uống, giỏ hàng tính tiền và nút chuyển chế độ ban đêm Dark Mode."*
+2. **Bước 2 — Lấy câu lệnh chuẩn (Vibe Prompt):**
+   Vào mục **Vibe Coding** (\`/vibe\`) trên thanh menu của GitXplore, chọn mẫu **"Quán Cà Phê Cyber Chill"** hoặc dùng **Vibe Wizard** rồi bấm nút **"Sao chép Prompt"**.
+3. **Bước 3 — Đưa cho AI tạo ra web:**
+   • Bạn mở **ChatGPT**, **Claude** hoặc công cụ **Cursor AI**.
+   • Dán câu lệnh vừa copy vào ô chat và nhấn Enter.
+   • Bùm! AI sẽ viết toàn bộ mã nguồn HTML/React và bạn chỉ cần mở ra xem kết quả!
+   • Hoặc bạn có thể bấm **"⚡ Thử trong Sandbox"** ngay trên GitXplore để xem web chạy trực tiếp luôn!
+
+Bạn có muốn mình tạo ngay một đoạn câu lệnh gợi ý cho ý tưởng của bạn không nè?`;
+    }
+    return `You can build a website with AI in 3 simple steps:
+1. **Step 1:** Formulate your idea in plain words (e.g. "A chill coffee shop site with a drink menu and cart").
+2. **Step 2:** Grab a ready-to-use prompt from our **/vibe** hub (or use Vibe Wizard).
+3. **Step 3:** Paste it into ChatGPT, Claude, or Cursor IDE, or hit **"Try in Sandbox"** on GitXplore to see it live!`;
   }
 
   // Câu hỏi chung Arisu

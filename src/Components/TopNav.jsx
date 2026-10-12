@@ -32,11 +32,10 @@ const ICONS = {
 // Các tab giữa. `to` = chuyển trang, `modal` = mở popup.
 const TABS = [
   { id: 'home', label: 'Trang chủ', to: '/' },
-  { id: 'market', label: 'Chợ Công Nghệ', to: '/market' },
   { id: 'vibe', label: 'Vibe', to: '/vibe' },
+  { id: 'market', label: 'Chợ Công Nghệ', to: '/market' },
+  { id: 'community', label: 'Cộng đồng', to: '/community', hasSubmenu: true },
   { id: 'news', label: 'Tin tức', to: '/news' },
-  { id: 'community', label: 'Cộng đồng', to: '/community' },
-  { id: 'forum', label: 'Diễn đàn', to: '/forum' },
   { id: 'support', label: 'Hỗ trợ', modal: 'support' },
 ];
 
@@ -86,8 +85,7 @@ export default function TopNav() {
     pathname.startsWith('/market') ? 'market' :
     pathname.startsWith('/vibe') ? 'vibe' :
     pathname.startsWith('/news') ? 'news' :
-    pathname.startsWith('/forum') ? 'forum' :
-    pathname.startsWith('/community') ? 'community' :
+    (pathname.startsWith('/community') || pathname.startsWith('/forum')) ? 'community' :
     pathname === '/' ? 'home' : null;
 
   const tabLabel = {
@@ -143,17 +141,45 @@ export default function TopNav() {
       {/* ===== GIỮA: tab icon ===== */}
       <nav className="tn-tabs" aria-label={t('ui_main_nav')}>
         {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
-            onClick={() => onTab(tab)}
-            aria-label={tabLabel[tab.id]}
-            aria-current={activeId === tab.id ? 'page' : undefined}
-          >
-            {ICONS[tab.id]}
-            <span className="tn-tip">{tabLabel[tab.id]}</span>
-          </button>
+          <div key={tab.id} className="tn-tab-wrap">
+            <button
+              type="button"
+              className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
+              onClick={() => onTab(tab)}
+              aria-label={tabLabel[tab.id]}
+              aria-current={activeId === tab.id ? 'page' : undefined}
+            >
+              {ICONS[tab.id]}
+              <span className="tn-tip">{tabLabel[tab.id]}</span>
+            </button>
+
+            {tab.hasSubmenu && (
+              <div className="tn-sub-dropdown" role="menu">
+                <button
+                  type="button"
+                  className="tn-sub-item"
+                  onClick={(e) => { e.stopPropagation(); go('/community'); }}
+                >
+                  <span style={{ fontSize: '16px' }}>👥</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '12.5px', color: '#fef08a' }}>{t('community')}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{lang === 'vi' ? 'Dự án & Thành viên' : 'Members & Projects'}</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="tn-sub-item"
+                  onClick={(e) => { e.stopPropagation(); go('/forum'); }}
+                >
+                  <span style={{ fontSize: '16px' }}>💬</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '12.5px', color: '#fef08a' }}>{FORUM_LABEL[lang] || FORUM_LABEL.en}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{lang === 'vi' ? 'Diễn đàn Thảo luận' : 'Discussion Forum'}</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         ))}
       </nav>
 

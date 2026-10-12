@@ -277,20 +277,29 @@ export default function HeroParallax() {
           </button>
           <button
             type="button"
-            onClick={() => scrollToId('explore')}
+            onClick={() => navigate('/vibe')}
             style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25))',
+              color: '#fef08a',
+              border: '1px solid rgba(245, 158, 11, 0.5)',
               padding: '12px 24px',
               borderRadius: '24px',
               fontSize: '13px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: 'pointer',
-              transition: 'background 0.2s',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
-            onMouseEnter={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.2)')}
-            onMouseLeave={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.1)')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 0 20px rgba(245, 158, 11, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
             {t('hero_btn_dev')}
           </button>
