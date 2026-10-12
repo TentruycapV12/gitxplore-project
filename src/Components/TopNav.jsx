@@ -23,6 +23,7 @@ const ICONS = {
   forum: <Svg><path d="M4 5h16v11H9l-5 4z" /></Svg>,
   support: <Svg><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9" /></Svg>,
   search: <Svg><circle cx="11" cy="11" r="6.5" /><path d="m20 20-3.8-3.8" /></Svg>,
+  market: <Svg><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></Svg>,
   grid: <Svg><circle cx="6" cy="6" r="1.4" /><circle cx="12" cy="6" r="1.4" /><circle cx="18" cy="6" r="1.4" /><circle cx="6" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18" cy="12" r="1.4" /><circle cx="6" cy="18" r="1.4" /><circle cx="12" cy="18" r="1.4" /><circle cx="18" cy="18" r="1.4" /></Svg>,
   bell: <Svg><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15zM10 21h4" /></Svg>,
   bookmark: <Svg><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" /></Svg>,
@@ -31,6 +32,7 @@ const ICONS = {
 // Các tab giữa. `to` = chuyển trang, `modal` = mở popup.
 const TABS = [
   { id: 'home', label: 'Trang chủ', to: '/' },
+  { id: 'market', label: 'Chợ Công Nghệ', to: '/market' },
   { id: 'vibe', label: 'Vibe', to: '/vibe' },
   { id: 'news', label: 'Tin tức', to: '/news' },
   { id: 'community', label: 'Cộng đồng', to: '/community' },
@@ -83,6 +85,7 @@ export default function TopNav() {
   }, [menu]);
 
   const activeId =
+    pathname.startsWith('/market') ? 'market' :
     pathname.startsWith('/vibe') ? 'vibe' :
     pathname.startsWith('/news') ? 'news' :
     pathname.startsWith('/forum') ? 'forum' :
@@ -90,7 +93,7 @@ export default function TopNav() {
     pathname === '/' ? 'home' : null;
 
   const tabLabel = {
-    home: t('ui_home'), vibe: t('vibe_nav') || 'Vibe Coding', news: t('news'), community: t('community'),
+    home: t('ui_home'), market: 'Chợ Công Nghệ', vibe: t('vibe_nav') || 'Vibe Coding', news: t('news'), community: t('community'),
     forum: FORUM_LABEL[lang] || FORUM_LABEL.en, support: t('support'),
   };
 
@@ -243,6 +246,9 @@ export default function TopNav() {
                 </button>
                 <button type="button" onClick={() => { setMenu(null); openCompare(); }}>
                   <span style={{ fontSize: '18px' }}>⚖️</span><span>So sánh Repo</span>
+                </button>
+                <button type="button" onClick={() => go('/market')}>
+                  <span style={{ fontSize: '18px' }}>🛒</span><span>Chợ Công Nghệ</span>
                 </button>
                 <button type="button" onClick={() => go('/vibe')}>{ICONS.vibe}<span>{t('vibe_nav') || 'Vibe Coding'}</span></button>
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>

@@ -1,0 +1,263 @@
+/* ========================================================
+   MARKETPLACE FEATURED BANNER ON HOMEPAGE
+   Prefix: mfb-
+======================================================== */
+
+.mfb-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.25fr 0.85fr;
+  gap: 32px;
+  align-items: center;
+  padding: 34px 40px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(20, 16, 26, 0.92) 0%, rgba(12, 10, 18, 0.96) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 35px rgba(139, 92, 246, 0.12);
+  margin-bottom: 45px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mfb-banner:hover {
+  transform: translateY(-3px);
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), 0 0 45px rgba(168, 85, 247, 0.22);
+}
+
+.mfb-glow {
+  position: absolute;
+  top: -80px;
+  right: -60px;
+  width: 420px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, rgba(59, 130, 246, 0.1) 50%, transparent 80%);
+  filter: blur(55px);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .mfb-banner {
+    grid-template-columns: 1fr;
+    padding: 26px 20px;
+    gap: 22px;
+  }
+}
+
+.mfb-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 2;
+}
+
+.mfb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.14);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  padding: 5px 12px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.mfb-badge-tag {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: #f3e8ff;
+}
+
+.mfb-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.mfb-title span {
+  background: linear-gradient(135deg, #a855f7 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mfb-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  max-width: 580px;
+}
+
+.mfb-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mfb-categories button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.mfb-categories button:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #f3e8ff;
+  transform: translateY(-1px);
+}
+
+.mfb-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.mfb-cta-btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+}
+
+.mfb-cta-primary {
+  background: linear-gradient(135deg, #9333ea, #3b82f6);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+}
+
+.mfb-cta-primary:hover {
+  background: linear-gradient(135deg, #a855f7, #60a5fa);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.55);
+}
+
+.mfb-cta-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f8fafc;
+}
+
+.mfb-cta-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+/* Right Vault Card */
+.mfb-right {
+  z-index: 2;
+}
+
+.mfb-vault {
+  background: rgba(10, 8, 16, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 18px;
+  padding: 18px 20px;
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.08);
+}
+
+.mfb-vault-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.mfb-vault-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mfb-vault-status {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mfb-vault-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mfb-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+.mfb-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #c084fc;
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.mfb-step-item strong {
+  color: #f8fafc;
+}
+
+.mfb-vault-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.mfb-vault-fee {
+  color: #38bdf8;
+  font-weight: 700;
+}

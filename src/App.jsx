@@ -22,6 +22,7 @@ const SearchPage = lazy(() => import('./pages/SearchPage.jsx'));
 const VibePage = lazy(() => import('./pages/VibePage.jsx'));
 const VibePlaygroundModal = lazy(() => import('./Components/VibePlaygroundModal.jsx'));
 const RepoCompareModal = lazy(() => import('./Components/RepoCompareModal.jsx'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage.jsx'));
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -98,6 +99,8 @@ export default function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/vibe" element={<VibePage />} />
           <Route path="/vibe/:category" element={<VibePage />} />
+          <Route path="/market" element={<MarketplacePage />} />
+          <Route path="/marketplace" element={<Navigate to="/market" replace />} />
 
           {/* /accountscenter/:section */}
           <Route
