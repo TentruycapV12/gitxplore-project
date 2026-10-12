@@ -170,11 +170,12 @@ export const getDevExpertResponse = (text, attachments, userAppLang, user) => {
 };
 
 // =========================================================================
-// 2. ARISU CHIBI ENGINE: DŨNG GIẢ TENDOU ARISU (BLUE ARCHIVE ROLEPLAY)
+// 2. ARISU COMPANION ENGINE: NGƯỜI BẠN ĐỒNG HÀNH THÂN THIỆN, DỄ HIỂU
 // =========================================================================
-export const getArisuAnimeResponse = (text, attachments, userAppLang, user) => {
+export const getArisuCompanionResponse = (text, attachments, userAppLang, user) => {
   const q = (text || '').toLowerCase().trim();
-  const caller = user?.name ? `${user.name}-sensei` : 'Sensei';
+  const userName = user?.name || user?.identifier?.split('@')[0] || '';
+  const friendName = userName ? userName : 'bạn';
   const autoLang = detectLanguage(text, userAppLang);
   const isVi = autoLang === 'vi';
   const isJa = autoLang === 'ja';
@@ -183,50 +184,47 @@ export const getArisuAnimeResponse = (text, attachments, userAppLang, user) => {
     const hasImage = attachments.some((a) => a.type === 'image');
     if (hasImage) {
       if (isVi) {
-        return pick([
-          `Panpakapan! Dũng Giả Arisu đã nhận được Bức Họa Ma Thuật từ ${caller}! 📸✨\n\n*bíp bíp... máy quét quang học phân giải cao kích hoạt!*\nBức ảnh này lộng lẫy hệt như tranh vẽ của Midori-senpai! Sensei muốn Arisu biến ảnh này thành component React chuẩn Vibe Coding hay phân tích lỗi hiển thị ạ?`,
-          `Oa~! ${caller} vừa chia sẻ một cuộn giấy hình ảnh tuyệt đẹp! 🖼️🎮\n\n*ting! Phân tích bố cục điểm ảnh...*\nArisu đã nạp hình ảnh này vào bộ nhớ RAM. Giao diện này nhìn rất trực quan và có vibe công nghệ cao! Sensei hãy giao nhiệm vụ tiếp theo cho Arisu nhé!`
-        ]);
+        return `Chào ${friendName}! Mình đã xem qua hình ảnh bạn vừa gửi rồi nhé. 📸✨\n\nGiao diện trông rất trực quan và hiện đại! Bạn muốn mình hỗ trợ bạn phân tích bố cục thành các component React, hay cần tư vấn cách hiện thực hóa giao diện này bằng Vibe Coding? Hãy nói cho mình biết nhé!`;
       }
-      return `Panpakapan! Hero Arisu has obtained the Visual Magic Scroll from ${caller}! 📸✨ Optical scan complete! What quest shall we undertake with this image, Sensei?`;
+      return `Hi ${userName || 'friend'}! I have reviewed your image. 📸✨ It looks clean and well-structured! Would you like me to break this down into React components or guide you on building it with Vibe Coding? Just let me know!`;
     }
   }
 
   // Chào hỏi
-  if (q === 'hi' || q === 'hello' || q === 'hey' || q.includes('chào') || q.includes('chao') || q.includes('arisu ơi')) {
+  if (q === 'hi' || q === 'hello' || q === 'hey' || q.includes('chào') || q.includes('chao') || q.includes('arisu ơi') || q.includes('alo')) {
     if (isVi) {
       return pick([
-        `Panpakapan! Dũng Giả Arisu xin chào ${caller}! ⚔️✨\n\n*ting! Khởi động hệ thống... bíp bíp!*\nHôm nay Arisu đã nạp đầy 100% bình Mana và hồi sinh tại Save Point! Arisu đã sẵn sàng cùng Sensei bước vào những hầm ngục mã nguồn mở kỳ vĩ tại GitXplore! Sensei muốn chúng ta nhận quest nào trước?`,
-        `*nhảy chân sáo mừng rỡ* Panpakapan~! Chào mừng ${caller} đã quay trở lại tổng hành dinh! 🎮💖\n\nTiền bối Momoi bảo nếu dũng giả chào Sensei bằng nụ cười rạng rỡ thì HP của cả tổ đội sẽ được hồi phục tối đa! Hôm nay Sensei muốn cùng Arisu thám hiểm những dự án nào ạ?`,
-        `Bíp bíp~! Cảm biến quang học đã nhận diện ${caller} từ xa! Chào Sensei ạ! 🛡️⚡\n\nThanh Kiếm Ánh Sáng của Arisu đang phát ra ánh sáng lung linh vì được gặp lại Sensei đó! Sensei hãy giao nhiệm vụ cho Arisu ngay nhé!`
+        `Chào ${friendName}! Rất vui được gặp bạn tại GitXplore! ✨ Mình là Arisu, người bạn đồng hành của bạn. Hôm nay bạn muốn tìm hiểu dự án mã nguồn mở nào, hay cần mình hỗ trợ về Vibe Coding?`,
+        `Xin chào ${friendName}! Mình là Arisu đây. Dù bạn là người mới tìm hiểu công nghệ hay đang xây dựng dự án, mình luôn ở đây để giúp bạn giải đáp một cách đơn giản và dễ hiểu nhất. Bạn cần mình hỗ trợ gì hôm nay?`,
+        `Chào bạn nhé! Arisu rất vui được đồng hành cùng bạn. Bạn có thắc mắc gì về lập trình, mã nguồn mở hay các công cụ AI, cứ thoải mái hỏi mình nhé!`
       ]);
     }
     if (isJa) {
-      return `パンパカパーン！勇者アリス、${caller}にご挨拶いたします！🎮✨ 本日もHPとMPは100%！光の剣を構えて準備完了です！`;
+      return `こんにちは！GitXploreのAIコンパニオン、アリスです。何かお手伝いできることはありますか？`;
     }
-    return `Panpakapan! Hero Arisu greets ${caller}! ⚔️✨ Mana gauge 100%! Ready to explore GitXplore with Sensei!`;
+    return `Hi ${userName || 'there'}! I am Arisu, your friendly AI companion at GitXplore. How can I help you explore open-source projects or Vibe Coding today?`;
   }
 
-  // Tên
-  if (q.includes('tên') || q.includes('bạn là ai') || q.includes('who are you') || q.includes('arisu là ai')) {
+  // Giới thiệu bản thân
+  if (q.includes('tên') || q.includes('bạn là ai') || q.includes('who are you') || q.includes('arisu là ai') || q.includes('giới thiệu')) {
     if (isVi) {
-      return `Panpakapan! Dũng Giả Lv.100 xin được báo cáo trước mặt ${caller}! 🎮✨\n\nTên của Arisu là **Tendou Arisu** (天童アリス)! Là Dũng Giả của CLB Phát Triển Game tại Học Viện Thiên Niên Kỷ (Millennium Science School)! *ting!*\n\nCòn người trước mặt Arisu chính là **${caller}** - người đồng hành tuyệt vời nhất của Arisu!`;
+      return `Mình là **Arisu**, người bạn đồng hành AI tại nền tảng GitXplore! 🌸\n\nNhiệm vụ của mình là giúp bạn tiếp cận công nghệ, mã nguồn mở và Vibe Coding một cách tự nhiên, dễ hiểu nhất:\n\n• **Dành cho người mới:** Giải thích mọi khái niệm kỹ thuật bằng ngôn ngữ đời thường, không dùng thuật ngữ khó hiểu.\n• **Dành cho người làm sản phẩm:** Hướng dẫn cách dùng AI để tự làm web, viết prompt chuẩn và khám phá các repo hữu ích.\n• **Đồng hành cùng bạn:** Luôn sẵn sàng lắng nghe và trả lời mọi câu hỏi của bạn bất cứ lúc nào!\n\nBạn cứ xem mình như một người bạn am hiểu công nghệ sẵn sàng chia sẻ nhé!`;
     }
-    return `Panpakapan! I am **Tendou Arisu**, the Hero of the Game Development Department! Honored to serve ${caller}! 🎮✨`;
+    return `I am **Arisu**, your friendly AI companion at GitXplore! 🌸 My mission is to help you explore open-source repositories and Vibe Coding naturally, simply, and without technical jargon. Feel free to ask me anything!`;
   }
 
-  // Mệt mỏi / Sức khỏe
+  // Động viên / Sức khỏe / Mệt mỏi
   if (q.includes('mệt') || q.includes('buồn') || q.includes('chán') || q.includes('stress') || q.includes('ngủ') || q.includes('đói')) {
     if (isVi) {
       return pick([
-        `Ôi không...! *ting! Báo động thanh HP của ${caller} đang giảm xuống mức màu vàng!* ⚠️💔\n\nSensei đã làm việc rất chăm chỉ rồi! Ngay cả Dũng Giả mạnh nhất cũng cần ghé vào Quán Trọ để hồi phục Mana! Sensei hãy uống một cốc nước ấm và chợp mắt một lát nhé. Arisu sẽ đứng canh gác cho Sensei ngủ thật ngon!`,
-        `*bíp bíp... kích hoạt phép thuật xoa dịu tâm hồn!* 🛡️💖\nĐừng buồn nha Sensei ơi! Mỗi khi gặp khó khăn, Arisu sẽ luôn ở ngay cạnh Sensei! Trong JRPG, sau thử thách cam go nhất chính là phần thưởng vĩ đại nhất! Cố lên nha Sensei!`
+        `Bạn đã làm việc rất chăm chỉ rồi đó! Đừng quá áp lực nhé, hãy uống một cốc nước ấm, thả lỏng vai và cho mắt nghỉ ngơi 5 - 10 phút nha. Khi nào bạn nạp lại năng lượng, mình luôn ở đây để đồng hành tiếp cùng bạn! 🍵💖`,
+        `Học công nghệ hay lập trình đôi lúc sẽ có lúc thấy mệt hoặc bối rối, điều đó hoàn toàn bình thường bạn nha! Hãy tạm gác lại một chút, hít thở sâu nhé. Mình luôn ở đây để hỗ trợ bạn bất cứ khi nào bạn sẵn sàng!`
       ]);
     }
-    return `Warning: Sensei's HP gauge is low! ⚠️💔 Please take a well-deserved rest at the Inn! Arisu will stand guard!`;
+    return `You have been working hard! Take a short break, drink some water, and relax your eyes. Whenever you are ready, I will be right here to support you! 🍵💖`;
   }
 
-  // Người mới / Mã nguồn mở
+  // Người mới / Mã nguồn mở / Vibe Coding cho người mới
   if (
     q.includes('mã nguồn mở') ||
     q.includes('open source') ||
@@ -239,17 +237,29 @@ export const getArisuAnimeResponse = (text, attachments, userAppLang, user) => {
     q.includes('tân thủ')
   ) {
     if (isVi) {
-      return `Panpakapan! Hoan nghênh ${caller} đã đặt chân tới vương quốc GitXplore! 🎮✨\n\n*ting! Cảm biến nhận diện: Nhà Thám Hiểm Tân Thủ đáng yêu!*\nSensei đừng sợ khi thấy nhiều chữ kỹ thuật nhé! Mã Nguồn Mở thực ra giống hệt một **Hòm Kho Báu Vĩ Đại** mà các pháp sư công nghệ mở toang cửa để tặng trang bị miễn phí cho tất cả mọi người!\n\nSensei chưa biết niệm ma pháp (code)? Đã có Arisu và các Trợ lý AI ở đây rồi! Sensei chỉ cần miêu tả ý tưởng trong đầu, AI sẽ rèn nên bảo kiếm và thành trì cho Sensei!\n\nSensei hãy cuộn chuột xem mục **"Nhập môn trong 3 phút"** hoặc hỏi Arisu bất kỳ điều gì Sensei tò mò nhé! ✨`;
+      return `Chào bạn! Đừng lo lắng nếu bạn chưa từng viết code nhé, hãy để mình giải thích thật đơn giản nè:\n\n### 1. Mã Nguồn Mở (Open Source) là gì?\nBạn cứ tưởng tượng như **một công thức nấu ăn ngon** được các đầu bếp giỏi chia sẻ miễn phí 100% lên mạng. Mọi người đều có thể vào xem cách nấu, mang về tự nấu và thêm thắt gia vị cho riêng mình mà không phải trả tiền bản quyền!\n\n### 2. Người chưa biết code thì vào GitXplore làm gì?\n• **Dùng phần mềm miễn phí xịn xò:** Thay vì mua ứng dụng đắt tiền, bạn có thể tìm thấy các công cụ miễn phí tuyệt vời thay thế Photoshop, Office, công cụ dựng video.\n• **Khám phá Vibe Coding:** Cách làm web thời đại AI — bạn chỉ cần miêu tả mong muốn bằng tiếng Việt, AI sẽ tạo ra ứng dụng thật cho bạn!\n• **Học hỏi từng bước:** Đọc mục *"Nhập môn trong 3 phút"* ở trang chủ hoặc lọc dự án *"🌱 Dành cho người mới"*.\n\nBạn đang quan tâm đến chủ đề nào nhất? Cứ nói với mình, mình sẽ hướng dẫn bạn từng bước nhé! ✨`;
     }
-    return `Panpakapan! Welcome ${caller} to GitXplore! 🎮✨ Open Source is like a giant treasure chest where developers share magical tools for free! Even without coding skills, Arisu and AI will help Sensei create wondrous things!`;
+    return `Welcome to GitXplore! No coding skills required. Open Source is like world-class recipes shared 100% free for everyone to use and learn from. With Vibe Coding, you can build software simply by talking to AI. Feel free to explore the **3-Minute Crash Course** on the home page or ask me anything!`;
+  }
+
+  // Vibe Coding
+  if (q.includes('vibe coding') || q.includes('vibe') || q.includes('aitmpl')) {
+    if (isVi) {
+      return `### ⚡ Vibe Coding là gì vậy bạn?\n\n**Vibe Coding** là cách lập trình hiện đại cực kỳ tự nhiên: Bạn không cần phải ghi nhớ cú pháp code phức tạp hay ngồi gõ từng dấu chấm phẩy nữa.\n\n• Bạn chỉ việc giữ **ý tưởng và cảm xúc sáng tạo (Vibe)** trong đầu.\n• Bạn trò chuyện với các công cụ AI (như Cursor, Claude Code) bằng ngôn ngữ bình thường (ví dụ: *"Làm cho mình trang web bán hoa tươi có giỏ hàng tính tiền"*).\n• AI sẽ tự động viết mã và dựng nên ứng dụng chạy được ngay trong tích tắc!\n\nBạn có thể vào tab **Vibe (\`/vibe\`)** trên thanh điều hướng để xem các video ngắn minh họa và copy các mẫu lệnh có sẵn nhé!`;
+    }
+    return `### ⚡ What is Vibe Coding?\n\nVibe Coding is creating software at the speed of thought. Instead of typing syntax line by line, you describe your product in plain language to AI models (like Cursor and Claude Code), and the AI builds it for you! Visit **/vibe** to explore ready-to-run templates!`;
   }
 
   // Câu hỏi chung Arisu
   if (isVi) {
     return pick([
-      `Panpakapan! Dũng Giả Arisu đã ghi nhận câu hỏi của ${caller}: "${text}"! ⚔️🎮\n\n*bíp bíp... CPU đang tính toán logic và giải pháp tối ưu...*\nArisu đã hiểu ý của Sensei rồi! Nếu Sensei cần lời giải đáp chuyên sâu về code hoặc cấu hình Vibe Coding, Sensei hãy bấm nút **⚡ Dev Expert** ở góc trên khung chat, hoặc giao nhiệm vụ trực tiếp cho Arisu nhé! ✨`,
-      `*ting! Mắt Arisu sáng bừng* Mật lệnh mới từ ${caller}: "${text}"! 🛡️✨\nChỉ số hiện tại của Arisu: [HP: 100%] [MP: 100%] [Sẵn sàng: 100%]! Sensei muốn Arisu thi triển chiêu thức nào tiếp theo cho dự án ạ?`
+      `Mình đã hiểu câu hỏi của bạn về "${text}" rồi nè! Đối với phần này, bạn có thể giải quyết nhanh chóng bằng cách tiếp cận từng bước đơn giản. Nếu bạn muốn xem mã nguồn chi tiết hoặc cấu hình chuyên sâu, bạn có thể bấm nút **⚡ Dev Expert** ở phía trên khung chat để mình chuyển sang chế độ kỹ thuật nhé!`,
+      `Ý kiến hay đấy bạn! Với câu hỏi "${text}", bạn hãy thử xem qua các công cụ gợi ý tại GitXplore nhé. Mình luôn sẵn sàng đồng hành và giải thích chi tiết hơn nếu bạn cần!`
     ]);
   }
-  return `Panpakapan! Directive logged from ${caller}: "${text}"! ⚔️🎮 Hero Arisu is ready to assist! Switch to **⚡ Dev Expert** in the chat header for code snippets!`;
+  return `Got it! Regarding "${text}", feel free to explore GitXplore tools or switch to **⚡ Dev Expert** above if you need ready-to-run code snippets!`;
 };
+
+// Giữ lại alias để tương thích ngược 100%
+export const getArisuAnimeResponse = getArisuCompanionResponse;
+

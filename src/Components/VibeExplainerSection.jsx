@@ -267,15 +267,15 @@ export default function VibeExplainerSection({ onClose }) {
           {/* Mẹo Vibe Coding */}
           <div className="vbe-tips-row">
             <div className="vbe-tip-item">
-              <strong>🎯 1. Rõ ràng về mong muốn</strong>
+              <strong>🎯 {lang === 'vi' ? '1. Rõ ràng về mong muốn' : '1. Be Clear on Goals'}</strong>
               <p>{lang === 'vi' ? 'Miêu tả cụ thể màu sắc, các nút bấm và hành động khi người dùng click vào.' : 'Describe buttons, colors, and user interactions specifically.'}</p>
             </div>
             <div className="vbe-tip-item">
-              <strong>🪜 2. Đi từng bước nhỏ</strong>
+              <strong>🪜 {lang === 'vi' ? '2. Đi từng bước nhỏ' : '2. Take Small Iterative Steps'}</strong>
               <p>{lang === 'vi' ? 'Bảo AI làm giao diện trước, sau đó mới thêm các tính năng nâng cao tiếp theo.' : 'Ask AI to generate UI first, then add deeper features step by step.'}</p>
             </div>
             <div className="vbe-tip-item">
-              <strong>⚡ 3. Dùng Vibe Rules chuẩn</strong>
+              <strong>⚡ {lang === 'vi' ? '3. Dùng Vibe Rules chuẩn' : '3. Use Verified Vibe Rules'}</strong>
               <p>{lang === 'vi' ? 'Dán file .cursorrules từ GitXplore vào để AI code chuẩn kiến trúc, không bị lỗi vặt.' : 'Use verified .cursorrules from GitXplore to keep AI output spotless.'}</p>
             </div>
           </div>

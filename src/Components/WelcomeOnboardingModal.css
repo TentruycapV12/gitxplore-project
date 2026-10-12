@@ -6,12 +6,14 @@
 .ob-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(12px);
-  z-index: 9999;
-  display: grid;
-  place-items: center;
-  padding: 20px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
   animation: obFadeIn 0.25s ease-out;
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: #f3f4f6;
@@ -25,11 +27,13 @@
 .ob-modal-card {
   width: 100%;
   max-width: 680px;
+  max-height: 90vh;
+  margin: auto;
   background: #120909;
   border: 1px solid rgba(245, 158, 11, 0.35);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(245, 158, 11, 0.16);
   border-radius: 24px;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   animation: obScaleUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);

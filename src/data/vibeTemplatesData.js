@@ -1204,3 +1204,137 @@ Includes:
     exampleOutput: `Successfully bootstrapped 15 components into your workspace.`,
   },
 ];
+
+export const VIBE_TEMPLATES_EN = {
+  'frontend-vibe-wizard': {
+    shortDesc: 'Craft modern Apple/Linear-style interfaces with smooth animations using GSAP and Tailwind CSS.',
+    fullDesc: 'Comprehensive guide instructing AI models to craft stunning React components, high-end micro-interactions, responsive layouts, and 60fps animations.',
+  },
+  'clean-code-refactor': {
+    shortDesc: 'Refactor legacy code into clean modular architecture adhering to SOLID, DRY, and separation of concerns.',
+    fullDesc: 'Deep refactoring protocol enforcing clean module architecture, decoupling business logic from UI, and eliminating technical debt.',
+  },
+  'deep-researcher': {
+    shortDesc: 'Inspect entire codebases, generate architectural diagrams, detect logic flaws, and map data flows.',
+    fullDesc: 'Comprehensive codebase exploration agent that reads directories, tracks state pipelines, and maps dependencies.',
+  },
+  'test-driven-development': {
+    shortDesc: 'Auto-generate comprehensive test suites covering 100% edge cases with mocks for Vitest/Jest and Playwright.',
+    fullDesc: 'Unit, integration, and E2E test suite generator delivering resilient tests and deterministic fixtures.',
+  },
+  'database-architect': {
+    shortDesc: 'Design relational schemas, optimize B-Tree/GIN indexes, and configure Row-Level Security (RLS) for Supabase.',
+    fullDesc: 'Production PostgreSQL schema design, indexing strategies, migrations, and strict RLS security policies.',
+  },
+  'seo-web-performance': {
+    shortDesc: 'Optimize web performance for 100 Lighthouse score with bundle compression, font optimization, and lazy loading.',
+    fullDesc: 'Core Web Vitals optimizer minimizing bundle sizes, eliminating layout shifts, and implementing modern caching strategies.',
+  },
+  'api-design-spec': {
+    shortDesc: 'Design REST & OpenAPI 3.1 specs with Zod schema validation, standardized status codes, and resilient error formats.',
+    fullDesc: 'Industry-standard API specification system including OpenAPI 3.1 documentation, Zod schemas, and contract tests.',
+  },
+  'security-audit-sentinel': {
+    shortDesc: 'Scan codebases for OWASP Top 10 vulnerabilities, XSS, SQL Injection, API key leaks, and RBAC authorization flaws.',
+    fullDesc: 'Defensive code scanning protocol verifying input sanitization, CSRF protections, and credential safety.',
+  },
+  'fullstack-autonomous-agent': {
+    shortDesc: 'Autonomous AI engineer that plans tasks, writes frontend & backend code, runs tests, and commits incrementally.',
+    fullDesc: 'Multi-step autonomous software engineer that reads requirements, formulates plans, implements code, and verifies builds.',
+  },
+  'qa-sentinel-agent': {
+    shortDesc: 'Automated QA agent detecting regression bugs, synthesizing boundary test cases, and identifying conflicting logic.',
+    fullDesc: 'Quality assurance agent that evaluates diffs, generates reproducible test scenarios, and checks assertions.',
+  },
+  'devops-cloud-agent': {
+    shortDesc: 'Generate optimized multi-stage Dockerfiles, GitHub Actions CI/CD workflows, and Vercel/Cloudflare deployments.',
+    fullDesc: 'Cloud infrastructure automator generating hardened Docker images, automated release pipelines, and edge deployments.',
+  },
+  'uiux-design-lead-agent': {
+    shortDesc: 'Design distinctive interfaces with curated color palettes, typographic rhythm, and design system tokens.',
+    fullDesc: 'Design systems lead agent providing bespoke styling tokens, WCAG contrast compliance, and responsive rules.',
+  },
+  'legacy-migrator-agent': {
+    shortDesc: 'Seamlessly migrate legacy React (Class components, CRA) to modern React 19 + Vite with functional hooks.',
+    fullDesc: 'Modernization agent upgrading deprecated patterns, converting class lifecycles to hooks, and setting up Vite.',
+  },
+  'cmd-slash-plan': {
+    shortDesc: 'The /plan command: Break down complex user requirements into actionable step-by-step implementation blueprints.',
+    fullDesc: 'Structural planning command that explores codebase architecture before producing an executable implementation plan.',
+  },
+  'cmd-slash-review': {
+    shortDesc: 'The /review command: Inspect current git diffs, score code quality, and recommend critical improvements.',
+    fullDesc: 'Senior code review command providing line-by-line constructive critique, bug detection, and linting checks.',
+  },
+  'cmd-slash-commit': {
+    shortDesc: 'The /commit command: Analyze staged changes and craft concise Conventional Commit messages (feat/fix/refactor).',
+    fullDesc: 'Commit generator command evaluating git status and diffs to generate semantic commit messages.',
+  },
+  'cmd-slash-test': {
+    shortDesc: 'The /test command: Automatically detect modified files and synthesize immediate edge-case test suites.',
+    fullDesc: 'Instant test generation command targeting recently touched files to prevent regressions.',
+  },
+  'cmd-slash-explain': {
+    shortDesc: 'The /explain command: Explain complex code in dual depths: Beginner (ELI5) and Senior Architect perspectives.',
+    fullDesc: 'Dual-depth explanation tool providing both high-level analogies and deep architectural mechanisms.',
+  },
+  'mcp-postgres': {
+    shortDesc: 'PostgreSQL MCP server enabling AI to query schemas, inspect tables, and run secure SQL queries.',
+    fullDesc: 'Model Context Protocol integration providing database introspection and secure query capabilities.',
+  },
+  'mcp-github': {
+    shortDesc: 'GitHub MCP server: Create PRs, inspect issues, search repositories, and comment on code directly from terminal.',
+    fullDesc: 'Model Context Protocol tools for complete GitHub repository management and collaboration directly in AI.',
+  },
+  'mcp-puppeteer': {
+    shortDesc: 'Puppeteer Browser Automation MCP: Launch real browsers, capture screenshots, test responsiveness, and crawl dynamic DOM.',
+    fullDesc: 'Headless browser automation tool empowering AI agents to visually inspect web pages and test client behavior.',
+  },
+  'mcp-brave-search': {
+    shortDesc: 'Brave Search API MCP: Real-time web retrieval keeping AI models up-to-date with 2026 library releases.',
+    fullDesc: 'Live web search integration fetching official documentation, changelogs, and answers to modern coding problems.',
+  },
+  'mcp-filesystem-secure': {
+    shortDesc: 'Secure Local Filesystem MCP: Safe read and write operations scoped strictly within designated directories.',
+    fullDesc: 'Controlled filesystem bridge preventing unauthorized path traversals while facilitating multi-file edits.',
+  },
+  'cursorrules-modern-react': {
+    shortDesc: 'Battle-tested .cursorrules for React 19: Strict clean code, anti-hallucination protocols, and token optimization.',
+    fullDesc: 'Production-ready system rules configuration forcing concise outputs, idiomatic hook usage, and type safety.',
+  },
+  'claude-code-guidelines': {
+    shortDesc: 'Production CLAUDE.md template: Instructs Claude Code on project structure, test scripts, and commit standards.',
+    fullDesc: 'Standard project guidelines guiding Claude Code on build commands, test patterns, and architectural boundaries.',
+  },
+  'antigravity-system-rule': {
+    shortDesc: 'RULE.md guidelines: Respect existing comments and format clickable file:// markdown links for seamless navigation.',
+    fullDesc: 'Core guidelines for Antigravity pairing sessions ensuring documentation integrity and clickable references.',
+  },
+  'strict-typescript-standards': {
+    shortDesc: 'Strict Zero-Any TypeScript rules: Zero `any` tolerance, disciplined discriminated unions, and type narrowing.',
+    fullDesc: 'Strict typing guidelines enforcing sound types, comprehensive generics, and runtime schema validations.',
+  },
+  'git-precommit-gatekeeper': {
+    shortDesc: 'Automated Git pre-commit hook verifying syntax, formatting with Prettier, and running quick unit tests.',
+    fullDesc: 'Local verification hook preventing malformed code and failing tests from entering repository branches.',
+  },
+  'auto-docstring-generator': {
+    shortDesc: 'Automated hook syncing Markdown documentation and generating typed JSDoc for exported functions upon save.',
+    fullDesc: 'Documentation synchronization hook keeping project READMEs and JSDoc signatures updated.',
+  },
+  'sidecar-dev-terminal': {
+    shortDesc: 'Integrated Sidecar panel: Live terminal logs, quick git status overview, and interactive preview server controls.',
+    fullDesc: 'Interactive developer sidecar extension for real-time monitoring of terminal streams and project state.',
+  },
+  'ai-template-bundle-pack': {
+    shortDesc: 'Complete Vibe Coding pack containing 15+ skills, 5 agents, and full .cursorrules configuration for teams.',
+    fullDesc: 'All-in-one starter bundle packaging production skills, autonomous agents, and system rules into one installable package.',
+  },
+};
+
+export function getVibeDesc(item, lang = 'vi', field = 'shortDesc') {
+  if (lang === 'vi') return item?.[field] || '';
+  const en = VIBE_TEMPLATES_EN[item?.id];
+  return en?.[field] || item?.[field] || '';
+}
+

@@ -34,9 +34,16 @@ import { getDevExpertResponse, getArisuAnimeResponse, detectLanguage } from './a
 // Gọi Supabase Edge Function 'chat-ai' (LLM Gemini/Groq), tự động fallback về offline engine
 async function requestAIResponse(textToSend, currentAttachments, lang, user, aiMode) {
   try {
+    const isVi = lang === 'vi';
+    const personaInstruction = aiMode === 'dev'
+      ? `[CHỈ ĐẠO BẮT BUỘC: Bạn là Trợ lý Lập trình viên Cấp cao của GitXplore. Trả lời súc tích, đi thẳng vào trọng tâm, code mẫu sạch, giải thích rõ ràng và thiết thực. Ngôn ngữ phản hồi: ${isVi ? 'tiếng Việt' : 'English'}].\n\n`
+      : `[CHỈ ĐẠO BẮT BUỘC: Bạn là Arisu - người bạn đồng hành AI thông minh, ấm áp và thân thiện của GitXplore. Tuyệt đối KHÔNG dùng các từ Panpakapan, Dũng giả, Sensei, hầm ngục, HP, Mana hay nhập vai game. Hãy trò chuyện tự nhiên như một người bạn thân, xưng "mình" gọi "bạn", nói đúng trọng tâm, đơn giản, dễ hiểu và giúp người dùng tiếp cận công nghệ một cách tự nhiên nhất. Ngôn ngữ phản hồi: ${isVi ? 'tiếng Việt' : 'English'}].\n\n`;
+
+    const fullPrompt = personaInstruction + textToSend;
+
     const { data, error } = await supabase.functions.invoke('chat-ai', {
       body: {
-        prompt: textToSend,
+        prompt: fullPrompt,
         mode: aiMode,
         appLang: lang,
         userName: user?.name || user?.identifier || null,
@@ -225,8 +232,8 @@ export default function ArisuAIAssistant() {
           id: 'welcome-1',
           sender: 'ai',
           text: lang === 'vi'
-            ? 'Chào bạn! Tôi là Trợ lý Kỹ thuật & Vibe Coding của GitXplore. Tôi có thể hỗ trợ bạn viết code, giải đáp React/Vite/CSS, phân tích lỗi hoặc chia sẻ cấu hình .cursorrules & MCP Servers. Bạn cũng có thể bấm chuyển đổi sang chế độ **🌸 Arisu Chibi** bất kỳ lúc nào!'
-            : 'Welcome! I am GitXplore Developer & Vibe Coding Assistant. I can assist with React, Vite, CSS, bug triage, .cursorrules and MCP servers. You can also switch to **🌸 Arisu Chibi** mode anytime!',
+            ? 'Chào bạn! Mình là Trợ lý AI đồng hành của GitXplore. Mình có thể hỗ trợ bạn tìm hiểu mã nguồn mở, Vibe Coding, giải đáp React/Vite/CSS, phân tích lỗi hoặc chia sẻ cấu hình .cursorrules & MCP. Dù bạn là người mới hay lập trình viên, mình luôn ở đây để hỗ trợ bạn thật đơn giản, tự nhiên và đúng trọng tâm!'
+            : 'Welcome! I am your GitXplore AI Assistant & Companion. I can help you explore open source, guide you through Vibe Coding, triage React/Vite/CSS bugs, or share .cursorrules and MCP setups simply and clearly. How can I help you today?',
           timestamp: Date.now(),
         },
       ]);
@@ -561,7 +568,7 @@ export default function ArisuAIAssistant() {
                   gap: '6px'
                 }}
               >
-                <span>⚡</span> Dev Expert Mode
+                <span>⚡</span> {lang === 'vi' ? 'Chế độ Kỹ thuật (Dev)' : 'Dev Expert Mode'}
               </button>
               <button
                 type="button"
@@ -583,7 +590,7 @@ export default function ArisuAIAssistant() {
                   gap: '6px'
                 }}
               >
-                <span>🌸</span> Arisu Chibi Mode
+                <span>🌸</span> {lang === 'vi' ? 'Bạn Đồng Hành Arisu' : 'Arisu Companion'}
               </button>
             </div>
           </div>
@@ -596,7 +603,7 @@ export default function ArisuAIAssistant() {
               style={{ background: 'rgba(16, 185, 129, 0.22)', borderColor: 'rgba(16, 185, 129, 0.45)', color: '#6ee7b7' }}
               onClick={() => handleChipClick(lang === 'vi' ? 'Mã nguồn mở là gì? Giải thích siêu đơn giản cho người chưa biết code!' : 'What is open source? Explain simply for beginners!')}
             >
-              🌱 Mã nguồn mở là gì?
+              🌱 {lang === 'vi' ? 'Mã nguồn mở là gì?' : 'What is Open Source?'}
             </button>
             <button
               type="button"
@@ -604,7 +611,7 @@ export default function ArisuAIAssistant() {
               style={{ background: 'rgba(16, 185, 129, 0.22)', borderColor: 'rgba(16, 185, 129, 0.45)', color: '#6ee7b7' }}
               onClick={() => handleChipClick(lang === 'vi' ? 'Tôi không biết code thì dùng trang web này làm gì?' : 'I do not know how to code, what can I do on this website?')}
             >
-              🚀 Chưa biết code làm gì?
+              🚀 {lang === 'vi' ? 'Chưa biết code làm gì?' : 'What if I cannot code?'}
             </button>
             {aiMode === 'dev' ? (
               <>
@@ -613,7 +620,7 @@ export default function ArisuAIAssistant() {
                   className="arisu-chip"
                   onClick={() => handleChipClick(lang === 'vi' ? 'Hướng dẫn cấu hình .cursorrules chuẩn Vibe Coding?' : 'How to configure .cursorrules for Vibe Coding?')}
                 >
-                  ⚡ Mẫu .cursorrules
+                  ⚡ {lang === 'vi' ? 'Mẫu .cursorrules' : '.cursorrules template'}
                 </button>
                 <button
                   type="button"
@@ -627,7 +634,7 @@ export default function ArisuAIAssistant() {
                   className="arisu-chip"
                   onClick={() => handleChipClick(lang === 'vi' ? 'Làm sao để sửa lỗi CORS trong Vite và React?' : 'How to fix CORS error in Vite and React?')}
                 >
-                  🛠️ Khắc phục CORS
+                  🛠️ {lang === 'vi' ? 'Khắc phục CORS' : 'Fix CORS Error'}
                 </button>
               </>
             ) : (
@@ -635,16 +642,23 @@ export default function ArisuAIAssistant() {
                 <button
                   type="button"
                   className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Làm sao để dùng các mẫu Vibe Coding?' : 'How to use Vibe Coding templates?')}
+                  onClick={() => handleChipClick(lang === 'vi' ? 'Vibe Coding là gì? Hướng dẫn người mới bắt đầu.' : 'What is Vibe Coding? Beginner guide.')}
                 >
-                  {t('arisu_chip_vibe')}
+                  💡 {lang === 'vi' ? 'Vibe Coding là gì?' : 'What is Vibe Coding?'}
                 </button>
                 <button
                   type="button"
                   className="arisu-chip"
-                  onClick={() => handleChipClick(lang === 'vi' ? 'Arisu là ai trong Blue Archive?' : 'Who is Arisu in Blue Archive?')}
+                  onClick={() => handleChipClick(lang === 'vi' ? 'Làm sao để dùng các mẫu Vibe Coding tại GitXplore?' : 'How to use Vibe Coding templates?')}
                 >
-                  {t('arisu_chip_who')}
+                  🚀 {lang === 'vi' ? 'Cách dùng mẫu Vibe' : 'How to use Vibe templates'}
+                </button>
+                <button
+                  type="button"
+                  className="arisu-chip"
+                  onClick={() => handleChipClick(lang === 'vi' ? 'Arisu có thể giúp mình những gì trên web này?' : 'How can Arisu help me on GitXplore?')}
+                >
+                  🌸 {lang === 'vi' ? 'Arisu giúp được gì?' : 'How can Arisu help?'}
                 </button>
               </>
             )}

@@ -65,13 +65,6 @@ export default function TopNav() {
   const { unreadCount } = useNotifications();
   const rootRef = useRef(null);
 
-  // Tự động hiển thị hướng dẫn lần đầu đăng nhập
-  useEffect(() => {
-    if (user?.identifier && !localStorage.getItem(`gx_onboard_done_${user.identifier}`)) {
-      setShowOnboarding(true);
-    }
-  }, [user]);
-
   useEffect(() => {
     if (pathname === '/search') setQuery(new URLSearchParams(search).get('q') || '');
   }, [pathname, search]);
@@ -195,7 +188,7 @@ export default function TopNav() {
           }}
         >
           <span>🔍</span>
-          <span style={{ opacity: 0.85 }}>Tìm kiếm...</span>
+          <span style={{ opacity: 0.85 }}>{lang === 'vi' ? 'Tìm kiếm...' : 'Search...'}</span>
           <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#fef08a' }}>⌘K</kbd>
         </button>
 

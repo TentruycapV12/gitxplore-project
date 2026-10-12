@@ -440,20 +440,20 @@ const E = {
   vb_modal_tab_install: ['Lệnh Cài Đặt (CLI & Config)', 'Installation (CLI & Config)', 'インストール (CLI & Config)', '安装命令 (CLI 与配置)', '설치 명령어 (CLI 및 설정)', 'Installation (CLI & Config)', 'Installation (CLI & Konfig)', 'Instalación (CLI y config)', 'Установка (CLI и конфиг)', 'Instalação (CLI e config)'],
   vb_modal_tab_example: ['Mã Mẫu / Kết Quả', 'Code Example / Output', 'サンプルコード / 出力', '代码示例 / 产出', '예시 코드 / 결과', 'Exemple de code / Sortie', 'Codebeispiel / Ausgabe', 'Ejemplo de código / Salida', 'Пример кода / Результат', 'Exemplo de código / Saída'],
 
-  // ---------- Arisu AI Assistant (Blue Archive) ----------
-  arisu_title: ['Arisu • Trợ lý AI Blue Archive', 'Arisu • Blue Archive AI Assistant', 'アリス • ブルーアーカイブ AIアシスタント', '爱丽丝 • 蔚蓝档案 AI 助手机人', '아리스 • 블루 아카이브 AI 어시스턴트', 'Arisu • Assistante IA Blue Archive', 'Arisu • Blue Archive KI-Assistentin', 'Arisu • Asistente IA Blue Archive', 'Арису • ИИ-помощница Blue Archive', 'Arisu • Assistente IA Blue Archive'],
-  arisu_sub: ['Panpakapan! Dũng giả Arisu sẵn sàng hỗ trợ!', 'Panpakapan! Hero Arisu is ready to assist!', 'パンパカパーン！勇者アリス、準備完了です！', '邦邦咔邦！勇者爱丽丝已准备就绪！', '빵파레! 용사 아리스가 도울 준비가 되었습니다!', 'Panpakapan ! L’héroïne Arisu est prête !', 'Panpakapan! Heldin Arisu ist einsatzbereit!', '¡Panpakapan! ¡La heroína Arisu está lista!', 'Панпакапан! Герой Арису готова помочь!', 'Panpakapan! A heroína Arisu está pronta!'],
+  // ---------- Arisu AI Assistant (Friendly Companion) ----------
+  arisu_title: ['Arisu • Bạn Đồng Hành AI', 'Arisu • Friendly AI Companion', 'アリス • AIコンパニオン', '爱丽丝 • AI智能伙伴', '아리스 • AI 동반자', 'Arisu • Compagne IA', 'Arisu • KI-Begleiterin', 'Arisu • Compañera IA', 'Арису • ИИ-компаньон', 'Arisu • Companheira IA'],
+  arisu_sub: ['Người bạn đồng hành hỗ trợ công nghệ & Vibe Coding', 'Friendly AI companion for tech & Vibe Coding', 'テクノロジーとVibe Codingの親身なガイド', '科技与 Vibe 编程的贴心向导', '기술과 바이브 코딩의 친절한 안내자', 'Guide bienveillant pour la tech et le Vibe Coding', 'Freundliche Begleiterin für Tech & Vibe Coding', 'Guía amigable para tecnología y Vibe Coding', 'Дружелюбный гид по технологиям и Vibe Coding', 'Guia amigável para tecnologia e Vibe Coding'],
   arisu_welcome: [
-    'Panpakapan! Em là Arisu, dũng giả từ CLB Phát triển Game Millenium! 🎮 Em có thể giải đáp mọi thắc mắc về mã nguồn mở GitXplore, hướng dẫn Vibe Coding, giải thích code hoặc trả lời file/ảnh của bạn! Em có thể giúp gì cho bạn hôm nay?',
-    'Panpakapan! I am Arisu, the hero from Millennium Game Development Dept! 🎮 I can answer any questions about GitXplore open-source repos, guide you through Vibe Coding, explain code, and analyze files/images. How can I assist you today?',
-    'パンパカパーン！ミレニアムゲーム開発部の勇者、アリスです！🎮 GitXploreのオープンソースやVibe Codingの解説、コードの質問、画像やファイルの確認など何でも聞いてください！本日はどのようなクエストでしょうか？',
-    '邦邦咔邦！我是千年游戏开发部的勇者爱丽丝！🎮 我可以解答关于 GitXplore 开源项目、Vibe 编程的所有疑问，还能解析代码以及您发送的文件与图片！今天有什么任务交给我吗？',
-    '빵파레! 밀레니엄 게임개발부의 용사 아리스입니다! 🎮 GitXplore 오픈소스 프로젝트와 바이브 코딩 안내, 코드 설명 및 업로드한 파일/사진 분석까지 무엇이든 물어보세요! 오늘은 어떤 퀘스트인가요?',
-    'Panpakapan ! Je suis Arisu, l’héroïne du club de dev de jeux de Millennium ! 🎮 Je peux répondre à toutes vos questions sur GitXplore, le Vibe Coding, expliquer du code ou examiner vos fichiers et images. Comment puis-je aider aujourd’hui ?',
-    'Panpakapan! Ich bin Arisu, die Heldin aus dem Millennium-Spieleentwicklungsclub! 🎮 Ich kann alle Fragen zu GitXplore, Vibe Coding beantworten, Code erklären oder Dateien/Bilder analysieren. Wie kann ich heute helfen?',
-    '¡Panpakapan! ¡Soy Arisu, la heroína del Departamento de Desarrollo de Juegos de Millennium! 🎮 Puedo resolver dudas sobre GitXplore, guiarte en Vibe Coding, explicar código y analizar archivos o imágenes. ¿En qué puedo ayudar hoy?',
-    'Панпакапан! Я Арису, герой из Клуба разработки игр Миллениума! 🎮 Отвечу на любые вопросы о GitXplore, Vibe Coding, коде, файлах или изображениях. Какое задание у вас сегодня?',
-    'Panpakapan! Eu sou a Arisu, a heroína do Clube de Desenvolvimento de Jogos da Millennium! 🎮 Posso tirar dúvidas sobre o GitXplore, guiar no Vibe Coding, explicar código e analisar arquivos e imagens. Como posso ajudar hoje?'
+    'Chào bạn! Mình là Arisu, người bạn đồng hành của bạn tại GitXplore. Mình ở đây để giúp bạn hiểu về mã nguồn mở, Vibe Coding và công nghệ một cách đơn giản, tự nhiên và dễ hiểu nhất. Bạn cần tìm hiểu gì hôm nay nè?',
+    'Hi there! I am Arisu, your friendly AI companion at GitXplore. I am here to help you explore open source, Vibe Coding, and tech simply, clearly, and naturally. What would you like to explore today?',
+    'こんにちは！GitXploreのAIコンパニオン、アリスです。オープンソースやVibe Coding、プログラミングについて分かりやすくシンプルにお答えします。本日は何をお手伝いしましょうか？',
+    '你好！我是 Arisu，你在 GitXplore 的 AI 智能伙伴。无论你是初学者还是开发者，我都会用最自然、直观的方式为你解答开源与编程问题。今天有什么想了解的呢？',
+    '안녕하세요! GitXplore의 AI 동반자 아리스입니다. 오픈소스, Vibe 코딩 및 개발 정보를 쉽고 자연스럽게 안내해 드릴게요. 오늘 어떤 점이 궁금하신가요?',
+    'Bonjour ! Je suis Arisu, votre compagne IA sur GitXplore. Je suis là pour vous aider à explorer l’open source et le Vibe Coding de manière simple et naturelle.',
+    'Hallo! Ich bin Arisu, deine freundliche KI-Begleiterin auf GitXplore. Ich helfe dir dabei, Open Source und Vibe Coding einfach und verständlich zu verstehen.',
+    '¡Hola! Soy Arisu, tu compañera de IA en GitXplore. Estoy aquí para ayudarte a entender el código abierto y el Vibe Coding de forma sencilla y directa.',
+    'Привет! Я Арису, твой дружелюбный ИИ-гид по GitXplore. Помогу разобраться в открытом коде и Vibe Coding просто, понятно и без лишних сложностей.',
+    'Olá! Eu sou a Arisu, sua companheira de IA no GitXplore. Estou aqui para ajudar você a explorar código aberto e Vibe Coding de forma simples e natural.'
   ],
   arisu_ph: [
     'Nhắn tin, dán link hoặc ghi âm hỏi Arisu...',
@@ -486,7 +486,7 @@ const E = {
   arisu_chip_vibe: ['🚀 Tìm mẫu Vibe Coding', '🚀 Explore Vibe templates', '🚀 Vibe テンプレートを探す', '🚀 查找 Vibe 编程模版', '🚀 바이브 템플릿 찾기', '🚀 Explorer modèles Vibe', '🚀 Vibe-Vorlagen erkunden', '🚀 Explorar plantillas Vibe', '🚀 Шаблоны Vibe Coding', '🚀 Explorar modelos Vibe'],
   arisu_chip_save: ['⭐ Cách lưu repo?', '⭐ How to save a repo?', '⭐ リポジトリの保存方法は？', '⭐ 如何收藏代码库？', '⭐ 저장소 저장 방법은?', '⭐ Comment sauvegarder un dépôt ?', '⭐ Wie speichere ich ein Repo?', '⭐ ¿Cómo guardar un repo?', '⭐ Как сохранить репо?', '⭐ Como salvar um repositório?'],
   arisu_chip_security: ['🛡️ Bảo mật tài khoản', '🛡️ Account security', '🛡️ アカウントセキュリティ', '🛡️ 账号安全中心', '🛡️ 계정 보안', '🛡️ Sécurité du compte', '🛡️ Kontosicherheit', '🛡️ Seguridad de la cuenta', '🛡️ Безопасность аккаунта', '🛡️ Segurança da conta'],
-  arisu_chip_who: ['🎮 Arisu là ai thế?', '🎮 Who is Arisu?', '🎮 アリスって誰？', '🎮 爱丽丝是谁？', '🎮 아리스는 누구인가요?', '🎮 Qui est Arisu ?', '🎮 Wer ist Arisu?', '🎮 ¿Quién es Arisu?', '🎮 Кто такая Арису?', '🎮 Quem é a Arisu?'],
+  arisu_chip_who: ['💡 Arisu giúp được gì?', '💡 How can Arisu help?', '💡 アリスができることは？', '💡 爱丽丝能帮什么忙？', '💡 아리스는 무엇을 돕나요?', '💡 Que peut faire Arisu ?', '💡 Wie kann Arisu helfen?', '💡 ¿Cómo puede ayudar Arisu?', '💡 Чем может помочь Арису?', '💡 Como Arisu pode ajudar?'],
   arisu_floating_hint: ['Hỏi Arisu AI ✨', 'Ask Arisu AI ✨', 'アリスAIに質問 ✨', '咨询爱丽丝 AI ✨', '아리스 AI에게 질문 ✨', 'Demander à Arisu IA ✨', 'Arisu KI fragen ✨', 'Preguntar a Arisu IA ✨', 'Спросить Арису ИИ ✨', 'Perguntar para Arisu IA ✨'],
 
   // ---------- Thông báo Hệ thống Thực tế (Notifications) ----------

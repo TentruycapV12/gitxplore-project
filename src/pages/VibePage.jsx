@@ -5,7 +5,7 @@ import Footer from '../Components/Footer.jsx';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
-import { VIBE_CATEGORIES, VIBE_ENGINES, VIBE_TEMPLATES } from '../data/vibeTemplatesData';
+import { VIBE_CATEGORIES, VIBE_ENGINES, VIBE_TEMPLATES, getVibeDesc } from '../data/vibeTemplatesData';
 import { downloadZipBundle } from '../lib/zipExport';
 import VibeExplainerSection from '../Components/VibeExplainerSection.jsx';
 import './VibePage.css';
@@ -539,7 +539,7 @@ export default function VibePage() {
                       </div>
 
                       <h4 className="vb-spotlight-title">{item.name}</h4>
-                      <p className="vb-spotlight-desc">{item.shortDesc}</p>
+                      <p className="vb-spotlight-desc">{getVibeDesc(item, lang, 'shortDesc')}</p>
 
                       <div className="vb-compat-row" style={{ margin: '12px 0 6px' }}>
                         {item.compatibility.map((eng) => (
@@ -743,7 +743,7 @@ export default function VibePage() {
                     </div>
 
                     <h3 className="vb-card-title">{item.name}</h3>
-                    <p className="vb-card-desc">{item.shortDesc}</p>
+                    <p className="vb-card-desc">{getVibeDesc(item, lang, 'shortDesc')}</p>
                   </div>
 
                   {/* Compatibility & Tags */}
@@ -874,7 +874,7 @@ export default function VibePage() {
 
 // ==================== COMPONENT: MODAL CHI TIẾT TEMPLATE ====================
 function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy, onDownload, onDownloadZip, copiedId, onTryPlayground }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [activeTab, setActiveTab] = useState('prompt'); // 'prompt' | 'install' | 'example'
   const catObj = VIBE_CATEGORIES.find((c) => c.id === item.category) || {};
 
@@ -899,9 +899,9 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
             </span>
             <h2 className="vb-modal-title">{item.name}</h2>
             <div className="vb-modal-sub">
-              <span>Tác giả: <strong>{item.author}</strong></span>
-              <span>• Phiên bản: <strong>{item.version}</strong></span>
-              <span>• Đánh giá: <strong>★ {item.rating || '4.9'}</strong> ({item.stars} sao)</span>
+              <span>{lang === 'vi' ? 'Tác giả:' : 'Author:'} <strong>{item.author}</strong></span>
+              <span>• {lang === 'vi' ? 'Phiên bản:' : 'Version:'} <strong>{item.version}</strong></span>
+              <span>• {lang === 'vi' ? 'Đánh giá:' : 'Rating:'} <strong>★ {item.rating || '4.9'}</strong> ({item.stars} {lang === 'vi' ? 'sao' : 'stars'})</span>
             </div>
           </div>
 
@@ -950,7 +950,7 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
           {activeTab === 'prompt' && (
             <div className="vb-prompt-section">
               <div className="vb-section-desc">
-                <p>{item.fullDesc}</p>
+                <p>{getVibeDesc(item, lang, 'fullDesc')}</p>
               </div>
 
               <div className="vb-code-container">
@@ -962,7 +962,7 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
                     onClick={(e) => onCopy(item.systemPrompt, 'modal-prompt', e)}
                   >
                     <Ico d={copiedId === 'modal-prompt' ? ICONS.check : ICONS.copy} size={14} />
-                    <span>{copiedId === 'modal-prompt' ? 'Đã copy!' : 'Copy Prompt'}</span>
+                    <span>{copiedId === 'modal-prompt' ? (lang === 'vi' ? 'Đã copy!' : 'Copied!') : 'Copy Prompt'}</span>
                   </button>
                 </div>
                 <pre className="vb-pre">
@@ -975,7 +975,9 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
           {activeTab === 'install' && (
             <div className="vb-install-section">
               <p className="vb-guide-note">
-                Sử dụng lệnh bên dưới trong terminal để đưa mẫu này vào dự án của bạn (hỗ trợ Claude Code CLI, Cursor IDE và Antigravity):
+                {lang === 'vi'
+                  ? 'Sử dụng lệnh bên dưới trong terminal để đưa mẫu này vào dự án của bạn (hỗ trợ Claude Code CLI, Cursor IDE và Antigravity):'
+                  : 'Use the command below in terminal to add this template to your project (supports Claude Code CLI, Cursor IDE, and Antigravity):'}
               </p>
 
               <div className="vb-install-block">
@@ -1021,7 +1023,11 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
 
           {activeTab === 'example' && (
             <div className="vb-example-section">
-              <p className="vb-guide-note">Ví dụ minh họa cấu trúc hoặc kết quả mà mẫu này sinh ra khi AI hoạt động:</p>
+              <p className="vb-guide-note">
+                {lang === 'vi'
+                  ? 'Ví dụ minh họa cấu trúc hoặc kết quả mà mẫu này sinh ra khi AI hoạt động:'
+                  : 'Sample output and structure produced by this template:'}
+              </p>
               <div className="vb-code-container">
                 <div className="vb-code-bar">
                   <span className="vb-file-name">example-output.tsx</span>
@@ -1031,11 +1037,11 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
                     onClick={(e) => onCopy(item.exampleOutput, 'modal-ex', e)}
                   >
                     <Ico d={copiedId === 'modal-ex' ? ICONS.check : ICONS.copy} size={14} />
-                    <span>{copiedId === 'modal-ex' ? 'Đã copy!' : 'Copy'}</span>
+                    <span>{copiedId === 'modal-ex' ? (lang === 'vi' ? 'Đã copy!' : 'Copied!') : 'Copy'}</span>
                   </button>
                 </div>
                 <pre className="vb-pre">
-                  <code>{item.exampleOutput || '// Chưa có ví dụ mã mẫu'}</code>
+                  <code>{item.exampleOutput || (lang === 'vi' ? '// Chưa có ví dụ mã mẫu' : '// No sample code provided')}</code>
                 </pre>
               </div>
             </div>
@@ -1062,10 +1068,10 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
                 border: 'none',
               }}
               onClick={() => onTryPlayground && onTryPlayground(item.id)}
-              title="Mở ngay trình giả lập Sandbox để thử nghiệm trực tiếp"
+              title={lang === 'vi' ? 'Mở ngay trình giả lập Sandbox để thử nghiệm trực tiếp' : 'Open sandbox simulator to test immediately'}
             >
               <span>⚡</span>
-              <span>Thử trong Sandbox</span>
+              <span>{lang === 'vi' ? 'Thử trong Sandbox' : 'Try in Sandbox'}</span>
             </button>
             <button
               type="button"
@@ -1077,10 +1083,10 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
                 fontWeight: 700,
               }}
               onClick={(e) => onDownloadZip && onDownloadZip(item, e)}
-              title="Tải toàn bộ file .cursorrules, CLAUDE.md, .windsurfrules & mcp.json đóng gói ZIP"
+              title={lang === 'vi' ? 'Tải toàn bộ file .cursorrules, CLAUDE.md, .windsurfrules & mcp.json đóng gói ZIP' : 'Download bundled ZIP with all config files'}
             >
               <span>📦</span>
-              <span>Tải trọn gói ZIP (Bundle)</span>
+              <span>{lang === 'vi' ? 'Tải trọn gói ZIP (Bundle)' : 'Download ZIP Bundle'}</span>
             </button>
             <button
               type="button"
@@ -1088,7 +1094,7 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
               onClick={() => onDownload(item)}
             >
               <Ico d={ICONS.download} size={15} />
-              <span>Tải file ({item.fileName || 'template.md'})</span>
+              <span>{lang === 'vi' ? 'Tải file' : 'Download file'} ({item.fileName || 'template.md'})</span>
             </button>
             <button
               type="button"
@@ -1096,7 +1102,7 @@ function TemplateDetailModal({ item, isSaved, onToggleBookmark, onClose, onCopy,
               onClick={(e) => onCopy(item.systemPrompt, 'modal-foot-copy', e)}
             >
               <Ico d={copiedId === 'modal-foot-copy' ? ICONS.check : ICONS.copy} size={15} />
-              <span>{copiedId === 'modal-foot-copy' ? 'Đã copy thành công!' : 'Copy Toàn Bộ Prompt'}</span>
+              <span>{copiedId === 'modal-foot-copy' ? (lang === 'vi' ? 'Đã copy thành công!' : 'Copied!') : (lang === 'vi' ? 'Copy Toàn Bộ Prompt' : 'Copy Full Prompt')}</span>
             </button>
           </div>
         </div>

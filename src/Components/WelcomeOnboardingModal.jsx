@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,13 +11,15 @@ export default function WelcomeOnboardingModal({ onClose }) {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [userMode, setUserMode] = useState('newbie'); // 'newbie' | 'dev'
-  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(true);
 
   const handleFinish = () => {
-    if (dontShowAgain && user?.identifier) {
-      localStorage.setItem(`gx_onboard_done_${user.identifier}`, 'true');
-    }
-    localStorage.setItem('gx_onboard_done_global', 'true');
+    try {
+      if (user?.identifier) {
+        localStorage.setItem(`gx_onboard_done_${user.identifier}`, 'true');
+      }
+      localStorage.setItem('gx_onboard_done_global', 'true');
+    } catch {}
     onClose();
     if (userMode === 'newbie') {
       setTimeout(() => {
@@ -31,7 +34,7 @@ export default function WelcomeOnboardingModal({ onClose }) {
     navigate(path);
   };
 
-  return (
+  return createPortal(
     <div className="ob-modal-overlay" role="dialog" aria-modal="true" aria-label="Hướng dẫn chào mừng" data-lenis-prevent="true">
       <div className="ob-modal-card" data-lenis-prevent="true">
         {/* Header with Step Indicator */}
@@ -312,6 +315,7 @@ export default function WelcomeOnboardingModal({ onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
