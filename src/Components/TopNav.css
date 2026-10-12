@@ -115,8 +115,25 @@
 .tn-circle:hover { background: rgba(255, 255, 255, 0.14); }
 .tn-circle.is-on { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.5); color: var(--tn-accent); }
 .tn-badge {
-  position: absolute; top: 5px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
-  background: #ef4444; border: 2px solid #120b0b;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  border: 2px solid #120b0b;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .tn-avatar {

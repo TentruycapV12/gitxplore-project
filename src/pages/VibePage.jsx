@@ -80,6 +80,7 @@ export default function VibePage() {
   const [savedIds, setSavedIds] = useState(loadSavedIds);
   const [userTemplates, setUserTemplates] = useState(loadUserTemplates);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Modals
   const [inspectItem, setInspectItem] = useState(null);
@@ -115,6 +116,11 @@ export default function VibePage() {
   const allTemplates = useMemo(() => {
     return [...userTemplates, ...VIBE_TEMPLATES];
   }, [userTemplates]);
+
+  // Mẫu nổi bật (Featured picks)
+  const featuredTemplates = useMemo(() => {
+    return allTemplates.filter((t) => t.badge === 'Featured' || t.badge === 'Hot' || t.badge === 'Popular').slice(0, 3);
+  }, [allTemplates]);
 
   // Bộ lọc tag phổ biến
   const allTags = useMemo(() => {
@@ -240,49 +246,6 @@ export default function VibePage() {
           </div>
         </div>
 
-        {/* FAST 3-STEP BEGINNER GUIDE FOR VIBE CODING */}
-        <div style={{
-          maxWidth: '920px',
-          margin: '28px auto 0',
-          background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
-          borderRadius: '16px',
-          padding: '20px 24px',
-          backdropFilter: 'blur(12px)',
-          textAlign: 'left'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', color: '#fef08a', fontWeight: 700, fontSize: '13.5px' }}>
-            <span>💡</span>
-            <span>{lang === 'vi' ? 'Cách sử dụng Vibe Coding trong 3 bước đơn giản (Dành cho người mới)' : 'How to use Vibe Coding in 3 Simple Steps'}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ color: '#10b981', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
-                {lang === 'vi' ? 'BƯỚC 1: CÀI ĐẶT TRÌNH SOẠN THẢO' : 'STEP 1: INSTALL EDITOR'}
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
-                {lang === 'vi' ? 'Tải Cursor IDE hoặc VS Code (có AI Copilot) miễn phí về máy tính.' : 'Download Cursor IDE or VS Code with AI Copilot.'}
-              </div>
-            </div>
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ color: '#3b82f6', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
-                {lang === 'vi' ? 'BƯỚC 2: SAO CHÉP QUY TẮC (.cursorrules)' : 'STEP 2: COPY RULE (.cursorrules)'}
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
-                {lang === 'vi' ? 'Chọn 1 mẫu thẻ bên dưới và bấm nút 📋 Sao chép quy tắc.' : 'Choose a template below and click 📋 Copy Rule.'}
-              </div>
-            </div>
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ color: '#f59e0b', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
-                {lang === 'vi' ? 'BƯỚC 3: DÁN VÀO DỰ ÁN & RA LỆNH' : 'STEP 3: PASTE & PROMPT'}
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#e5e7eb' }}>
-                {lang === 'vi' ? 'Tạo file .cursorrules trong code và nói ý tưởng bằng tiếng Việt để AI làm!' : 'Create .cursorrules in your project and prompt AI in plain language!'}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Terminal Search Trigger */}
         <div className="vb-search-container">
           <div className="vb-search-box">
@@ -362,6 +325,89 @@ export default function VibePage() {
             <Ico d={ICONS.external} size={14} />
           </a>
         </div>
+
+        {/* Guide Toggle Button */}
+        <div style={{ marginTop: '20px' }}>
+          <button
+            type="button"
+            className="vb-guide-toggle-btn"
+            onClick={() => setShowGuide((prev) => !prev)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              color: '#fef08a',
+              padding: '8px 18px',
+              borderRadius: '999px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <span>💡</span>
+            <span>{showGuide ? (lang === 'vi' ? 'Thu gọn hướng dẫn 3 bước' : 'Hide 3-Step Guide') : (lang === 'vi' ? 'Xem hướng dẫn Vibe Coding 3 bước cho người mới' : 'Quick 3-step beginner guide')}</span>
+            <span>{showGuide ? '▲' : '▼'}</span>
+          </button>
+        </div>
+
+        {/* FAST 3-STEP BEGINNER GUIDE FOR VIBE CODING */}
+        {showGuide && (
+          <div style={{
+            maxWidth: '920px',
+            margin: '20px auto 0',
+            background: 'linear-gradient(135deg, rgba(20, 27, 45, 0.9), rgba(12, 16, 28, 0.95))',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            borderRadius: '18px',
+            padding: '22px 24px',
+            backdropFilter: 'blur(16px)',
+            textAlign: 'left',
+            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fef08a', fontWeight: 800, fontSize: '14px' }}>
+                <span>💡</span>
+                <span>{lang === 'vi' ? 'Quy trình sử dụng Vibe Coding (3 bước chuẩn Cursor / Claude Code):' : '3-Step Vibe Coding Workflow:'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}
+              >
+                ✕ {lang === 'vi' ? 'Đóng' : 'Close'}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <div style={{ color: '#10b981', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'BƯỚC 1: CÀI ĐẶT TRÌNH SOẠN THẢO' : 'STEP 1: INSTALL EDITOR'}
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#e2e8f0', lineHeight: '1.5' }}>
+                  {lang === 'vi' ? 'Tải Cursor IDE, Windsurf hoặc VS Code (có Claude Code / GitHub Copilot).' : 'Download Cursor IDE, Windsurf or VS Code with Claude Code.'}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.25)' }}>
+                <div style={{ color: '#38bdf8', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'BƯỚC 2: SAO CHÉP QUY TẮC (.cursorrules)' : 'STEP 2: COPY RULE (.cursorrules)'}
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#e2e8f0', lineHeight: '1.5' }}>
+                  {lang === 'vi' ? 'Chọn 1 thẻ mẫu chuyên ngành bên dưới và bấm nút ⚡ Sao chép Rule.' : 'Pick a verified template below and click ⚡ Copy Rule.'}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.25)' }}>
+                <div style={{ color: '#f59e0b', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'BƯỚC 3: DÁN VÀO DỰ ÁN & RA LỆNH' : 'STEP 3: PASTE & PROMPT'}
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#e2e8f0', lineHeight: '1.5' }}>
+                  {lang === 'vi' ? 'Tạo file .cursorrules ở gốc dự án và prompt AI tự nhiên để code tự sinh!' : 'Create .cursorrules at project root and chat naturally with AI!'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ===== MAIN CONTENT WORKSPACE ===== */}
@@ -462,6 +508,76 @@ export default function VibePage() {
 
         {/* MAIN CATALOG VIEW */}
         <main className="vb-main">
+          {/* FEATURED SPOTLIGHT SECTION */}
+          {category === 'all' && !searchQuery && !showSavedOnly && !selectedTag && featuredTemplates.length > 0 && (
+            <section className="vb-spotlight-section">
+              <div className="vb-spotlight-head">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>🔥</span>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                    {lang === 'vi' ? 'Mẫu Vibe Đề Xuất Hàng Đầu (Staff Picks)' : 'Featured Staff Picks'}
+                  </h3>
+                </div>
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  {lang === 'vi' ? 'Đã kiểm định tối ưu 100% cho Claude Code & Cursor IDE' : 'Production verified for Cursor & Claude Code'}
+                </span>
+              </div>
+
+              <div className="vb-spotlight-grid">
+                {featuredTemplates.map((item) => {
+                  const isSaved = savedIds.includes(item.id);
+                  const catObj = VIBE_CATEGORIES.find((c) => c.id === item.category) || {};
+
+                  return (
+                    <article
+                      key={`spotlight-${item.id}`}
+                      className="vb-spotlight-card"
+                      onClick={() => setInspectItem(item)}
+                    >
+                      <div className="vb-spotlight-top">
+                        <span className="vb-cat-badge" style={{ '--cat-color': catObj.color || '#f59e0b' }}>
+                          <Ico d={ICONS[catObj.icon] || ICONS.zap} size={12} />
+                          {item.categoryName}
+                        </span>
+                        <span className="vb-status-badge is-featured">★ STAFF PICK</span>
+                        <button
+                          type="button"
+                          className={`vb-bookmark-btn ${isSaved ? 'is-active' : ''}`}
+                          onClick={(e) => toggleBookmark(item.id, e)}
+                          title={isSaved ? 'Bỏ lưu' : 'Lưu mẫu này'}
+                        >
+                          <Ico d={ICONS.bookmark} size={15} />
+                        </button>
+                      </div>
+
+                      <h4 className="vb-spotlight-title">{item.name}</h4>
+                      <p className="vb-spotlight-desc">{item.shortDesc}</p>
+
+                      <div className="vb-compat-row" style={{ margin: '12px 0 6px' }}>
+                        {item.compatibility.map((eng) => (
+                          <span key={eng} className="vb-compat-pill">{eng}</span>
+                        ))}
+                      </div>
+
+                      <div className="vb-spotlight-foot">
+                        <span style={{ fontSize: '12px', color: '#fef08a', fontWeight: 700 }}>
+                          ⭐ {item.stars} • ⬇️ {item.downloads}
+                        </span>
+                        <button
+                          type="button"
+                          className="vb-act-btn vb-act-prompt"
+                          onClick={(e) => handleCopy(item.systemPrompt || item.installCommand, `${item.id}-spotlight`, e)}
+                        >
+                          {copiedId === `${item.id}-spotlight` ? (lang === 'vi' ? '✓ Đã sao chép' : '✓ Copied') : (lang === 'vi' ? '⚡ Sao chép Rule' : '⚡ Copy Rule')}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* Subheader Filters & Controls */}
           <div className="vb-toolbar">
             <div className="vb-tags-wrap">
