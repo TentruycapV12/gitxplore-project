@@ -4,6 +4,9 @@ import Footer from '../Components/Footer.jsx';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useLanguage } from '../context/LanguageContext';
+import { supabase } from '../supabaseClient';
+import BuyerSellerChatModal from '../Components/marketplace/BuyerSellerChatModal.jsx';
+import ProductReviewSection from '../Components/marketplace/ProductReviewSection.jsx';
 import {
   MARKET_CATEGORIES,
   PRODUCT_CONDITIONS,
@@ -88,6 +91,68 @@ export default function MarketplacePage() {
     }
   }, [orders]);
 
+  // Tự động đồng bộ sản phẩm & đơn hàng từ Supabase Cloud (với fallback localStorage)
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCloudData() {
+      try {
+        const { data: cloudProds, error: pErr } = await supabase
+          .from('marketplace_products')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!pErr && Array.isArray(cloudProds) && cloudProds.length > 0 && isMounted) {
+          setProducts((prev) => {
+            const map = new Map();
+            cloudProds.forEach((p) => map.set(p.id, p));
+            prev.forEach((p) => { if (!map.has(p.id)) map.set(p.id, p); });
+            return Array.from(map.values());
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase marketplace_products fetch fallback:', err);
+      }
+
+      try {
+        const { data: cloudOrders, error: oErr } = await supabase
+          .from('marketplace_orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!oErr && Array.isArray(cloudOrders) && cloudOrders.length > 0 && isMounted) {
+          setOrders((prev) => {
+            const map = new Map();
+            cloudOrders.forEach((o) => map.set(o.id, o));
+            prev.forEach((o) => { if (!map.has(o.id)) map.set(o.id, o); });
+            return Array.from(map.values());
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase marketplace_orders fetch fallback:', err);
+      }
+    }
+
+    loadCloudData();
+
+    // Lắng nghe thay đổi sản phẩm theo thời gian thực (Realtime sync)
+    const channel = supabase
+      .channel('public:marketplace_products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'marketplace_products' }, (payload) => {
+        if (!isMounted) return;
+        if (payload.eventType === 'INSERT') {
+          setProducts((prev) => [payload.new, ...prev.filter((p) => p.id !== payload.new.id)]);
+        } else if (payload.eventType === 'UPDATE') {
+          setProducts((prev) => prev.map((p) => (p.id === payload.new.id ? { ...p, ...payload.new } : p)));
+        } else if (payload.eventType === 'DELETE') {
+          setProducts((prev) => prev.filter((p) => p.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // 3. Quản lý Voucher đã lưu
   const [savedVoucherCodes, setSavedVoucherCodes] = useState(() => {
     try {
@@ -163,6 +228,7 @@ export default function MarketplacePage() {
   // 7. Modals & Dialogs
   const [selectedProduct, setSelectedProduct] = useState(null); // Chi tiết sản phẩm
   const [checkoutProduct, setCheckoutProduct] = useState(null); // Đặt mua & Ký quỹ
+  const [chatProduct, setChatProduct] = useState(null); // Trò chuyện trực tiếp Người mua <-> Người bán
   const [showPostModal, setShowPostModal] = useState(false); // Đăng bán sản phẩm (Seller Central)
   const [showMyOrdersModal, setShowMyOrdersModal] = useState(false); // Quản lý đơn hàng & Ví sàn
   const [ordersModalTab, setOrdersModalTab] = useState('buyer'); // 'buyer' | 'seller'
@@ -263,7 +329,7 @@ export default function MarketplacePage() {
       statusLabel: isVi
         ? 'Tiền giữ an toàn tại Két Sắt Escrow (Tạm khóa kho 15 phút)'
         : 'Funds locked in Escrow Vault (15-min inventory reserved)',
-      buyerName: user?.username || (isVi ? 'Khách Hàng GitXplore' : 'GitXplore Customer'),
+      buyerName: user?.username || user?.name || (isVi ? 'Khách Hàng GitXplore' : 'GitXplore Customer'),
       ...orderData,
     };
     setOrders((prev) => [newOrder, ...prev]);
@@ -271,6 +337,23 @@ export default function MarketplacePage() {
     setSelectedProduct(null);
     setOrdersModalTab('buyer');
     setShowMyOrdersModal(true);
+
+    // Đồng bộ đơn hàng lên Supabase Cloud
+    try {
+      supabase.from('marketplace_orders').insert([{
+        id: newOrder.id,
+        product_id: newOrder.productId,
+        product_title: newOrder.productTitle,
+        total_amount: newOrder.totalAmount,
+        status: newOrder.status,
+        buyer_name: newOrder.buyerName,
+        shipping_address: newOrder.shippingAddress,
+        phone: newOrder.phone,
+        created_at: newOrder.createdAt,
+      }]).then(({ error }) => {
+        if (error) console.warn('Supabase marketplace_orders insert note:', error.message);
+      });
+    } catch {}
 
     // Gửi thông báo thực tế tới TopNav notification bell
     sendMarketplaceNotification({
@@ -361,6 +444,29 @@ export default function MarketplacePage() {
   const handleAddNewProduct = (newProd) => {
     setProducts((prev) => [newProd, ...prev]);
     setShowPostModal(false);
+
+    // Đồng bộ sản phẩm mới lên Supabase Cloud
+    try {
+      supabase.from('marketplace_products').insert([{
+        id: newProd.id,
+        sku: newProd.sku,
+        title: newProd.title,
+        title_en: newProd.title_en || newProd.title,
+        category: newProd.category,
+        category_name: newProd.categoryName,
+        price: newProd.price,
+        original_price: newProd.originalPrice,
+        condition: newProd.condition,
+        stock: newProd.stock,
+        images: newProd.images,
+        description: newProd.description,
+        specs: newProd.specs,
+        seller: newProd.seller,
+        created_at: newProd.createdAt || new Date().toISOString(),
+      }]).then(({ error }) => {
+        if (error) console.warn('Supabase marketplace_products insert note:', error.message);
+      });
+    } catch {}
 
     // Gửi thông báo đăng sản phẩm thành công
     sendMarketplaceNotification({
@@ -845,11 +951,21 @@ export default function MarketplacePage() {
           product={selectedProduct}
           lang={lang}
           onClose={() => setSelectedProduct(null)}
+          onOpenChat={(p) => setChatProduct(p)}
           onBuyNow={() => {
             const p = selectedProduct;
             setSelectedProduct(null);
             setCheckoutProduct(p);
           }}
+        />
+      )}
+
+      {/* ===== MODAL CHAT TRỰC TIẾP NGƯỜI MUA <-> NGƯỜI BÁN ===== */}
+      {chatProduct && (
+        <BuyerSellerChatModal
+          product={chatProduct}
+          lang={lang}
+          onClose={() => setChatProduct(null)}
         />
       )}
 
@@ -980,7 +1096,7 @@ function ProductCard({ product, lang, onOpenDetail, onBuyNow }) {
 /* ========================================================
    SUB-COMPONENT: PRODUCT DETAIL MODAL
 ======================================================== */
-function ProductDetailModal({ product, lang, onClose, onBuyNow }) {
+function ProductDetailModal({ product, lang, onClose, onBuyNow, onOpenChat }) {
   const isVi = lang === 'vi';
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const condConfig = PRODUCT_CONDITIONS[product.condition] || PRODUCT_CONDITIONS.brand_new;
@@ -1082,14 +1198,37 @@ function ProductDetailModal({ product, lang, onClose, onBuyNow }) {
                 : 'Funds held in Escrow Vault. You have a 48-hour inspection trial before funds are released to the seller!'}
             </div>
 
-            <button
-              type="button"
-              className="mp-btn-buy"
-              style={{ width: '100%', padding: '14px', fontSize: '15px' }}
-              onClick={onBuyNow}
-            >
-              {isVi ? `Tiến Hành Ký Quỹ & Đặt Hàng (${formatCurrency(product.price, lang)})` : `Place Escrow Order (${formatCurrency(product.price, lang)})`}
-            </button>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                style={{
+                  flex: '0 0 auto',
+                  padding: '12px 18px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderColor: 'rgba(245, 158, 11, 0.4)',
+                  color: '#fef08a',
+                }}
+                onClick={() => onOpenChat && onOpenChat(product)}
+              >
+                <span>💬</span>
+                <span>{isVi ? 'Chat Với Người Bán' : 'Chat with Seller'}</span>
+              </button>
+              <button
+                type="button"
+                className="mp-btn-buy"
+                style={{ flex: 1, padding: '12px', fontSize: '14px' }}
+                onClick={onBuyNow}
+              >
+                {isVi ? `Ký Quỹ & Đặt Hàng (${formatCurrency(product.price, lang)})` : `Place Escrow Order (${formatCurrency(product.price, lang)})`}
+              </button>
+            </div>
+
+            {/* Đánh Giá & Nhận Xét Từ Người Mua */}
+            <ProductReviewSection productId={product.id} lang={lang} />
           </div>
         </div>
       </div>
@@ -1293,18 +1432,52 @@ function CheckoutEscrowModal({ product, lang, savedVouchers, onClose, onConfirmO
             </div>
           </div>
 
-          {/* Mô phỏng mã VietQR */}
-          <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px dashed rgba(245,158,11,0.4)', borderRadius: '12px', padding: '14px', textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{ fontSize: '13px', color: '#fef08a', fontWeight: 700, marginBottom: '6px' }}>
-              🏦 {isVi ? 'Quét Mã VietQR Chuyển Khoản Ký Quỹ Tự Động' : 'Scan VietQR to Deposit Escrow'}
+          {/* Cổng thanh toán mã VietQR tự động */}
+          <div style={{ background: 'linear-gradient(135deg, rgba(20, 28, 46, 0.9), rgba(14, 19, 31, 0.95))', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '16px', padding: '16px', textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13.5px', color: '#fef08a', fontWeight: 800, marginBottom: '10px' }}>
+              <span>🏦</span>
+              <span>{isVi ? 'Quét Mã VietQR Chuyển Khoản Ký Quỹ Tức Thì' : 'Scan VietQR for Instant Escrow Deposit'}</span>
             </div>
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=GITXPLORE-ESCROW-DEPOSIT-2026"
-              alt="VietQR Escrow"
-              style={{ width: '130px', height: '130px', borderRadius: '8px', border: '2px solid #fff', margin: '0 auto 8px' }}
-            />
-            <div style={{ fontSize: '11.5px', color: '#cbd5e1' }}>
-              {isVi ? 'Nội dung CK:' : 'Transfer Note:'} <strong style={{ color: '#38bdf8' }}>GX-ESC-ORDER</strong> • Bank: <strong>MBBank (GitXplore Escrow Vault)</strong>
+
+            <div style={{ display: 'inline-block', background: '#ffffff', padding: '10px', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', marginBottom: '12px' }}>
+              <img
+                src={`https://img.vietqr.io/image/MB-0348736111-compact2.png?amount=${totalEscrowDeposit}&addInfo=GX_ESC_${product.id.slice(-6)}&accountName=GITXPLORE%20ESCROW%20VAULT`}
+                alt="VietQR MBBank"
+                style={{ width: '190px', height: 'auto', display: 'block' }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', textAlign: 'left', background: 'rgba(0,0,0,0.4)', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Ngân hàng: </span>
+                <strong style={{ color: '#ffffff' }}>MB Bank (Quân Đội)</strong>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Số TK: </span>
+                <strong style={{ color: '#fef08a' }}>0348736111</strong>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText('0348736111'); alert(isVi ? 'Đã sao chép số tài khoản!' : 'Copied account number!'); }}
+                  style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', marginLeft: '6px', fontSize: '11px', textDecoration: 'underline' }}
+                >
+                  {isVi ? 'Sao chép' : 'Copy'}
+                </button>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Chủ TK: </span>
+                <strong style={{ color: '#ffffff' }}>GITXPLORE ESCROW</strong>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Nội dung: </span>
+                <strong style={{ color: '#38bdf8' }}>{`GX_ESC_${product.id.slice(-6)}`}</strong>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(`GX_ESC_${product.id.slice(-6)}`); alert(isVi ? 'Đã sao chép nội dung chuyển khoản!' : 'Copied memo!'); }}
+                  style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', marginLeft: '6px', fontSize: '11px', textDecoration: 'underline' }}
+                >
+                  {isVi ? 'Sao chép' : 'Copy'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1617,10 +1790,23 @@ function SellerCentralModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
                 <button
                   type="button"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.15))',
+                    border: '1px solid #f59e0b',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    color: '#fef08a',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  📁 {isVi ? 'Chọn ảnh từ thiết bị' : 'Choose files from device'}
+                  <span>📷</span>
+                  <span>{isVi ? 'Chọn ảnh từ thiết bị / máy tính' : 'Upload from device'}</span>
                 </button>
                 <input
                   type="file"
@@ -1631,9 +1817,47 @@ function SellerCentralModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct 
                   onChange={handleFileUpload}
                 />
               </div>
+
+              {/* Gallery of Uploaded Photos */}
+              {imageUrls.trim() && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px' }}>
+                  {imageUrls.split('\n').filter(Boolean).map((img, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
+                      <img src={img.trim()} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lines = imageUrls.split('\n').filter((_, i) => i !== idx);
+                          setImageUrls(lines.join('\n'));
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                          background: 'rgba(239, 68, 68, 0.85)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '18px',
+                          height: '18px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          display: 'grid',
+                          placeItems: 'center',
+                          padding: 0,
+                        }}
+                        title="Xóa ảnh này"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <textarea
                 rows="2"
-                placeholder={isVi ? 'Dán URL ảnh hoặc tải từ máy tính lên (mỗi dòng 1 đường dẫn)...' : 'Paste image URLs or uploaded files (one per line)...'}
+                placeholder={isVi ? 'Dán link ảnh URL hoặc tải thêm ảnh từ máy tính...' : 'Paste image URLs or uploaded files (one per line)...'}
                 value={imageUrls}
                 onChange={(e) => setImageUrls(e.target.value)}
               />

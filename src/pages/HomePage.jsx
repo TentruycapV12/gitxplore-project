@@ -5,8 +5,7 @@ import { useProjectFilters } from '../hooks/useProjectFilters';
 import { useUI } from '../context/UIContext';
 import HeroParallax from '../Components/HeroParallax.jsx';
 import BeginnerQuickStart from '../Components/BeginnerQuickStart.jsx';
-import VibeFeaturedBanner from '../Components/VibeFeaturedBanner.jsx';
-import MarketplaceFeaturedBanner from '../Components/MarketplaceFeaturedBanner.jsx';
+import HomeHubSpotlight from '../Components/HomeHubSpotlight.jsx';
 import Component1 from '../Components/Component1.jsx';
 import Component2 from '../Components/Component2.jsx';
 import About from '../Components/About.jsx';
@@ -33,8 +32,7 @@ export default function HomePage() {
       <BeginnerQuickStart />
 
       <main className="lusion-container" id="explore">
-        <VibeFeaturedBanner />
-        <MarketplaceFeaturedBanner />
+        <HomeHubSpotlight />
         <Component1 />
 
         <section className="projects-grid">

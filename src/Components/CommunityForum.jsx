@@ -76,6 +76,13 @@ export default function CommunityForum() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicDesc, setNewTopicDesc] = useState('');
+  const [descPreviewMode, setDescPreviewMode] = useState(false);
+
+  const handleInsertMarkdown = (prefix, suffix, defaultText = '') => {
+    setNewTopicDesc((prev) => {
+      return prev ? `${prev}\n${prefix}${defaultText}${suffix}` : `${prefix}${defaultText}${suffix}`;
+    });
+  };
   const [newPrefix, setNewPrefix] = useState('Discussion');
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -1740,23 +1747,158 @@ export default function CommunityForum() {
                 />
               </div>
 
-              <textarea
-                placeholder={ft.modal_desc_ph}
-                value={newTopicDesc}
-                onChange={(e) => setNewTopicDesc(e.target.value)}
-                rows={3}
-                style={{
-                  width: '100%',
-                  background: '#1a0d0d',
-                  border: '1px solid #381a1a',
-                  borderRadius: '6px',
-                  padding: '10px',
-                  color: '#fff',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  resize: 'none',
-                }}
-              />
+              {/* Markdown Formatting Toolbar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', background: '#1f0f0f', padding: '6px 8px', borderRadius: '6px', border: '1px solid #381a1a' }}>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMarkdown('**', '**', 'chữ in đậm')}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                    title="In đậm"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMarkdown('*', '*', 'chữ in nghiêng')}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontStyle: 'italic', cursor: 'pointer' }}
+                    title="In nghiêng"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMarkdown('```jsx\n', '\n```', '// Mã nguồn của bạn ở đây')}
+                    style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace', cursor: 'pointer' }}
+                    title="Khối mã nguồn (Code Block)"
+                  >
+                    &lt;/&gt;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMarkdown('[Tiêu đề link](', ')', 'https://github.com')}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer' }}
+                    title="Chèn liên kết (Link)"
+                  >
+                    🔗
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMarkdown('> ', '', 'Trích dẫn quan trọng...')}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer' }}
+                    title="Trích dẫn"
+                  >
+                    ❝
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMarkdown('- ', '', 'Mục danh sách')}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer' }}
+                    title="Danh sách gạch đầu dòng"
+                  >
+                    • List
+                  </button>
+                </div>
+
+                {/* Tab Switcher: Soạn thảo / Xem trước */}
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDescPreviewMode(false)}
+                    style={{
+                      background: !descPreviewMode ? 'rgba(245,158,11,0.2)' : 'transparent',
+                      border: '1px solid',
+                      borderColor: !descPreviewMode ? '#f59e0b' : 'transparent',
+                      color: !descPreviewMode ? '#fef08a' : '#94a3b8',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✏️ Soạn thảo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDescPreviewMode(true)}
+                    style={{
+                      background: descPreviewMode ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                      border: '1px solid',
+                      borderColor: descPreviewMode ? '#38bdf8' : 'transparent',
+                      color: descPreviewMode ? '#38bdf8' : '#94a3b8',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    👁️ Xem trước
+                  </button>
+                </div>
+              </div>
+
+              {!descPreviewMode ? (
+                <textarea
+                  placeholder={ft.modal_desc_ph}
+                  value={newTopicDesc}
+                  onChange={(e) => setNewTopicDesc(e.target.value)}
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    background: '#1a0d0d',
+                    border: '1px solid #381a1a',
+                    borderRadius: '6px',
+                    padding: '10px',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    minHeight: '90px',
+                    maxHeight: '220px',
+                    overflowY: 'auto',
+                    background: '#160b0b',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    color: '#e2e8f0',
+                    fontSize: '13px',
+                    lineHeight: '1.6',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  {newTopicDesc ? (
+                    <div>
+                      {newTopicDesc.split('\n').map((line, idx) => {
+                        if (line.startsWith('```')) {
+                          return (
+                            <div key={idx} style={{ color: '#38bdf8', fontFamily: 'monospace', background: 'rgba(0,0,0,0.5)', padding: '4px 8px', borderRadius: '4px', margin: '4px 0' }}>
+                              {line}
+                            </div>
+                          );
+                        }
+                        if (line.startsWith('> ')) {
+                          return (
+                            <div key={idx} style={{ borderLeft: '3px solid #f59e0b', paddingLeft: '8px', color: '#fef08a', margin: '4px 0' }}>
+                              {line.slice(2)}
+                            </div>
+                          );
+                        }
+                        return <div key={idx}>{line}</div>;
+                      })}
+                    </div>
+                  ) : (
+                    <span style={{ color: '#64748b', fontStyle: 'italic' }}>Chưa có nội dung để xem trước...</span>
+                  )}
+                </div>
+              )}
 
               {filePreview && (
                 <div style={{ position: 'relative' }}>

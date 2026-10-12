@@ -45,6 +45,11 @@ const FORUM_LABEL = {
   fr: 'Forum', de: 'Forum', es: 'Foro', ru: 'Форум', pt: 'Fórum',
 };
 
+const MARKET_LABEL = {
+  vi: 'Chợ Công Nghệ', en: 'Tech Market', ja: 'テック市場', zh: '科技集市', ko: '테크 마켓',
+  fr: 'Marché Tech', de: 'Tech-Markt', es: 'Mercado Tech', ru: 'Тех-Рынок', pt: 'Mercado Tech',
+};
+
 export default function TopNav() {
   const { user, logout } = useAuth();
   const { openModal, openPlayground, openCompare } = useUI();
@@ -93,7 +98,7 @@ export default function TopNav() {
     pathname === '/' ? 'home' : null;
 
   const tabLabel = {
-    home: t('ui_home'), market: 'Chợ Công Nghệ', vibe: t('vibe_nav') || 'Vibe Coding', news: t('news'), community: t('community'),
+    home: t('ui_home'), market: MARKET_LABEL[lang] || MARKET_LABEL.en, vibe: t('vibe_nav') || 'Vibe Coding', news: t('news'), community: t('community'),
     forum: FORUM_LABEL[lang] || FORUM_LABEL.en, support: t('support'),
   };
 
@@ -248,7 +253,7 @@ export default function TopNav() {
                   <span style={{ fontSize: '18px' }}>⚖️</span><span>So sánh Repo</span>
                 </button>
                 <button type="button" onClick={() => go('/market')}>
-                  <span style={{ fontSize: '18px' }}>🛒</span><span>{t('marketplace') || (lang === 'vi' ? 'Chợ Công Nghệ' : 'Marketplace')}</span>
+                  <span style={{ fontSize: '18px' }}>🛒</span><span>{MARKET_LABEL[lang] || MARKET_LABEL.en}</span>
                 </button>
                 <button type="button" onClick={() => go('/vibe')}>{ICONS.vibe}<span>{t('vibe_nav') || 'Vibe Coding'}</span></button>
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
