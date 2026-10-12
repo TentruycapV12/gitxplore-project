@@ -11,36 +11,45 @@ export default function MarketplaceFeaturedBanner() {
       {/* Cột trái: Thông điệp & Phân loại */}
       <div className="mfb-left">
         <div className="mfb-badge">
-          <span>🛡️ SÀN TRUNG GIAN ESCROW</span>
+          <span>🛡️ SÀN THƯƠNG MẠI ĐIỆN TỬ &amp; KÝ QUỸ ESCROW</span>
           <span className="mfb-badge-tag">PHÍ SÀN 2.5%</span>
         </div>
 
         <h2 className="mfb-title">
-          Chợ Công Nghệ & Sàn Trung Gian <span>GitXplore</span>
+          Chợ Thiết Bị Điện Tử &amp; Sàn Trung Gian <span>GitXplore</span>
         </h2>
 
         <p className="mfb-desc">
-          Môi trường kết nối kỹ sư mua bán thiết bị điện tử, vi mạch IoT, PC/Laptop,
-          piano điện và các công cụ AI Coding (Cursor Pro, Windsurf). Tiền được giữ
-          an toàn trong két sắt ký quỹ, bao kiểm tra 48h!
+          Mô hình kết nối 3 bên chuẩn Shopee / Lazada: Mua bán <strong>TOÀN BỘ mọi thiết bị điện tử</strong> (từ
+          điện thoại, máy tính, vi mạch bán dẫn, smarthome, đồ âm thanh, TV đến máy ảnh, flycam &amp; công cụ AI).
+          Tiền giữ an toàn tại Két Sắt Escrow, kiểm tra 48h trước khi giải ngân!
         </p>
 
         {/* Category tags */}
         <div className="mfb-categories" onClick={(e) => e.stopPropagation()}>
-          <button type="button" onClick={() => navigate('/market?cat=components')}>
-            🔌 Vi mạch & Linh kiện IoT
+          <button type="button" onClick={() => navigate('/market?cat=phones-tablets')}>
+            📱 Điện thoại &amp; Tablet
           </button>
-          <button type="button" onClick={() => navigate('/market?cat=computers')}>
-            💻 PC, Laptop & Card màn hình
+          <button type="button" onClick={() => navigate('/market?cat=computers-laptops')}>
+            💻 Laptop &amp; PC Gaming
           </button>
-          <button type="button" onClick={() => navigate('/market?cat=ai-tools')}>
-            🤖 Bản quyền AI (Cursor, Claude)
+          <button type="button" onClick={() => navigate('/market?cat=components-circuits')}>
+            🔌 Vi mạch &amp; Bán dẫn
           </button>
-          <button type="button" onClick={() => navigate('/market?cat=instruments')}>
-            🎹 Piano điện & Audio Gear
+          <button type="button" onClick={() => navigate('/market?cat=smart-home')}>
+            🏠 Smarthome &amp; IoT
           </button>
-          <button type="button" onClick={() => navigate('/market?cat=displays')}>
-            📺 Tivi & Màn hình 4K
+          <button type="button" onClick={() => navigate('/market?cat=audio-music')}>
+            🎧 Âm thanh &amp; Nhạc cụ
+          </button>
+          <button type="button" onClick={() => navigate('/market?cat=cameras-drones')}>
+            📷 Flycam &amp; Máy ảnh
+          </button>
+          <button type="button" onClick={() => navigate('/market?cat=ai-software')}>
+            🤖 Bản quyền AI &amp; Code
+          </button>
+          <button type="button" onClick={() => navigate('/market?cat=diy-tools')}>
+            🛠️ Máy hàn &amp; Thiết bị đo
           </button>
         </div>
 
@@ -54,7 +63,7 @@ export default function MarketplaceFeaturedBanner() {
               navigate('/market');
             }}
           >
-            <span>Khám phá Chợ ngay</span>
+            <span>Khám phá Sàn Điện Tử</span>
             <span>➔</span>
           </button>
           <button
@@ -65,22 +74,21 @@ export default function MarketplaceFeaturedBanner() {
               navigate('/market?post=true');
             }}
           >
-            <span>Đăng bán sản phẩm</span>
+            <span>Đăng bán thiết bị (Phí 2.5%)</span>
           </button>
         </div>
       </div>
 
-      {/* Cột phải: Mô phỏng Két sắt ký quỹ */}
+      {/* Cột phải: Mô phỏng Két sắt ký quỹ & Logistics */}
       <div className="mfb-right" onClick={(e) => e.stopPropagation()}>
         <div className="mfb-vault">
           <div className="mfb-vault-header">
             <span className="mfb-vault-title">
               <span>🔐</span>
-              <span>Két Sắt Ký Quỹ GitXplore</span>
+              <span>Két Sắt Ký Quỹ &amp; Logistics GitXplore</span>
             </span>
-            <span className="mfb-vault-status">
-              <span style={{ fontSize: '8px' }}>●</span>
-              <span>BẢO VỆ 100%</span>
+            <span className="mp-vault-status" style={{ fontSize: '10px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 8px', borderRadius: '999px', color: '#10b981', fontWeight: 800 }}>
+              ● CHUẨN TMĐT
             </span>
           </div>
 
@@ -88,26 +96,26 @@ export default function MarketplaceFeaturedBanner() {
             <div className="mfb-step-item">
               <span className="mfb-step-num">1</span>
               <span>
-                <strong>Người mua nạp cọc:</strong> Tiền được giữ an toàn tại két sắt sàn, người bán chuẩn bị hàng.
+                <strong>Khóa kho &amp; Ký quỹ:</strong> Người mua nạp cọc vào Két sắt, hệ thống tự động khóa hàng trong 15 phút.
               </span>
             </div>
             <div className="mfb-step-item">
               <span className="mfb-step-num">2</span>
               <span>
-                <strong>Giao hàng & Test 48h:</strong> Người mua nhận hàng / key AI, kiểm tra đúng mô tả.
+                <strong>Vận chuyển đa kênh:</strong> Người bán giao hàng qua Hỏa tốc 2H, GHN, Viettel Post hoặc gửi mã số online.
               </span>
             </div>
             <div className="mfb-step-item">
               <span className="mfb-step-num">3</span>
               <span>
-                <strong>Giải ngân minh bạch:</strong> Sàn chuyển tiền cho người bán sau khi trừ <strong>2.5% phí dịch vụ</strong>.
+                <strong>Đối soát &amp; Giải ngân:</strong> Khách kiểm tra 48h, sàn tự động trích <strong>2.5% phí dịch vụ</strong> và chuyển tiền cho shop.
               </span>
             </div>
           </div>
 
           <div className="mfb-vault-footer">
-            <span>🛡️ Hoàn tiền 100% nếu có tranh chấp</span>
-            <span className="mfb-vault-fee">Phí chỉ 2.5%</span>
+            <span>🛡️ Voucher Freeship Xtra • Bảo vệ 100%</span>
+            <span className="mfb-vault-fee" style={{ color: '#38bdf8', fontWeight: 700 }}>Phí sàn: 2.5%</span>
           </div>
         </div>
       </div>
