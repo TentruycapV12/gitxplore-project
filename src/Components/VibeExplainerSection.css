@@ -738,6 +738,81 @@
   background: #fbbf24;
 }
 
+/* Social video modal */
+.vbe-social-modal-body {
+  padding: 24px;
+  background: linear-gradient(135deg, #090d16 0%, #05070c 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  aspect-ratio: auto;
+}
+
+.vbe-social-preview-box {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 14px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vbe-social-overlay {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.vbe-social-main-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  color: #07090e;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+  transition: all 0.2s;
+}
+
+.vbe-social-main-cta:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+}
+
+.vbe-modal-prompt-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px dashed rgba(245, 158, 11, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.vbe-youtube-fallback-tip {
+  padding: 8px 16px;
+  background: rgba(245, 158, 11, 0.08);
+  border-top: 1px solid rgba(245, 158, 11, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #fbbf24;
+}
+
 /* Toast */
 .vbe-toast {
   position: fixed;

@@ -7,14 +7,15 @@ const VIBE_VIDEOS = [
   {
     id: 'v1',
     platform: 'youtube',
-    badgeText: 'YouTube Shorts / Clip',
-    title: 'Vibe Coding Là Gì? Cuộc Cách Mạng Lập Trình Bằng Trò Chuyện AI',
-    desc: 'Andrej Karpathy (cựu Giám đốc AI Tesla / OpenAI) khởi xướng xu hướng lập trình bằng cảm xúc và ngôn ngữ tự nhiên thay vì gõ code thủ công.',
-    duration: '03:20',
-    views: '🔥 1.4M views',
+    badgeText: 'YouTube Tutorial',
+    videoId: 'Qf48xLv9m4Y',
+    title: 'Cursor AI & Vibe Coding: Hướng Dẫn Cho Người Mới (Zero to Hero)',
+    desc: 'Toàn bộ quy trình lập trình bằng trò chuyện AI: Cài đặt Cursor, ra lệnh bằng prompt tiếng Việt và xuất ra ứng dụng thực tế chạy ngay.',
+    duration: '20:15',
+    views: '🔥 1.2M views',
     thumb: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80',
-    embedUrl: 'https://www.youtube.com/embed/yvPzS0_Oa3U?autoplay=1',
-    externalUrl: 'https://www.youtube.com/results?search_query=vibe+coding+andrej+karpathy',
+    embedUrl: 'https://www.youtube-nocookie.com/embed/Qf48xLv9m4Y?autoplay=1',
+    externalUrl: 'https://www.youtube.com/watch?v=Qf48xLv9m4Y',
   },
   {
     id: 'v2',
@@ -25,7 +26,8 @@ const VIBE_VIDEOS = [
     duration: '00:58',
     views: '🚀 890K views',
     thumb: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80',
-    embedUrl: 'https://www.youtube.com/embed/yvPzS0_Oa3U?autoplay=1',
+    promptUsed: 'Tạo game Rắn Săn Mồi Neon phong cách Cyberpunk bằng HTML5 Canvas, có tính điểm, điều khiển bằng bàn phím và nút cảm ứng, hiệu ứng phát sáng khi ăn mồi.',
+    templateId: 'snake',
     externalUrl: 'https://www.tiktok.com/tag/vibecoding',
   },
   {
@@ -37,20 +39,22 @@ const VIBE_VIDEOS = [
     duration: '01:15',
     views: '⭐ 620K views',
     thumb: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80',
-    embedUrl: 'https://www.youtube.com/embed/yvPzS0_Oa3U?autoplay=1',
+    promptUsed: 'Tạo một trang web quán cà phê hiện đại phong cách cyberpunk chill, có menu chọn đồ uống, giỏ hàng tính tiền và nút chuyển chế độ Dark/Light mode.',
+    templateId: 'cafe',
     externalUrl: 'https://www.facebook.com/watch/?q=vibe+coding',
   },
   {
     id: 'v4',
     platform: 'youtube',
-    badgeText: 'YouTube Tutorial',
-    title: 'Bí Quyết Prompting Chuẩn: Ra Lệnh Cho AI Viết Code Không Lỗi',
-    desc: 'Cách dùng Claude Code & Cursor hiệu quả: Không bị ảo giác code, tự động sinh test và xuất sản phẩm chạy ngay.',
-    duration: '00:52',
-    views: '⚡ 750K views',
+    badgeText: 'Andrej Karpathy Talk',
+    videoId: 'zjkBMFhNj_g',
+    title: 'Andrej Karpathy Giải Thích Về AI & Tương Lai Của Lập Trình',
+    desc: 'Bài nói chuyện kinh điển của Andrej Karpathy (cha đẻ khái niệm Vibe Coding) giải thích cách LLM và AI Agents thay đổi hoàn toàn cách con người làm phần mềm.',
+    duration: '55:00',
+    views: '⚡ 4.8M views',
     thumb: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-    embedUrl: 'https://www.youtube.com/embed/yvPzS0_Oa3U?autoplay=1',
-    externalUrl: 'https://www.youtube.com/hashtag/vibecoding',
+    embedUrl: 'https://www.youtube-nocookie.com/embed/zjkBMFhNj_g?autoplay=1',
+    externalUrl: 'https://www.youtube.com/watch?v=zjkBMFhNj_g',
   },
 ];
 
@@ -314,16 +318,19 @@ export default function VibeExplainerSection({ onClose }) {
                         className="vbe-video-link-btn"
                         onClick={() => setPlayingVideo(vid)}
                       >
-                        👁️ {lang === 'vi' ? 'Xem clip' : 'Watch'}
+                        {vid.platform === 'youtube'
+                          ? (lang === 'vi' ? '👁️ Xem clip' : 'Watch')
+                          : (lang === 'vi' ? '💡 Prompt & Demo' : 'Prompt & Demo')}
                       </button>
                       <a
                         href={vid.externalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="vbe-video-link-btn"
-                        title={lang === 'vi' ? 'Mở trên ứng dụng gốc' : 'Open in app'}
+                        title={lang === 'vi' ? 'Mở xem trên ứng dụng gốc' : 'Open in app'}
+                        style={{ color: vid.platform === 'youtube' ? '#f87171' : vid.platform === 'tiktok' ? '#00ffcc' : '#60a5fa' }}
                       >
-                        ↗
+                        {vid.platform === 'youtube' ? '▶ YouTube ↗' : vid.platform === 'tiktok' ? '🎵 TikTok ↗' : '📘 Facebook ↗'}
                       </a>
                     </div>
                   </div>
@@ -448,15 +455,85 @@ export default function VibeExplainerSection({ onClose }) {
               </button>
             </div>
 
-            <div className="vbe-modal-body">
-              <iframe
-                src={playingVideo.embedUrl}
-                title={playingVideo.title}
-                className="vbe-modal-iframe"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
+            {playingVideo.platform === 'youtube' ? (
+              <>
+                <div className="vbe-modal-body">
+                  <iframe
+                    src={playingVideo.embedUrl}
+                    title={playingVideo.title}
+                    className="vbe-modal-iframe"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="vbe-youtube-fallback-tip">
+                  <span>💡</span>
+                  <span>
+                    {lang === 'vi'
+                      ? 'Nếu trình duyệt chặn nhúng hoặc mạng chậm, bạn có thể bấm "Xem trên YouTube" bên dưới để mở xem trực tiếp.'
+                      : 'If your browser restricts embeds, click "Open in app" below to watch directly on YouTube.'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="vbe-social-modal-body">
+                <div className="vbe-social-preview-box" style={{ backgroundImage: `url(${playingVideo.thumb})` }}>
+                  <div className="vbe-social-overlay">
+                    <span className={`vbe-platform-badge ${playingVideo.platform}`} style={{ position: 'static', marginBottom: '8px' }}>
+                      {playingVideo.platform === 'tiktok' ? '🎵 Clip Viral TikTok' : '📘 Clip Facebook Reels'}
+                    </span>
+                    <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 800, margin: '8px 0 6px' }}>
+                      {playingVideo.title}
+                    </h3>
+                    <p style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.5', maxWidth: '520px', margin: '0 auto 16px' }}>
+                      {playingVideo.desc}
+                    </p>
+
+                    <a
+                      href={playingVideo.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="vbe-social-main-cta"
+                    >
+                      <span>{playingVideo.platform === 'tiktok' ? '🎵 MỞ & XEM VIDEO TRÊN TIKTOK ↗' : '📘 MỞ & XEM VIDEO TRÊN FACEBOOK REELS ↗'}</span>
+                    </a>
+                  </div>
+                </div>
+
+                {playingVideo.promptUsed && (
+                  <div className="vbe-modal-prompt-box">
+                    <div className="vbe-prompt-label">
+                      <span>💬</span>
+                      <span>{lang === 'vi' ? 'CÂU LỆNH VIBE PROMPT ĐÃ DÙNG TRONG VIDEO NÀY:' : 'VIBE PROMPT USED IN THIS VIDEO:'}</span>
+                    </div>
+                    <div className="vbe-prompt-text">{playingVideo.promptUsed}</div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                      <button
+                        type="button"
+                        className="vbe-btn-copy"
+                        onClick={() => handleCopyPrompt(playingVideo.promptUsed)}
+                      >
+                        <span>📋</span>
+                        <span>{lang === 'vi' ? 'Sao chép Prompt này' : 'Copy Prompt'}</span>
+                      </button>
+                      {playingVideo.templateId && (
+                        <button
+                          type="button"
+                          className="vbe-btn-run"
+                          onClick={() => {
+                            setPlayingVideo(null);
+                            openPlayground(playingVideo.templateId);
+                          }}
+                        >
+                          <span>▶️</span>
+                          <span>{lang === 'vi' ? 'Chạy thử kết quả trong Sandbox' : 'Run in Sandbox'}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="vbe-modal-footer">
               <p>{playingVideo.desc}</p>
@@ -466,7 +543,13 @@ export default function VibeExplainerSection({ onClose }) {
                 rel="noopener noreferrer"
                 className="vbe-modal-ext-link"
               >
-                <span>{lang === 'vi' ? 'Xem trên ứng dụng gốc' : 'Open in app'}</span>
+                <span>
+                  {playingVideo.platform === 'youtube'
+                    ? (lang === 'vi' ? 'Xem trên YouTube' : 'Open in YouTube')
+                    : playingVideo.platform === 'tiktok'
+                    ? (lang === 'vi' ? 'Xem trên TikTok' : 'Open in TikTok')
+                    : (lang === 'vi' ? 'Xem trên Facebook' : 'Open in Facebook')}
+                </span>
                 <span>↗</span>
               </a>
             </div>
