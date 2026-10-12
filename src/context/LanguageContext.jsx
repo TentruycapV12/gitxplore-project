@@ -17,7 +17,7 @@ export const LANGUAGES = [
 
 export const TRANSLATIONS = {
   vi: {
-    community: 'Cộng đồng', about: 'Giới thiệu', support: 'Hỗ trợ', language: 'Ngôn ngữ', register: 'Đăng ký', signin: 'Đăng nhập', signout: 'Đăng xuất',
+    community: 'Cộng đồng', about: 'Giới thiệu', support: 'Hỗ trợ', language: 'Ngôn ngữ', register: 'Đăng ký', signin: 'Đăng nhập', signout: 'Đăng xuất', marketplace: 'Chợ Công Nghệ',
     welcome_sub: '⚡ NỀN TẢNG TINH HOA LẬP TRÌNH & VIBE CODING THẾ HỆ MỚI',
     welcome_title: 'GITXPLORE',
     welcome_desc: 'Khám phá tinh hoa mã nguồn mở, trang bị .cursorrules & MCP chuẩn Vibe Coding, khai phóng sức mạnh siêu việt cho lập trình viên.',
@@ -60,7 +60,7 @@ export const TRANSLATIONS = {
     acc_return: '← Quay lại GitXplore'
   },
   en: {
-    community: 'Community', about: 'About', support: 'Support', language: 'Language', register: 'Register', signin: 'Sign in', signout: 'Sign out',
+    community: 'Community', about: 'About', support: 'Support', language: 'Language', register: 'Register', signin: 'Sign in', signout: 'Sign out', marketplace: 'Marketplace',
     welcome_sub: '⚡ NEXT-GEN DEVELOPER & VIBE CODING PLATFORM',
     welcome_title: 'GITXPLORE',
     welcome_desc: 'Explore curated open-source repositories, equip .cursorrules & MCP for Vibe Coding, and build software at superhuman velocity.',

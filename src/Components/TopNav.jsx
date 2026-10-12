@@ -248,7 +248,7 @@ export default function TopNav() {
                   <span style={{ fontSize: '18px' }}>⚖️</span><span>So sánh Repo</span>
                 </button>
                 <button type="button" onClick={() => go('/market')}>
-                  <span style={{ fontSize: '18px' }}>🛒</span><span>Chợ Công Nghệ</span>
+                  <span style={{ fontSize: '18px' }}>🛒</span><span>{t('marketplace') || (lang === 'vi' ? 'Chợ Công Nghệ' : 'Marketplace')}</span>
                 </button>
                 <button type="button" onClick={() => go('/vibe')}>{ICONS.vibe}<span>{t('vibe_nav') || 'Vibe Coding'}</span></button>
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
