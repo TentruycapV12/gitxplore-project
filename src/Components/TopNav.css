@@ -106,31 +106,44 @@
   position: relative;
   display: flex;
   align-items: center;
+  height: 100%;
 }
 
 .tn-sub-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 4px);
   left: 50%;
-  transform: translateX(-50%) translateY(6px);
-  background: rgba(18, 9, 10, 0.95);
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(18, 9, 10, 0.96);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  border: 1px solid rgba(245, 158, 11, 0.4);
   border-radius: 14px;
   padding: 6px;
-  min-width: 210px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+  min-width: 220px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(245, 158, 11, 0.15);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
   z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* Cầu nối chuột vô hình (Invisible Bridge): giữ hover tuyệt đối khi kéo chuột từ icon xuống menu */
+.tn-sub-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: transparent;
+}
+
 .tn-tab-wrap:hover .tn-sub-dropdown,
-.tn-tab-wrap:focus-within .tn-sub-dropdown {
+.tn-tab-wrap:focus-within .tn-sub-dropdown,
+.tn-sub-dropdown.is-open {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0);
@@ -139,20 +152,21 @@
 .tn-sub-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 10px 14px;
   border-radius: 10px;
   background: transparent;
   border: none;
   color: #fef08a;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
   text-decoration: none;
   width: 100%;
 }
 
 .tn-sub-item:hover {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.16);
+  transform: translateX(3px);
 }
 
 /* ---------- Phải ---------- */

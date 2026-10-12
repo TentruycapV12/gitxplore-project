@@ -61,8 +61,21 @@ export default function TopNav() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menu, setMenu] = useState(null); // 'apps' | 'user' | 'notif' | null
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hoveredSubmenu, setHoveredSubmenu] = useState(false);
+  const submenuTimerRef = useRef(null);
   const { unreadCount } = useNotifications();
   const rootRef = useRef(null);
+
+  const handleSubmenuEnter = () => {
+    if (submenuTimerRef.current) clearTimeout(submenuTimerRef.current);
+    setHoveredSubmenu(true);
+  };
+
+  const handleSubmenuLeave = () => {
+    submenuTimerRef.current = setTimeout(() => {
+      setHoveredSubmenu(false);
+    }, 240); // 240ms grace period for frictionless cursor movement
+  };
 
   useEffect(() => {
     if (pathname === '/search') setQuery(new URLSearchParams(search).get('q') || '');
@@ -141,7 +154,12 @@ export default function TopNav() {
       {/* ===== GIỮA: tab icon ===== */}
       <nav className="tn-tabs" aria-label={t('ui_main_nav')}>
         {TABS.map((tab) => (
-          <div key={tab.id} className="tn-tab-wrap">
+          <div
+            key={tab.id}
+            className={`tn-tab-wrap ${tab.hasSubmenu ? 'has-submenu' : ''}`}
+            onMouseEnter={tab.hasSubmenu ? handleSubmenuEnter : undefined}
+            onMouseLeave={tab.hasSubmenu ? handleSubmenuLeave : undefined}
+          >
             <button
               type="button"
               className={`tn-tab ${activeId === tab.id ? 'is-active' : ''}`}
@@ -150,30 +168,43 @@ export default function TopNav() {
               aria-current={activeId === tab.id ? 'page' : undefined}
             >
               {ICONS[tab.id]}
-              <span className="tn-tip">{tabLabel[tab.id]}</span>
+              {!tab.hasSubmenu && <span className="tn-tip">{tabLabel[tab.id]}</span>}
             </button>
 
             {tab.hasSubmenu && (
-              <div className="tn-sub-dropdown" role="menu">
+              <div
+                className={`tn-sub-dropdown ${hoveredSubmenu ? 'is-open' : ''}`}
+                role="menu"
+                onMouseEnter={handleSubmenuEnter}
+                onMouseLeave={handleSubmenuLeave}
+              >
                 <button
                   type="button"
                   className="tn-sub-item"
-                  onClick={(e) => { e.stopPropagation(); go('/community'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHoveredSubmenu(false);
+                    go('/community');
+                  }}
                 >
-                  <span style={{ fontSize: '16px' }}>👥</span>
+                  <span style={{ fontSize: '18px' }}>👥</span>
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700, fontSize: '12.5px', color: '#fef08a' }}>{t('community')}</div>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#fef08a' }}>{t('community')}</div>
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>{lang === 'vi' ? 'Dự án & Thành viên' : 'Members & Projects'}</div>
                   </div>
                 </button>
                 <button
                   type="button"
                   className="tn-sub-item"
-                  onClick={(e) => { e.stopPropagation(); go('/forum'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHoveredSubmenu(false);
+                    go('/forum');
+                  }}
                 >
-                  <span style={{ fontSize: '16px' }}>💬</span>
+                  <span style={{ fontSize: '18px' }}>💬</span>
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700, fontSize: '12.5px', color: '#fef08a' }}>{FORUM_LABEL[lang] || FORUM_LABEL.en}</div>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#fef08a' }}>{FORUM_LABEL[lang] || FORUM_LABEL.en}</div>
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>{lang === 'vi' ? 'Diễn đàn Thảo luận' : 'Discussion Forum'}</div>
                   </div>
                 </button>
