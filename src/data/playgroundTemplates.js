@@ -416,5 +416,108 @@ export const PLAYGROUND_TEMPLATES = [
   </script>
 </body>
 </html>`
+  },
+
+  {
+    id: 'fireworks',
+    title: '🎆 Pháo Hoa Hạt 3D Tương Tác (Particle Fireworks)',
+    category: 'Creative & Animation',
+    description: 'Màn trình diễn pháo hoa hạt phát sáng tương tác theo cú click chuột hoặc chạm màn hình, kèm lời chúc mừng và hiệu ứng ánh sáng Neon rực rỡ.',
+    prompt: 'Tạo một trang web hiệu ứng pháo hoa tương tác bằng HTML5 Canvas, khi click hoặc chạm màn hình thì bắn chùm pháo hoa hạt neon nhiều màu sắc bung tỏa cùng lời chúc mừng.',
+    code: `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Fireworks Show</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #05050a; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; cursor: crosshair; user-select: none; }
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    .hud { position: relative; z-index: 2; text-align: center; pointer-events: none; }
+    h1 { font-size: 32px; font-weight: 800; color: #fef08a; text-shadow: 0 0 20px #f59e0b; margin-bottom: 8px; letter-spacing: 2px; }
+    p { font-size: 15px; color: #94a3b8; margin-bottom: 16px; }
+    .badge { display: inline-block; padding: 6px 16px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 999px; color: #fbbf24; font-size: 13px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="hud">
+    <h1>✨ VIBE CELEBRATION</h1>
+    <p>Nhấp chuột hoặc chạm vào màn hình bất kỳ đâu để bắn pháo hoa!</p>
+    <div class="badge">🎆 Đã bắn: <span id="count">0</span> chùm pháo hoa</div>
+  </div>
+
+  <script>
+    const cv = document.getElementById('canvas');
+    const ctx = cv.getContext('2d');
+    let w = cv.width = window.innerWidth;
+    let h = cv.height = window.innerHeight;
+    window.addEventListener('resize', () => { w = cv.width = window.innerWidth; h = cv.height = window.innerHeight; });
+
+    let particles = [];
+    let count = 0;
+    const colors = ['#f59e0b', '#ef4444', '#38bdf8', '#10b981', '#c084fc', '#f43f5e', '#facc15'];
+
+    function createFirework(x, y) {
+      count++;
+      document.getElementById('count').textContent = count;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 60; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 6 + 2;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          alpha: 1,
+          decay: Math.random() * 0.02 + 0.015,
+          color,
+          size: Math.random() * 3 + 2
+        });
+      }
+    }
+
+    window.addEventListener('pointerdown', e => {
+      createFirework(e.clientX, e.clientY);
+    });
+
+    // Tự động bắn mở màn
+    createFirework(w * 0.5, h * 0.4);
+    setTimeout(() => createFirework(w * 0.35, h * 0.35), 400);
+    setTimeout(() => createFirework(w * 0.65, h * 0.35), 700);
+
+    function loop() {
+      requestAnimationFrame(loop);
+      ctx.fillStyle = 'rgba(5, 5, 10, 0.2)';
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.08; // trọng lực nhẹ
+        p.alpha -= p.decay;
+
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    loop();
+  </script>
+</body>
+</html>`
   }
 ];
+

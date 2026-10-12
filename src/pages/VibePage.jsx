@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { VIBE_CATEGORIES, VIBE_ENGINES, VIBE_TEMPLATES } from '../data/vibeTemplatesData';
 import { downloadZipBundle } from '../lib/zipExport';
+import VibeExplainerSection from '../Components/VibeExplainerSection.jsx';
 import './VibePage.css';
 
 const SAVED_STORAGE_KEY = 'gx_vibe_saved_templates';
@@ -81,7 +82,7 @@ export default function VibePage() {
   const [savedIds, setSavedIds] = useState(loadSavedIds);
   const [userTemplates, setUserTemplates] = useState(loadUserTemplates);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
 
   // Modals
   const [inspectItem, setInspectItem] = useState(null);
@@ -359,87 +360,41 @@ export default function VibePage() {
           </a>
         </div>
 
-        {/* Guide Toggle Button */}
-        <div style={{ marginTop: '20px' }}>
+        {/* Guide & Onboarding Toggle Button */}
+        <div style={{ marginTop: '22px' }}>
           <button
             type="button"
             className="vb-guide-toggle-btn"
             onClick={() => setShowGuide((prev) => !prev)}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
+              background: showGuide ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.16))' : 'rgba(255, 255, 255, 0.05)',
+              border: showGuide ? '1px solid #f59e0b' : '1px solid rgba(245, 158, 11, 0.35)',
               color: '#fef08a',
-              padding: '8px 18px',
+              padding: '10px 22px',
               borderRadius: '999px',
-              fontSize: '13px',
-              fontWeight: 600,
+              fontSize: '13.5px',
+              fontWeight: 750,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '8px',
               transition: 'all 0.2s',
+              boxShadow: showGuide ? '0 0 20px rgba(245, 158, 11, 0.28)' : 'none',
             }}
           >
             <span>💡</span>
-            <span>{showGuide ? (lang === 'vi' ? 'Thu gọn hướng dẫn 3 bước' : 'Hide 3-Step Guide') : (lang === 'vi' ? 'Xem hướng dẫn Vibe Coding 3 bước cho người mới' : 'Quick 3-step beginner guide')}</span>
-            <span>{showGuide ? '▲' : '▼'}</span>
+            <span>
+              {showGuide
+                ? (lang === 'vi' ? 'Thu gọn Cẩm nang & Video Vibe Coding' : 'Hide Vibe Guide & Videos')
+                : (lang === 'vi' ? '✨ Vibe Coding Là Gì? Xem Video Hướng Dẫn & 5 Code Test Mẫu' : '✨ What is Vibe Coding? Watch Videos & 5 Test Starters')}
+            </span>
+            <span style={{ fontSize: '11px' }}>{showGuide ? '▲' : '▼'}</span>
           </button>
         </div>
 
-        {/* FAST 3-STEP BEGINNER GUIDE FOR VIBE CODING */}
+        {/* VIBE CODING EXPLAINER, VIDEOS & INTERACTIVE STARTERS */}
         {showGuide && (
-          <div style={{
-            maxWidth: '920px',
-            margin: '20px auto 0',
-            background: 'linear-gradient(135deg, rgba(20, 27, 45, 0.9), rgba(12, 16, 28, 0.95))',
-            border: '1px solid rgba(245, 158, 11, 0.35)',
-            borderRadius: '18px',
-            padding: '22px 24px',
-            backdropFilter: 'blur(16px)',
-            textAlign: 'left',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5)',
-            animation: 'fadeIn 0.2s ease-out',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fef08a', fontWeight: 800, fontSize: '14px' }}>
-                <span>💡</span>
-                <span>{lang === 'vi' ? 'Quy trình sử dụng Vibe Coding (3 bước chuẩn Cursor / Claude Code):' : '3-Step Vibe Coding Workflow:'}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGuide(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}
-              >
-                ✕ {lang === 'vi' ? 'Đóng' : 'Close'}
-              </button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.25)' }}>
-                <div style={{ color: '#10b981', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
-                  {lang === 'vi' ? 'BƯỚC 1: CÀI ĐẶT TRÌNH SOẠN THẢO' : 'STEP 1: INSTALL EDITOR'}
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#e2e8f0', lineHeight: '1.5' }}>
-                  {lang === 'vi' ? 'Tải Cursor IDE, Windsurf hoặc VS Code (có Claude Code / GitHub Copilot).' : 'Download Cursor IDE, Windsurf or VS Code with Claude Code.'}
-                </div>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.25)' }}>
-                <div style={{ color: '#38bdf8', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
-                  {lang === 'vi' ? 'BƯỚC 2: SAO CHÉP QUY TẮC (.cursorrules)' : 'STEP 2: COPY RULE (.cursorrules)'}
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#e2e8f0', lineHeight: '1.5' }}>
-                  {lang === 'vi' ? 'Chọn 1 thẻ mẫu chuyên ngành bên dưới và bấm nút ⚡ Sao chép Rule.' : 'Pick a verified template below and click ⚡ Copy Rule.'}
-                </div>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.25)' }}>
-                <div style={{ color: '#f59e0b', fontWeight: 800, fontSize: '12px', marginBottom: '4px' }}>
-                  {lang === 'vi' ? 'BƯỚC 3: DÁN VÀO DỰ ÁN & RA LỆNH' : 'STEP 3: PASTE & PROMPT'}
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#e2e8f0', lineHeight: '1.5' }}>
-                  {lang === 'vi' ? 'Tạo file .cursorrules ở gốc dự án và prompt AI tự nhiên để code tự sinh!' : 'Create .cursorrules at project root and chat naturally with AI!'}
-                </div>
-              </div>
-            </div>
-          </div>
+          <VibeExplainerSection onClose={() => setShowGuide(false)} />
         )}
       </section>
 
