@@ -22,6 +22,17 @@ export function useNotifications() {
     setNotifications(loadNotifications());
   }, [storageKey]);
 
+  // Lắng nghe sự kiện thêm thông báo từ mọi nơi trên web (real-time)
+  useEffect(() => {
+    const handleCustomNotif = (e) => {
+      if (e.detail) {
+        setNotifications((prev) => [e.detail, ...prev]);
+      }
+    };
+    window.addEventListener('gx-add-notification', handleCustomNotif);
+    return () => window.removeEventListener('gx-add-notification', handleCustomNotif);
+  }, []);
+
   const saveNotifications = useCallback((updated) => {
     setNotifications(updated);
     try {
@@ -69,4 +80,40 @@ export function useNotifications() {
     clearAllNotifications,
     addNotification,
   };
+}
+
+/**
+ * Hàm gửi thông báo toàn sàn (Order, Escrow, Payout, Fee Collection)
+ */
+export function sendMarketplaceNotification(newItem, targetEmail) {
+  const itemWithDefaults = {
+    id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    timestamp: Date.now(),
+    read: false,
+    category: 'market',
+    ...newItem,
+  };
+
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('hka_user') || '{}');
+    const userKey = `gx_notifs_${currentUser?.identifier || 'guest'}`;
+    const userList = JSON.parse(localStorage.getItem(userKey) || '[]');
+    localStorage.setItem(userKey, JSON.stringify([itemWithDefaults, ...userList]));
+  } catch {
+    // ignore
+  }
+
+  // Đồng thời lưu cho Admin nếu có target
+  if (targetEmail) {
+    try {
+      const adminKey = `gx_notifs_${targetEmail}`;
+      const adminList = JSON.parse(localStorage.getItem(adminKey) || '[]');
+      localStorage.setItem(adminKey, JSON.stringify([itemWithDefaults, ...adminList]));
+    } catch {
+      // ignore
+    }
+  }
+
+  // Bắn event để TopNav Notification bell cập nhật tức thì
+  window.dispatchEvent(new CustomEvent('gx-add-notification', { detail: itemWithDefaults }));
 }

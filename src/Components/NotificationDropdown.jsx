@@ -13,6 +13,10 @@ const TYPE_ICONS = {
   like: { icon: '👍', bg: '#2563eb' },
   comment: { icon: '💬', bg: '#10b981' },
   reaction: { icon: '❤️', bg: '#ec4899' },
+  order: { icon: '📦', bg: '#f59e0b' },
+  escrow: { icon: '🛡️', bg: '#10b981' },
+  wallet: { icon: '💰', bg: '#3b82f6' },
+  admin: { icon: '👑', bg: '#ec4899' },
 };
 
 const formatRelTime = (ts, t) => {

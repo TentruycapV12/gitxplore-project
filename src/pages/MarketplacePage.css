@@ -1120,3 +1120,124 @@
   border-color: #10b981;
   color: #000000;
 }
+
+/* ===== 9. ADMIN PORTAL & PLATFORM TREASURY ===== */
+.mp-admin-badge-banner {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(168, 85, 247, 0.15));
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  border-radius: 14px;
+  padding: 10px 18px;
+  max-width: 980px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-admin-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mp-admin-pill {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fbcfe8;
+  background: rgba(236, 72, 153, 0.25);
+  border: 1px solid rgba(236, 72, 153, 0.5);
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+.mp-btn-admin-portal {
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.35);
+  transition: all 0.2s;
+}
+
+.mp-btn-admin-portal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+}
+
+/* Empty Catalog Onboarding */
+.mp-empty-catalog-card {
+  max-width: 860px;
+  margin: 40px auto 60px;
+  background: linear-gradient(135deg, rgba(20, 15, 26, 0.95), rgba(13, 9, 18, 0.95));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 22px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.mp-empty-catalog-icon {
+  font-size: 52px;
+  margin-bottom: 14px;
+}
+
+.mp-empty-catalog-card h3 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 10px;
+}
+
+.mp-empty-catalog-card p {
+  font-size: 14.5px;
+  color: #94a3b8;
+  max-width: 620px;
+  margin: 0 auto 24px;
+  line-height: 1.6;
+}
+
+.mp-empty-catalog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Seller Central Tabs & Steps */
+.mp-seller-steps-bar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.mp-step-tab {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mp-step-tab.is-active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #fef08a;
+}
+

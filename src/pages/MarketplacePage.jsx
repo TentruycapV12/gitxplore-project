@@ -12,12 +12,18 @@ import {
   INITIAL_MARKET_PRODUCTS,
 } from '../data/marketplaceData.js';
 import { getMarketplaceText } from '../data/marketplaceTranslations.js';
+import { sendMarketplaceNotification } from '../hooks/useNotifications.js';
 import './MarketplacePage.css';
 
-const STORAGE_PRODUCTS_KEY = 'gx_marketplace_products_v3';
+const STORAGE_PRODUCTS_KEY = 'gx_marketplace_products_v4';
 const STORAGE_ORDERS_KEY = 'gx_marketplace_orders_v3';
 const STORAGE_VOUCHERS_KEY = 'gx_marketplace_saved_vouchers_v3';
 const STORAGE_SELLER_KYC_KEY = 'gx_marketplace_seller_kyc_v3';
+const STORAGE_ADMIN_TREASURY_KEY = 'gx_admin_fee_treasury_v1';
+
+// Super Admin / Platform Regulator credentials
+const ADMIN_EMAIL = 'phamanhhoang920@gmail.com';
+const ADMIN_PUBLIC_ID = '63292076';
 
 // Format tiền tệ theo ngôn ngữ được chọn
 const formatCurrency = (num, lang = 'vi') => {
@@ -37,15 +43,22 @@ export default function MarketplacePage() {
   const isVi = lang === 'vi';
   const txt = (key, params) => getMarketplaceText(lang, key, params);
 
-  // 1. Quản lý danh sách sản phẩm
+  // Kiểm tra tài khoản Super Admin (Chủ sàn GitXplore)
+  const isAdmin = Boolean(
+    (user?.identifier || user?.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase() ||
+    String(user?.publicId || user?.id || '') === ADMIN_PUBLIC_ID ||
+    user?.role === 'admin'
+  );
+
+  // 1. Quản lý danh sách sản phẩm (Mặc định ban đầu trống - Người bán đăng tải qua Seller Central)
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved !== null) return JSON.parse(saved);
     } catch {
       // ignore
     }
-    return INITIAL_MARKET_PRODUCTS;
+    return [];
   });
 
   useEffect(() => {
@@ -150,18 +163,56 @@ export default function MarketplacePage() {
   // 7. Modals & Dialogs
   const [selectedProduct, setSelectedProduct] = useState(null); // Chi tiết sản phẩm
   const [checkoutProduct, setCheckoutProduct] = useState(null); // Đặt mua & Ký quỹ
-  const [showPostModal, setShowPostModal] = useState(false); // Đăng bán sản phẩm
+  const [showPostModal, setShowPostModal] = useState(false); // Đăng bán sản phẩm (Seller Central)
   const [showMyOrdersModal, setShowMyOrdersModal] = useState(false); // Quản lý đơn hàng & Ví sàn
   const [ordersModalTab, setOrdersModalTab] = useState('buyer'); // 'buyer' | 'seller'
   const [showKYCModal, setShowKYCModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false); // Két Phí Dịch Vụ & Quản Trị Super Admin
+
+  // Quản lý Két Doanh Thu Thu Phí Dịch Vụ Sàn (2.5% Escrow Fee Vault)
+  const [adminTreasury, setAdminTreasury] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_ADMIN_TREASURY_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return {
+      beneficiaryEmail: ADMIN_EMAIL,
+      beneficiaryId: ADMIN_PUBLIC_ID,
+      totalFeesCollected: 387500,
+      transactions: [
+        {
+          id: 'TXN-FEE-88921',
+          orderId: 'GX-ESC-50291',
+          amount: 387500,
+          rate: '2.5%',
+          productTitle: 'MacBook Pro 14 M3 Pro 18GB/512GB (Fullbox)',
+          timestamp: '2026-10-10T14:30:00.000Z',
+        },
+      ],
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_ADMIN_TREASURY_KEY, JSON.stringify(adminTreasury));
+    } catch {
+      // ignore
+    }
+  }, [adminTreasury]);
 
   // Mở modal nếu có query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('post') === 'true') {
-      setShowPostModal(true);
+      if (isAdmin) {
+        alert(txt('admin_no_post_notice'));
+      } else {
+        setShowPostModal(true);
+      }
     }
-  }, []);
+  }, [isAdmin]);
 
   // 8. Máy tính biểu phí tương tác (Live Fee & Tax Calculator)
   // Phí sàn 2.5% + Thuế khấu trừ 1.5% (Nghị định 117/2025/NĐ-CP)
@@ -220,15 +271,34 @@ export default function MarketplacePage() {
     setSelectedProduct(null);
     setOrdersModalTab('buyer');
     setShowMyOrdersModal(true);
+
+    // Gửi thông báo thực tế tới TopNav notification bell
+    sendMarketplaceNotification({
+      title: isVi ? `🛡️ Đã nạp cọc Ký Quỹ Escrow: Đơn ${newOrder.id}` : `🛡️ Escrow Deposited: Order ${newOrder.id}`,
+      message: isVi
+        ? `Số tiền ${formatCurrency(newOrder.totalAmount, lang)} đã được bảo chứng an toàn tại Két Escrow GitXplore cho "${newOrder.productTitle}". Người bán đang chuẩn bị đóng gói!`
+        : `Amount of ${formatCurrency(newOrder.totalAmount, lang)} is securely locked in Escrow for "${newOrder.productTitle}". Seller is preparing package.`,
+      type: 'escrow',
+      category: 'market',
+      link: '/marketplace',
+    });
   };
 
   // 11. Xử lý người mua bấm xác nhận hoàn tất & giải ngân
   const handleConfirmOrderReceived = (orderId) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return;
+
     const confirmMsg = isVi
       ? 'Bạn xác nhận đã nhận đúng sản phẩm, kiểm tra hoàn tất 48h và đồng ý giải ngân tiền cho Người Bán?'
       : 'Do you confirm that you have received and inspected the item, and agree to release funds to the Seller?';
 
     if (window.confirm(confirmMsg)) {
+      const grossPrice = targetOrder.productPrice || targetOrder.totalAmount || 0;
+      const fee2_5 = Math.round(grossPrice * 0.025);
+      const tax1_5 = Math.round(grossPrice * 0.015);
+      const sellerNet = grossPrice - fee2_5 - tax1_5;
+
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
@@ -242,13 +312,100 @@ export default function MarketplacePage() {
             : o
         )
       );
+
+      // Cập nhật Két Phí Dịch Vụ Admin Vault (phamanhhoang920@gmail.com)
+      setAdminTreasury((prev) => ({
+        ...prev,
+        totalFeesCollected: (prev.totalFeesCollected || 0) + fee2_5,
+        transactions: [
+          {
+            id: `TXN-FEE-${Date.now().toString().slice(-6)}`,
+            orderId: targetOrder.id,
+            amount: fee2_5,
+            rate: '2.5%',
+            productTitle: targetOrder.productTitle,
+            timestamp: new Date().toISOString(),
+          },
+          ...(prev.transactions || []),
+        ],
+      }));
+
+      // Bắn thông báo cho Người mua & Người bán
+      sendMarketplaceNotification({
+        title: isVi ? `✅ Giao dịch hoàn tất • Đã giải ngân: ${targetOrder.id}` : `✅ Order Completed • Payout Released: ${targetOrder.id}`,
+        message: isVi
+          ? `Đơn hàng "${targetOrder.productTitle}" đã hoàn tất 48h kiểm nghiệm. Người bán đã nhận ${formatCurrency(sellerNet, lang)} vào ví sàn!`
+          : `Order "${targetOrder.productTitle}" completed 48h trial. Seller received ${formatCurrency(sellerNet, lang)} into wallet!`,
+        type: 'wallet',
+        category: 'market',
+        link: '/marketplace',
+      });
+
+      // Bắn thông báo thu phí sàn 2.5% tới Super Admin phamanhhoang920@gmail.com
+      sendMarketplaceNotification(
+        {
+          title: isVi ? `👑 Thu phí dịch vụ sàn 2.5%: Đơn ${targetOrder.id}` : `👑 Platform Fee Collected 2.5%: Order ${targetOrder.id}`,
+          message: isVi
+            ? `Sàn GitXplore đã thu phí dịch vụ ${formatCurrency(fee2_5, lang)} từ đơn ${targetOrder.id} và ghi có vào Két Doanh Thu của Super Admin (${ADMIN_EMAIL}).`
+            : `GitXplore collected service fee ${formatCurrency(fee2_5, lang)} from order ${targetOrder.id} into Super Admin Vault (${ADMIN_EMAIL}).`,
+          type: 'admin',
+          category: 'market',
+          link: '/marketplace',
+        },
+        ADMIN_EMAIL
+      );
     }
   };
 
-  // 12. Xử lý thêm sản phẩm mới
+  // 12. Xử lý thêm sản phẩm mới (từ Seller Central)
   const handleAddNewProduct = (newProd) => {
     setProducts((prev) => [newProd, ...prev]);
     setShowPostModal(false);
+
+    // Gửi thông báo đăng sản phẩm thành công
+    sendMarketplaceNotification({
+      title: isVi ? `📦 Đã đăng bán sản phẩm mới lên sàn!` : `📦 New Product Listed on Marketplace!`,
+      message: isVi
+        ? `Sản phẩm "${newProd.title}" (Mã định danh GTIN/SKU: ${newProd.sku || 'Generic'}) đã được niêm yết công khai trên chợ GitXplore.`
+        : `Product "${newProd.title}" (GTIN/SKU: ${newProd.sku || 'Generic'}) is now live on GitXplore marketplace.`,
+      type: 'order',
+      category: 'market',
+      link: '/marketplace',
+    });
+  };
+
+  // 13. Xử lý trọng tài giải quyết tranh chấp (Admin 48H Arbitration)
+  const handleDisputeResolve = (orderId, resolution) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return;
+
+    if (resolution === 'release_to_seller') {
+      handleConfirmOrderReceived(orderId);
+    } else if (resolution === 'refund_buyer') {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'completed',
+                statusLabel: isVi
+                  ? 'Trọng tài hoàn tiền 100% cho Người Mua'
+                  : 'Arbitration 100% refunded to Buyer',
+              }
+            : o
+        )
+      );
+
+      sendMarketplaceNotification({
+        title: isVi ? `↩ Hoàn tiền thành công: Đơn ${targetOrder.id}` : `↩ Refund Completed: Order ${targetOrder.id}`,
+        message: isVi
+          ? `Trọng tài Sàn GitXplore đã phê duyệt hoàn tiền ${formatCurrency(targetOrder.totalAmount, lang)} về tài khoản của bạn.`
+          : `GitXplore Arbitration approved refund of ${formatCurrency(targetOrder.totalAmount, lang)} to your account.`,
+        type: 'wallet',
+        category: 'market',
+        link: '/marketplace',
+      });
+    }
   };
 
   // 13. Sổ cái kép & Doanh thu Người bán (Double-entry Ledger)
@@ -273,6 +430,30 @@ export default function MarketplacePage() {
 
       {/* ===== 1. HERO SECTION ===== */}
       <section className="mp-hero">
+        {/* Super Admin Identity Banner */}
+        {isAdmin && (
+          <div className="mp-admin-badge-banner">
+            <div className="mp-admin-info">
+              <span className="mp-admin-pill">{txt('admin_badge')}</span>
+              <span style={{ fontSize: '13px', color: '#fbcfe8' }}>
+                <strong>{ADMIN_EMAIL}</strong> • ID: <strong>{ADMIN_PUBLIC_ID}</strong>
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '12px', color: '#fef08a' }}>
+                💰 {txt('admin_fee_balance')} <strong>{formatCurrency(adminTreasury.totalFeesCollected, lang)}</strong>
+              </span>
+              <button
+                type="button"
+                className="mp-btn-admin-portal"
+                onClick={() => setShowAdminModal(true)}
+              >
+                👑 {txt('admin_portal_btn')}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mp-hero-badge">
           <span>{txt('hero_badge')}</span>
         </div>
@@ -320,19 +501,29 @@ export default function MarketplacePage() {
 
         {/* Hero Actions */}
         <div className="mp-hero-actions">
-          <button
-            type="button"
-            className="mp-btn-post"
-            onClick={() => {
-              if (!user) {
-                openModal('signin');
-              } else {
-                setShowPostModal(true);
-              }
-            }}
-          >
-            <span>{txt('btn_post_product')}</span>
-          </button>
+          {isAdmin ? (
+            <button
+              type="button"
+              className="mp-btn-post mp-btn-admin-portal"
+              onClick={() => setShowAdminModal(true)}
+            >
+              <span>👑 {txt('admin_portal_btn')}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="mp-btn-post"
+              onClick={() => {
+                if (!user) {
+                  openModal('signin');
+                } else {
+                  setShowPostModal(true);
+                }
+              }}
+            >
+              <span>🚀 {txt('btn_open_seller_central')}</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -555,12 +746,67 @@ export default function MarketplacePage() {
             <option value="price_asc">{txt('sort_price_asc')}</option>
             <option value="price_desc">{txt('sort_price_desc')}</option>
           </select>
+
+          {/* Quick Demo Catalog / Clear Catalog Toggle */}
+          {products.length === 0 ? (
+            <button
+              type="button"
+              className="mp-cat-pill"
+              style={{ borderColor: '#f59e0b', color: '#fef08a', padding: '8px 14px' }}
+              onClick={() => setProducts(INITIAL_MARKET_PRODUCTS)}
+            >
+              🎲 {txt('btn_load_demo_catalog')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="mp-cat-pill"
+              style={{ borderColor: '#ef4444', color: '#fca5a5', padding: '8px 14px' }}
+              onClick={() => {
+                if (window.confirm(isVi ? 'Bạn có chắc muốn xóa tất cả sản phẩm về danh mục trống?' : 'Reset to empty catalog?')) {
+                  setProducts([]);
+                }
+              }}
+            >
+              🗑️ {txt('btn_clear_to_empty')}
+            </button>
+          )}
         </div>
       </section>
 
       {/* ===== 7. PRODUCTS GRID ===== */}
       <section className="mp-products-section">
-        {filteredProducts.length === 0 ? (
+        {products.length === 0 ? (
+          <div className="mp-empty-catalog-card">
+            <div className="mp-empty-catalog-icon">🏪</div>
+            <h3>{txt('empty_market_title')}</h3>
+            <p>{txt('empty_market_desc')}</p>
+            <div className="mp-empty-catalog-actions">
+              <button
+                type="button"
+                className="mp-btn-post"
+                onClick={() => {
+                  if (isAdmin) {
+                    alert(txt('admin_no_post_notice'));
+                  } else if (!user) {
+                    openModal('signin');
+                  } else {
+                    setShowPostModal(true);
+                  }
+                }}
+              >
+                <span>🚀 {txt('btn_open_seller_central')}</span>
+              </button>
+              <button
+                type="button"
+                className="mp-btn-orders"
+                onClick={() => setProducts(INITIAL_MARKET_PRODUCTS)}
+              >
+                <span>🎲 {txt('btn_load_demo_catalog')}</span>
+              </button>
+            </div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="mp-empty-state">
             <div className="mp-empty-icon">🔌</div>
             <h3>{txt('empty_title')}</h3>
@@ -618,9 +864,9 @@ export default function MarketplacePage() {
         />
       )}
 
-      {/* ===== 10. MODAL ĐĂNG BÁN SẢN PHẨM MỚI ===== */}
+      {/* ===== 10. MODAL SELLER CENTRAL (AMAZON & SHOPEE STANDARD LISTING) ===== */}
       {showPostModal && (
-        <PostProductModal
+        <SellerCentralModal
           lang={lang}
           sellerKYC={sellerKYC}
           onOpenKYC={() => setShowKYCModal(true)}
@@ -629,7 +875,19 @@ export default function MarketplacePage() {
         />
       )}
 
-      {/* ===== 11. MODAL XÁC THỰC KYC (LUẬT TMĐT 2025) ===== */}
+      {/* ===== 11. MODAL KÉT DOANH THU THU PHÍ DỊCH VỤ SÀN (SUPER ADMIN) ===== */}
+      {showAdminModal && (
+        <AdminTreasuryModal
+          adminTreasury={adminTreasury}
+          orders={orders}
+          lang={lang}
+          sellerKYC={sellerKYC}
+          onClose={() => setShowAdminModal(false)}
+          onDisputeResolve={handleDisputeResolve}
+        />
+      )}
+
+      {/* ===== 12. MODAL XÁC THỰC KYC (LUẬT TMĐT 2025) ===== */}
       {showKYCModal && (
         <SellerKYCModal
           lang={lang}
@@ -642,7 +900,7 @@ export default function MarketplacePage() {
         />
       )}
 
-      {/* ===== 12. DRAWER KÉT SẮT & ĐƠN HÀNG (MY ORDERS & SELLER CENTER) ===== */}
+      {/* ===== 13. DRAWER KÉT SẮT & ĐƠN HÀNG (MY ORDERS & SELLER CENTER) ===== */}
       {showMyOrdersModal && (
         <MyOrdersModal
           orders={orders}
@@ -1064,33 +1322,45 @@ function CheckoutEscrowModal({ product, lang, savedVouchers, onClose, onConfirmO
 }
 
 /* ========================================================
-   SUB-COMPONENT: POST PRODUCT MODAL (ĐĂNG BÁN SẢN PHẨM)
+   SUB-COMPONENT: SELLER CENTRAL MODAL (AMAZON & SHOPEE FLOW)
 ======================================================== */
-function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct }) {
+function SellerCentralModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct }) {
   const isVi = lang === 'vi';
   const { user } = useAuth();
   const fileInputRef = useRef(null);
 
-  const [title, setTitle] = useState('');
+  // 5-Step Wizard Navigation
+  const [step, setStep] = useState(1);
+
+  // Form states
+  const [isNewToCatalog, setIsNewToCatalog] = useState(true);
+  const [sku, setSku] = useState('GTIN-' + Math.floor(100000 + Math.random() * 900000));
   const [category, setCategory] = useState('components-circuits');
+  const [brand, setBrand] = useState('');
+  const [modelOrCpu, setModelOrCpu] = useState('');
+
+  const [title, setTitle] = useState('');
+  const [imageUrls, setImageUrls] = useState('');
+  const [description, setDescription] = useState('');
+  const [keywords, setKeywords] = useState('');
+
   const [price, setPrice] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
   const [condition, setCondition] = useState('brand_new');
   const [stock, setStock] = useState('1');
-  const [deliveryType, setDeliveryType] = useState('physical');
-  const [description, setDescription] = useState('');
-  const [imageUrls, setImageUrls] = useState('');
-  const [specCpu, setSpecCpu] = useState('');
-  const [specWarranty, setSpecWarranty] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
 
-  // Tính phí sàn 2.5% + Thuế khấu trừ 1.5%
+  const [fulfillmentType, setFulfillmentType] = useState('FBM'); // 'FBM' | 'FBS'
+  const [specWarranty, setSpecWarranty] = useState('12 tháng chính hãng');
+  const [agreedTerms, setAgreedTerms] = useState(true);
+
+  // Dự toán đối soát phí sàn 2.5% + Thuế 1.5%
   const numPrice = Number(price) || 0;
   const estimatedFee = Math.round(numPrice * 0.025);
   const estimatedTax = Math.round(numPrice * 0.015);
   const estimatedReceive = numPrice - estimatedFee - estimatedTax;
 
-  // Xử lý upload ảnh từ máy tính (FileReader -> Base64)
+  // Upload file từ máy
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
     files.forEach((file) => {
@@ -1105,15 +1375,15 @@ function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct })
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title.trim() || !price) {
-      alert(isVi ? 'Vui lòng nhập tên sản phẩm và giá bán!' : 'Please enter product title and price!');
+  const handleFinalSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!title.trim() || !numPrice) {
+      alert(isVi ? 'Vui lòng điền đầy đủ tiêu đề sản phẩm và giá bán!' : 'Please enter product title and price!');
+      setStep(1);
       return;
     }
 
     const catObj = MARKET_CATEGORIES.find((c) => c.id === category);
-
     const rawImgs = imageUrls
       .split('\n')
       .map((s) => s.trim())
@@ -1121,11 +1391,15 @@ function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct })
     const finalImages = rawImgs.length > 0 ? rawImgs : ['https://images.unsplash.com/photo-1518770660439-4636190af475?w=800'];
 
     const specs = {};
-    if (specCpu) specs[isVi ? 'Vi xử lý / Model' : 'Processor / Model'] = specCpu;
+    if (sku) specs[isVi ? 'Mã định danh GTIN/SKU' : 'GTIN/SKU'] = sku;
+    if (brand) specs[isVi ? 'Thương hiệu' : 'Brand'] = brand;
+    if (modelOrCpu) specs[isVi ? 'Model / Vi xử lý' : 'Processor / Model'] = modelOrCpu;
     if (specWarranty) specs[isVi ? 'Bảo hành' : 'Warranty'] = specWarranty;
+    specs[isVi ? 'Hình thức hoàn thiện' : 'Fulfillment'] = fulfillmentType === 'FBM' ? 'FBM (Người bán tự giao)' : 'FBS (GitXplore Fulfillment)';
 
     const newProduct = {
       id: `prod-${Date.now()}`,
+      sku: sku || `GENERIC-${Math.floor(100000 + Math.random() * 900000)}`,
       title,
       title_en: title,
       category,
@@ -1136,9 +1410,11 @@ function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct })
       condition,
       stock: Number(stock) || 1,
       soldCount: 0,
-      deliveryType,
+      deliveryType: condition === 'digital_license' || fulfillmentType === 'FBS' ? 'digital' : 'physical',
+      fulfillmentType,
       images: finalImages,
       description,
+      keywords,
       specs,
       escrowSupported: true,
       serviceFeePercent: 2.5,
@@ -1161,29 +1437,35 @@ function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct })
 
   return (
     <div className="mp-modal-backdrop" onClick={onClose}>
-      <div className="mp-modal-box" onClick={(e) => e.stopPropagation()}>
+      <div className="mp-modal-box" style={{ maxWidth: '860px' }} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="mp-modal-close" onClick={onClose}>✕</button>
 
-        <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff' }}>
-          📤 {isVi ? 'Đăng Bán Thiết Bị Điện Tử (Phí Sàn 2.5%)' : 'List Electronics for Sale (2.5% Fee)'}
-        </h2>
-        <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 16px' }}>
-          {isVi
-            ? 'Đăng bán mọi thiết bị điện tử, vi mạch, PC, gia dụng, âm thanh hay công cụ AI lên toàn bộ sàn.'
-            : 'List phones, computers, semiconductors, smart home, audio, TVs or AI licenses on the marketplace.'}
-        </p>
-
-        {/* Thông báo KYC Luật TMĐT 2025 */}
-        <div style={{ background: sellerKYC?.isVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: '1px solid', borderColor: sellerKYC?.isVerified ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)', padding: '12px 16px', borderRadius: '12px', marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+        {/* Header Seller Central */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
-            <strong style={{ color: sellerKYC?.isVerified ? '#34d399' : '#f87171', fontSize: '13px', display: 'block' }}>
-              {sellerKYC?.isVerified
-                ? (isVi ? '✓ Danh tính người bán đã được KYC xác thực' : '✓ Seller Identity KYC Verified')
-                : (isVi ? '⚠️ Cần xác thực danh tính KYC (Luật TMĐT 2025)' : '⚠️ KYC Identity Required (E-Commerce Law)')}
-            </strong>
+            <h2 style={{ fontSize: '20px', fontWeight: 900, margin: 0, color: '#ffffff' }}>
+              🏪 {getMarketplaceText(lang, 'seller_central_title')}
+            </h2>
             <small style={{ color: '#94a3b8' }}>
-              {isVi ? `Chủ gian hàng: ${sellerKYC.fullName} • MST: ${sellerKYC.taxCode}` : `Store Owner: ${sellerKYC.fullName} • Tax: ${sellerKYC.taxCode}`}
+              {getMarketplaceText(lang, 'seller_central_subtitle')}
             </small>
+          </div>
+          <span style={{ fontSize: '12px', background: 'rgba(245,158,11,0.15)', border: '1px solid #f59e0b', color: '#fef08a', padding: '4px 10px', borderRadius: '8px' }}>
+            ⚡ {isVi ? 'Phí Sàn Trung Gian: 2.5%' : 'Platform Intermediary Fee: 2.5%'}
+          </span>
+        </div>
+
+        {/* KYC Compliance Status Banner */}
+        <div style={{ background: sellerKYC?.isVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: '1px solid', borderColor: sellerKYC?.isVerified ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)', padding: '10px 14px', borderRadius: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+          <div>
+            <strong style={{ color: sellerKYC?.isVerified ? '#34d399' : '#f87171', fontSize: '13px' }}>
+              {sellerKYC?.isVerified
+                ? (isVi ? '✓ Người Bán Đã Xác Thực KYC (Luật TMĐT 2025)' : '✓ Verified Seller KYC (E-Commerce Law)')
+                : (isVi ? '⚠️ Bắt buộc định danh KYC để nhận tiền giải ngân' : '⚠️ KYC Identity Required for Payouts')}
+            </strong>
+            <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
+              {isVi ? `Chủ Shop: ${sellerKYC.fullName} • MST: ${sellerKYC.taxCode}` : `Owner: ${sellerKYC.fullName} • Tax Code: ${sellerKYC.taxCode}`}
+            </div>
           </div>
           <button
             type="button"
@@ -1195,93 +1477,143 @@ function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct })
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mp-form-grid">
-            {/* Tên sản phẩm */}
-            <div className="mp-form-group is-full">
-              <label>{isVi ? 'Tên sản phẩm điện tử (*):' : 'Product Title (*):'}</label>
+        {/* Steps Bar */}
+        <div className="mp-seller-steps-bar">
+          <button
+            type="button"
+            className={`mp-step-tab ${step === 1 ? 'is-active' : ''}`}
+            onClick={() => setStep(1)}
+          >
+            1. {isVi ? 'Danh mục & Mã GTIN' : 'Catalog & GTIN'}
+          </button>
+          <button
+            type="button"
+            className={`mp-step-tab ${step === 2 ? 'is-active' : ''}`}
+            onClick={() => setStep(2)}
+          >
+            2. {isVi ? 'Tiêu đề & Hình ảnh' : 'Title & Media'}
+          </button>
+          <button
+            type="button"
+            className={`mp-step-tab ${step === 3 ? 'is-active' : ''}`}
+            onClick={() => setStep(3)}
+          >
+            3. {isVi ? 'Ưu đãi & Giá bán' : 'Offer & Pricing'}
+          </button>
+          <button
+            type="button"
+            className={`mp-step-tab ${step === 4 ? 'is-active' : ''}`}
+            onClick={() => setStep(4)}
+          >
+            4. {isVi ? 'Hoàn thiện (FBM/FBS)' : 'Fulfillment'}
+          </button>
+          <button
+            type="button"
+            className={`mp-step-tab ${step === 5 ? 'is-active' : ''}`}
+            onClick={() => setStep(5)}
+          >
+            5. {isVi ? 'Đối soát & Niêm yết' : 'Review & Publish'}
+          </button>
+        </div>
+
+        {/* STEP 1: Catalog & Product Identity */}
+        {step === 1 && (
+          <div className="mp-step-content">
+            <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#7dd3fc', fontWeight: 700, fontSize: '13.5px' }}>
+                <input
+                  type="checkbox"
+                  checked={isNewToCatalog}
+                  onChange={(e) => setIsNewToCatalog(e.target.checked)}
+                />
+                <span>✓ {isVi ? 'Tôi đang thêm một sản phẩm chưa từng bán trên GitXplore' : 'I am adding a product not sold on GitXplore'}</span>
+              </label>
+              <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>
+                {isVi
+                  ? 'Quy trình chuẩn Amazon: Thiết lập danh mục listing mới cho thiết bị phần cứng, linh kiện DIY hoặc key bản quyền số.'
+                  : 'Amazon Standard: Setup brand new catalog listing for hardware, DIY components, or digital AI licenses.'}
+              </small>
+            </div>
+
+            <div className="mp-form-grid">
+              <div className="mp-form-group">
+                <label>{isVi ? 'Mã định danh sản phẩm (GTIN / UPC / EAN / Generic) (*):' : 'Product Identifier (GTIN / UPC / EAN / Generic) (*):'}</label>
+                <input
+                  type="text"
+                  required
+                  placeholder={isVi ? 'Ví dụ: 8935212345678 hoặc Generic' : 'e.g., 8935212345678 or Generic'}
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                />
+                <small style={{ color: '#94a3b8' }}>
+                  {isVi ? 'Nếu sản phẩm tự chế, đồ cũ hoặc không có mã vạch, có thể nhập "Generic".' : 'If handmade, pre-owned or barcode-exempt, enter "Generic".'}
+                </small>
+              </div>
+
+              <div className="mp-form-group">
+                <label>{isVi ? 'Ngành hàng điện tử (*):' : 'Electronics Category (*):'}</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  {MARKET_CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.icon} {getMarketplaceText(lang, c.key) || c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mp-form-group">
+                <label>{isVi ? 'Thương hiệu / Hãng sản xuất:' : 'Brand / Manufacturer:'}</label>
+                <input
+                  type="text"
+                  placeholder={isVi ? 'Ví dụ: Apple, Sony, ESPRESSIF, Yamaha, NVIDIA...' : 'e.g., Apple, Sony, ESPRESSIF, Yamaha...'}
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                />
+              </div>
+
+              <div className="mp-form-group">
+                <label>{isVi ? 'Model thiết bị / Vi xử lý:' : 'Model / Processor:'}</label>
+                <input
+                  type="text"
+                  placeholder={isVi ? 'Ví dụ: ESP32-S3 Dual-Core, Apple M3, Core i7-14700K...' : 'e.g., ESP32-S3, Apple M3, Core i7...'}
+                  value={modelOrCpu}
+                  onChange={(e) => setModelOrCpu(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="mp-btn-post"
+                onClick={() => setStep(2)}
+              >
+                {isVi ? 'Tiếp Tục: Tiêu Đề & Hình Ảnh ➔' : 'Next: Title & Media ➔'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: Title, Media & Description */}
+        {step === 2 && (
+          <div className="mp-step-content">
+            <div className="mp-form-group" style={{ marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <label>{isVi ? 'Tiêu đề sản phẩm (Title - Tối đa 200 ký tự) (*):' : 'Product Title (Max 200 chars) (*):'}</label>
+                <span style={{ fontSize: '12px', color: title.length > 180 ? '#f87171' : '#94a3b8' }}>{title.length}/200</span>
+              </div>
               <input
                 type="text"
                 required
-                placeholder={isVi ? 'Ví dụ: iPhone 15 Pro Max / Kit ESP32-S3 AI / Piano Yamaha P-125...' : 'e.g., iPhone 15 Pro Max / ESP32-S3 AI Kit / Yamaha P-125 Piano...'}
+                maxLength={200}
+                placeholder={isVi ? 'Viết hoa chữ cái đầu: Ví dụ: MacBook Pro 14 M3 Pro 18GB/512GB Xám Không Gian (Fullbox)' : 'Capitalize each word: e.g., MacBook Pro 14 M3 Pro 18GB Space Gray (Fullbox)'}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
 
-            {/* Danh mục */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Phân loại ngành hàng điện tử (*):' : 'Electronics Category (*):'}</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {MARKET_CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {getMarketplaceText(lang, c.key) || c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tình trạng */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Tình trạng sản phẩm (*):' : 'Item Condition (*):'}</label>
-              <select value={condition} onChange={(e) => setCondition(e.target.value)}>
-                <option value="brand_new">{getMarketplaceText(lang, 'cond_brand_new')}</option>
-                <option value="like_new">{getMarketplaceText(lang, 'cond_like_new')}</option>
-                <option value="used">{getMarketplaceText(lang, 'cond_used')}</option>
-                <option value="digital_license">{getMarketplaceText(lang, 'cond_digital')}</option>
-              </select>
-            </div>
-
-            {/* Giá bán */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Giá bán niêm yết (VND) (*):' : 'Selling Price (VND) (*):'}</label>
-              <input
-                type="number"
-                required
-                min="10000"
-                step="10000"
-                placeholder="Ví dụ: 1500000"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </div>
-
-            {/* Giá gốc */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Giá gốc (nếu có giảm giá):' : 'Original Price (if on sale):'}</label>
-              <input
-                type="number"
-                min="10000"
-                step="10000"
-                placeholder="Ví dụ: 2000000"
-                value={originalPrice}
-                onChange={(e) => setOriginalPrice(e.target.value)}
-              />
-            </div>
-
-            {/* Số lượng tồn kho */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Số lượng tồn kho:' : 'Stock Quantity:'}</label>
-              <input
-                type="number"
-                min="1"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-              />
-            </div>
-
-            {/* Hình thức giao hàng */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Hình thức giao nhận:' : 'Fulfillment Type:'}</label>
-              <select value={deliveryType} onChange={(e) => setDeliveryType(e.target.value)}>
-                <option value="physical">{isVi ? 'Vận chuyển hàng hóa vật lý (GHN / Viettel Post / Hỏa tốc)' : 'Physical shipping (Couriers / 2H Express)'}</option>
-                <option value="digital">{isVi ? 'Giao trực tuyến qua email / mã kích hoạt số' : 'Instant digital license key'}</option>
-              </select>
-            </div>
-
-            {/* Upload Ảnh */}
-            <div className="mp-form-group is-full">
-              <label>{isVi ? 'Hình ảnh sản phẩm (Tải lên từ máy hoặc dán link):' : 'Product Images (Upload or paste links):'}</label>
+            <div className="mp-form-group" style={{ marginBottom: '14px' }}>
+              <label>{isVi ? 'Hình ảnh sản phẩm (Nền trắng rõ nét 500x500 hoặc 1000x1000) (*):' : 'Product Images (White background 500x500 or 1000x1000) (*):'}</label>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
                 <button
                   type="button"
@@ -1301,89 +1633,486 @@ function PostProductModal({ lang, sellerKYC, onOpenKYC, onClose, onAddProduct })
               </div>
               <textarea
                 rows="2"
-                placeholder={isVi ? 'Mỗi dòng 1 đường dẫn ảnh hoặc dữ liệu ảnh...' : 'One image URL per line...'}
+                placeholder={isVi ? 'Dán URL ảnh hoặc tải từ máy tính lên (mỗi dòng 1 đường dẫn)...' : 'Paste image URLs or uploaded files (one per line)...'}
                 value={imageUrls}
                 onChange={(e) => setImageUrls(e.target.value)}
               />
             </div>
 
-            {/* Thông số kỹ thuật nhanh */}
-            <div className="mp-form-group">
-              <label>{isVi ? 'Vi xử lý / Model thiết bị:' : 'Processor / Model:'}</label>
-              <input
-                type="text"
-                placeholder={isVi ? 'Ví dụ: Apple A17 Pro / ESP32-S3' : 'e.g., Apple A17 Pro / ESP32-S3'}
-                value={specCpu}
-                onChange={(e) => setSpecCpu(e.target.value)}
-              />
-            </div>
-            <div className="mp-form-group">
-              <label>{isVi ? 'Bảo hành / Cam kết:' : 'Warranty / Guarantee:'}</label>
-              <input
-                type="text"
-                placeholder={isVi ? 'Ví dụ: 12 tháng chính hãng / Bao test 7 ngày' : 'e.g., 12 months manufacturer'}
-                value={specWarranty}
-                onChange={(e) => setSpecWarranty(e.target.value)}
-              />
-            </div>
-
-            {/* Mô tả chi tiết */}
-            <div className="mp-form-group is-full">
+            <div className="mp-form-group" style={{ marginBottom: '14px' }}>
               <label>{isVi ? 'Mô tả chi tiết sản phẩm:' : 'Product Description:'}</label>
               <textarea
-                rows="4"
-                placeholder={isVi ? 'Mô tả công năng, phụ kiện đi kèm, tình trạng trầy xước, lý do nhượng lại...' : 'Describe specifications, condition, included accessories...'}
+                rows="3"
+                placeholder={isVi ? 'Mô tả công năng, ngoại hình trầy xước, phụ kiện đi kèm...' : 'Describe technical features, cosmetics, included accessories...'}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
-            {/* Tùy chọn VIP */}
-            <div className="mp-form-group is-full" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', padding: '12px', borderRadius: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#fef08a' }}>
-                <input
-                  type="checkbox"
-                  checked={isFeatured}
-                  onChange={(e) => setIsFeatured(e.target.checked)}
-                />
-                <span>👑 {isVi ? 'Đẩy tin VIP Lên Top Đầu (+15.000₫ phí quảng cáo sàn)' : 'VIP Featured Boost (+15,000₫ ads fee)'}</span>
-              </label>
-              <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>
-                {isVi ? 'Sản phẩm có viền sáng Neon Amber và luôn xuất hiện trên cùng trang tìm kiếm.' : 'Product will be highlighted with Neon Amber border and ranked on top.'}
-              </small>
+            <div className="mp-form-group">
+              <label>{isVi ? 'Từ khóa tìm kiếm (Search Keywords - cách nhau dấu phẩy):' : 'Search Keywords (comma separated):'}</label>
+              <input
+                type="text"
+                placeholder={isVi ? 'laptop cu, macbook m3, esp32, piano dien...' : 'macbook, esp32 ai, gaming laptop...'}
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                onClick={() => setStep(1)}
+              >
+                ⬅ {isVi ? 'Quay Lại' : 'Back'}
+              </button>
+              <button
+                type="button"
+                className="mp-btn-post"
+                onClick={() => setStep(3)}
+              >
+                {isVi ? 'Tiếp Tục: Ưu Đãi & Giá Bán ➔' : 'Next: Offer & Price ➔'}
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Dự toán đối soát doanh thu người bán */}
-          {numPrice > 0 && (
-            <div style={{ background: '#0a0810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', margin: '16px 0', fontSize: '13px' }}>
+        {/* STEP 3: Offer & Pricing */}
+        {step === 3 && (
+          <div className="mp-step-content">
+            <div className="mp-form-grid">
+              <div className="mp-form-group">
+                <label>{isVi ? 'Giá bán niêm yết (Gross Price - VND) (*):' : 'Selling Price (VND) (*):'}</label>
+                <input
+                  type="number"
+                  required
+                  min="10000"
+                  step="10000"
+                  placeholder="Ví dụ: 3500000"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </div>
+
+              <div className="mp-form-group">
+                <label>{isVi ? 'Giá gốc thị trường (nếu có giảm giá):' : 'Original Price (if discounted):'}</label>
+                <input
+                  type="number"
+                  min="10000"
+                  step="10000"
+                  placeholder="Ví dụ: 4500000"
+                  value={originalPrice}
+                  onChange={(e) => setOriginalPrice(e.target.value)}
+                />
+              </div>
+
+              <div className="mp-form-group">
+                <label>{isVi ? 'Tình trạng sản phẩm (*):' : 'Item Condition (*):'}</label>
+                <select value={condition} onChange={(e) => setCondition(e.target.value)}>
+                  <option value="brand_new">{getMarketplaceText(lang, 'cond_brand_new')}</option>
+                  <option value="like_new">{getMarketplaceText(lang, 'cond_like_new')}</option>
+                  <option value="used">{getMarketplaceText(lang, 'cond_used')}</option>
+                  <option value="digital_license">{getMarketplaceText(lang, 'cond_digital')}</option>
+                </select>
+              </div>
+
+              <div className="mp-form-group">
+                <label>{isVi ? 'Số lượng tồn kho (Units):' : 'Stock Quantity:'}</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                />
+              </div>
+
+              <div className="mp-form-group is-full">
+                <label>{isVi ? 'Chính sách bảo hành / Cam kết đổi trả:' : 'Warranty & Guarantee Policy:'}</label>
+                <input
+                  type="text"
+                  placeholder={isVi ? 'Ví dụ: 12 tháng chính hãng / Bao test 7 ngày 1 đổi 1' : 'e.g., 12 months warranty / 7-day money back'}
+                  value={specWarranty}
+                  onChange={(e) => setSpecWarranty(e.target.value)}
+                />
+              </div>
+
+              <div className="mp-form-group is-full" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', padding: '12px', borderRadius: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#fef08a' }}>
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                  />
+                  <span>👑 {isVi ? 'Đẩy tin VIP Lên Đầu Trang (+15.000₫ phí đẩy tin)' : 'VIP Featured Boost (+15,000₫ ads fee)'}</span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                onClick={() => setStep(2)}
+              >
+                ⬅ {isVi ? 'Quay Lại' : 'Back'}
+              </button>
+              <button
+                type="button"
+                className="mp-btn-post"
+                onClick={() => setStep(4)}
+              >
+                {isVi ? 'Tiếp Tục: Kênh Vận Chuyển ➔' : 'Next: Fulfillment ➔'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Fulfillment Channel (FBM vs FBS) */}
+        {step === 4 && (
+          <div className="mp-step-content">
+            <h4 style={{ margin: '0 0 12px', color: '#ffffff', fontSize: '15px' }}>
+              {isVi ? 'Chọn Hình Thức Hoàn Thiện Đơn Hàng (Fulfillment Channel):' : 'Select Fulfillment Channel:'}
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div
+                style={{
+                  background: fulfillmentType === 'FBM' ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.03)',
+                  border: '1.5px solid',
+                  borderColor: fulfillmentType === 'FBM' ? '#38bdf8' : 'rgba(255,255,255,0.12)',
+                  borderRadius: '14px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setFulfillmentType('FBM')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '24px' }}>📦</span>
+                  <div>
+                    <strong style={{ color: '#ffffff', fontSize: '15px', display: 'block' }}>
+                      FBM (Fulfillment by Merchant)
+                    </strong>
+                    <small style={{ color: '#38bdf8' }}>{isVi ? 'Người bán tự đóng gói' : 'Merchant self-pack'}</small>
+                  </div>
+                </div>
+                <p style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.5', margin: 0 }}>
+                  {isVi
+                    ? 'Bạn tự lưu kho hàng tại nhà/shop, khi có đơn sẽ đóng gói và bàn giao cho các hãng vận chuyển (GHN, Viettel Post, Hỏa tốc 2H).'
+                    : 'You store inventory in your warehouse. When an order arrives, you pack and hand it to integrated couriers.'}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  background: fulfillmentType === 'FBS' ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)',
+                  border: '1.5px solid',
+                  borderColor: fulfillmentType === 'FBS' ? '#10b981' : 'rgba(255,255,255,0.12)',
+                  borderRadius: '14px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setFulfillmentType('FBS')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '24px' }}>⚡</span>
+                  <div>
+                    <strong style={{ color: '#ffffff', fontSize: '15px', display: 'block' }}>
+                      FBS (Fulfillment by GitXplore)
+                    </strong>
+                    <small style={{ color: '#10b981' }}>{isVi ? 'Sàn phân phối / Key số' : 'Platform Fulfilled'}</small>
+                  </div>
+                </div>
+                <p style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.5', margin: 0 }}>
+                  {isVi
+                    ? 'Gửi hàng vào trung tâm điều phối của GitXplore, hoặc tự động phát hành license key phần mềm / mã kích hoạt AI trực tuyến tức thì.'
+                    : 'Stock in GitXplore hub or deliver instant digital software/AI license keys directly through platform automation.'}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                onClick={() => setStep(3)}
+              >
+                ⬅ {isVi ? 'Quay Lại' : 'Back'}
+              </button>
+              <button
+                type="button"
+                className="mp-btn-post"
+                onClick={() => setStep(5)}
+              >
+                {isVi ? 'Tiếp Tục: Đối Soát Biểu Phí ➔' : 'Next: Review & Fee Preview ➔'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: Review & Publish */}
+        {step === 5 && (
+          <div className="mp-step-content">
+            <h4 style={{ margin: '0 0 12px', color: '#ffffff', fontSize: '15px' }}>
+              {isVi ? 'Bảng Kê Đối Soát Doanh Thu & Niêm Yết Sàn (2.5% Phí Sàn):' : 'Financial Settlement & Listing Review:'}
+            </h4>
+
+            {/* Bảng kê đối soát tài chính */}
+            <div style={{ background: '#0a0810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', padding: '16px', marginBottom: '16px', fontSize: '13.5px' }}>
               <div className="mp-calc-row">
-                <span>{isVi ? 'Giá bán cho khách:' : 'Gross price:'}</span>
-                <strong>{formatCurrency(numPrice, lang)}</strong>
+                <span>{isVi ? 'Tiêu đề sản phẩm:' : 'Product Listing:'}</span>
+                <strong style={{ color: '#fef08a' }}>{title || (isVi ? '(Chưa đặt)' : '(Untitled)')}</strong>
+              </div>
+              <div className="mp-calc-row">
+                <span>{isVi ? 'Mã định danh GTIN/SKU:' : 'GTIN/SKU:'}</span>
+                <strong>{sku}</strong>
+              </div>
+              <div className="mp-calc-row">
+                <span>{isVi ? 'Giá bán niêm yết cho khách:' : 'Gross price:'}</span>
+                <strong style={{ color: '#ffffff' }}>{formatCurrency(numPrice, lang)}</strong>
               </div>
               <div className="mp-calc-row" style={{ color: '#ef4444' }}>
-                <span>{isVi ? 'Phí dịch vụ sàn (2.5%):' : 'Platform fee (2.5%):'}</span>
+                <span>{isVi ? 'Phí dịch vụ trung gian sàn GitXplore (2.5%):' : 'Platform fee (2.5%):'}</span>
                 <strong>- {formatCurrency(estimatedFee, lang)}</strong>
               </div>
               <div className="mp-calc-row" style={{ color: '#f59e0b' }}>
-                <span>{isVi ? 'Khấu trừ thuế (1.5% - NĐ 117/2025):' : 'Tax withholding (1.5%):'}</span>
+                <span>{isVi ? 'Thuế khấu trừ tại nguồn (1.5% - NĐ 117/2025/NĐ-CP):' : 'Tax withholding (1.5%):'}</span>
                 <strong>- {formatCurrency(estimatedTax, lang)}</strong>
               </div>
-              <div className="mp-calc-row is-receive" style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
-                <span>{isVi ? 'Bạn thực nhận về ví sàn:' : 'Net payout to seller wallet:'}</span>
-                <strong style={{ color: '#10b981', fontSize: '15px' }}>{formatCurrency(estimatedReceive, lang)}</strong>
+              <div className="mp-calc-row is-receive" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                <span>{isVi ? 'Người bán thực nhận về Ví Sàn sau 48h kiểm nghiệm:' : 'Net payout to seller wallet after 48h inspection:'}</span>
+                <strong style={{ color: '#10b981', fontSize: '16px' }}>{formatCurrency(estimatedReceive, lang)}</strong>
               </div>
             </div>
-          )}
 
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', margin: '14px 0', cursor: 'pointer', fontSize: '12.5px', color: '#cbd5e1' }}>
+              <input
+                type="checkbox"
+                checked={agreedTerms}
+                onChange={(e) => setAgreedTerms(e.target.checked)}
+                style={{ marginTop: '3px' }}
+              />
+              <span>
+                {isVi
+                  ? 'Tôi cam kết thông tin kỹ thuật chính xác, hàng hóa hợp pháp theo Luật Thương mại điện tử 2025 và chấp hành quy định tạm giữ ký quỹ Két Sắt Escrow 48h để bảo vệ quyền lợi người mua.'
+                  : 'I agree to the 2025 E-Commerce Regulations and the 48-Hour Escrow inspection protection policy of GitXplore.'}
+              </span>
+            </label>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                onClick={() => setStep(4)}
+              >
+                ⬅ {isVi ? 'Quay Lại Chỉnh Sửa' : 'Back'}
+              </button>
+              <button
+                type="button"
+                className="mp-btn-post"
+                disabled={!agreedTerms}
+                onClick={handleFinalSubmit}
+                style={{ padding: '14px 28px', fontSize: '15px' }}
+              >
+                🚀 {isVi ? 'Niêm Yết Lên Sàn GitXplore Ngay' : 'Publish Product to Marketplace Now'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================
+   SUB-COMPONENT: ADMIN TREASURY & PLATFORM PORTAL MODAL
+   Account: phamanhhoang920@gmail.com (ID: 63292076)
+======================================================== */
+function AdminTreasuryModal({ adminTreasury, orders, lang, sellerKYC, onClose, onDisputeResolve }) {
+  const isVi = lang === 'vi';
+  const [adminTab, setAdminTab] = useState('treasury'); // 'treasury' | 'kyc_moderation' | 'arbitration'
+
+  const completedOrders = orders.filter((o) => o.status === 'completed');
+  const disputedOrders = orders.filter((o) => o.status === 'disputed' || o.status === 'locked_escrow' || o.status === 'delivered_testing');
+
+  return (
+    <div className="mp-modal-backdrop" onClick={onClose}>
+      <div className="mp-modal-box" style={{ maxWidth: '920px' }} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="mp-modal-close" onClick={onClose}>✕</button>
+
+        {/* Super Admin Identity Badge */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.2), rgba(168,85,247,0.2))', border: '1px solid rgba(236,72,153,0.5)', padding: '16px 20px', borderRadius: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '20px' }}>👑</span>
+              <strong style={{ fontSize: '16px', color: '#fbcfe8' }}>
+                {isVi ? 'TÀI KHOẢN CHỦ SÀN / SUPER ADMIN' : 'PLATFORM OWNER / SUPER ADMIN'}
+              </strong>
+              <span className="mp-admin-pill">ID: 63292076</span>
+            </div>
+            <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
+              <strong>phamanhhoang920@gmail.com</strong> • {isVi ? 'Đơn vị trung gian hưởng 2.5% phí dịch vụ toàn sàn' : 'Platform Intermediary 2.5% Fee Beneficiary'}
+            </div>
+          </div>
+          <span style={{ fontSize: '12px', background: 'rgba(0,0,0,0.4)', padding: '6px 12px', borderRadius: '8px', color: '#fef08a' }}>
+            🔒 {isVi ? 'Chế độ Trung lập: Không được đăng bán hàng' : 'Neutrality: Listing Restricted'}
+          </span>
+        </div>
+
+        {/* Treasury Highlight Banner */}
+        <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>{getMarketplaceText(lang, 'admin_fee_balance')}</span>
+            <h2 style={{ fontSize: '30px', fontWeight: 900, color: '#10b981', margin: '6px 0' }}>
+              {formatCurrency(adminTreasury.totalFeesCollected, lang)}
+            </h2>
+            <small style={{ color: '#cbd5e1' }}>
+              {isVi ? 'Tự động trích 2.5% từ mọi giao dịch Escrow hoàn tất trên sàn' : 'Auto-deducted 2.5% from all completed marketplace escrow orders'}
+            </small>
+          </div>
           <button
-            type="submit"
-            className="mp-btn-post"
-            style={{ width: '100%', padding: '14px', fontSize: '15px' }}
+            type="button"
+            className="mp-btn-buy"
+            style={{ padding: '12px 20px', fontSize: '14px' }}
+            onClick={() => {
+              alert(isVi
+                ? `Lệnh rút quỹ phí sàn ${formatCurrency(adminTreasury.totalFeesCollected, lang)} đã được gửi tới tài khoản ngân hàng của Super Admin phamanhhoang920@gmail.com!`
+                : `Platform fee payout ${formatCurrency(adminTreasury.totalFeesCollected, lang)} dispatched to Super Admin bank account (phamanhhoang920@gmail.com)!`);
+            }}
           >
-            {isVi ? 'Đăng Sản Phẩm Lên Chợ Ngay' : 'List Item on Marketplace Now'}
+            💳 {isVi ? 'Rút Tiền Phí Về Ngân Hàng Super Admin' : 'Withdraw Fees to Admin Account'}
           </button>
-        </form>
+        </div>
+
+        {/* Tab switcher */}
+        <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', marginBottom: '18px' }}>
+          <button
+            type="button"
+            className={`mp-cat-pill ${adminTab === 'treasury' ? 'is-active' : ''}`}
+            onClick={() => setAdminTab('treasury')}
+          >
+            💰 {isVi ? 'Sổ Cái Thu Phí Dịch Vụ 2.5%' : '2.5% Fee Treasury Ledger'} ({adminTreasury.transactions?.length || 0})
+          </button>
+          <button
+            type="button"
+            className={`mp-cat-pill ${adminTab === 'kyc_moderation' ? 'is-active' : ''}`}
+            onClick={() => setAdminTab('kyc_moderation')}
+          >
+            📋 {isVi ? 'Kiểm Duyệt KYC Người Bán (Luật 2025)' : 'Seller KYC & Moderation'}
+          </button>
+          <button
+            type="button"
+            className={`mp-cat-pill ${adminTab === 'arbitration' ? 'is-active' : ''}`}
+            onClick={() => setAdminTab('arbitration')}
+          >
+            ⚖️ {isVi ? 'Trọng Tài Giải Quyết Tranh Chấp 48H' : '48H Dispute Arbitration'} ({disputedOrders.length})
+          </button>
+        </div>
+
+        {/* Tab 1: Sổ cái thu phí */}
+        {adminTab === 'treasury' && (
+          <div>
+            <div style={{ fontSize: '13.5px', color: '#94a3b8', marginBottom: '12px' }}>
+              {isVi ? 'Lịch sử dòng tiền 2.5% phí dịch vụ trung gian ghi có vào ví phamanhhoang920@gmail.com:' : 'Intermediary 2.5% fee transaction history credited to phamanhhoang920@gmail.com:'}
+            </div>
+            <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+              {(adminTreasury.transactions || []).map((txn) => (
+                <div
+                  key={txn.id}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px 16px', marginBottom: '8px' }}
+                >
+                  <div>
+                    <strong style={{ color: '#fef08a', fontSize: '13px' }}>{txn.id} • {txn.orderId}</strong>
+                    <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px' }}>{txn.productTitle}</div>
+                    <small style={{ color: '#94a3b8' }}>{new Date(txn.timestamp).toLocaleString(isVi ? 'vi-VN' : 'en-US')}</small>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <strong style={{ color: '#10b981', fontSize: '15px' }}>+{formatCurrency(txn.amount, lang)}</strong>
+                    <div style={{ fontSize: '11px', color: '#f59e0b' }}>{isVi ? 'Phí sàn 2.5%' : '2.5% Fee'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: KYC & Moderation */}
+        {adminTab === 'kyc_moderation' && (
+          <div>
+            <h4 style={{ margin: '0 0 10px', color: '#fff', fontSize: '15px' }}>
+              {isVi ? 'Danh Sách Người Bán Đã Định Danh Theo Luật TMĐT 2025:' : 'Registered Sellers under E-Commerce Law 2025:'}
+            </h4>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div>
+                  <strong style={{ color: '#ffffff', fontSize: '14px' }}>{sellerKYC?.fullName || 'Vũ Minh Tuấn'}</strong>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    CCCD/Hộ chiếu: <strong>{sellerKYC?.idNumber || '001095012345'}</strong> • MST: <strong>{sellerKYC?.taxCode || '8392019482'}</strong>
+                  </div>
+                </div>
+                <span style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid #10b981', color: '#10b981', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 800 }}>
+                  ✓ ĐÃ XÁC THỰC KYC
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#cbd5e1' }}>
+                {isVi ? 'Tuân thủ Nghị định 117/2025/NĐ-CP: Sàn GitXplore đã lưu trữ hồ sơ và tự động khấu trừ 1.5% thuế TNCN/GTGT khi giải ngân đơn hàng.' : 'Compliant with statutory regulations: GitXplore stores identity records and withholds 1.5% tax upon disbursement.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Arbitration */}
+        {adminTab === 'arbitration' && (
+          <div>
+            <h4 style={{ margin: '0 0 10px', color: '#fff', fontSize: '15px' }}>
+              {isVi ? 'Đơn Hàng Đang Giữ Ký Quỹ & Trọng Tài Sàn:' : 'Active Escrow Orders & Platform Arbitration:'}
+            </h4>
+            {disputedOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                ⚖️ {isVi ? 'Hiện không có đơn hàng nào bị khiếu nại hoặc tranh chấp.' : 'No disputed orders currently.'}
+              </div>
+            ) : (
+              disputedOrders.map((o) => (
+                <div
+                  key={o.id}
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px', marginBottom: '10px' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <strong style={{ color: '#fef08a' }}>{o.id} • {o.productTitle}</strong>
+                    <span style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 800 }}>{o.statusLabel}</span>
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginBottom: '10px' }}>
+                    {isVi ? 'Tổng tiền ký quỹ:' : 'Escrow Amount:'} <strong>{formatCurrency(o.totalAmount, lang)}</strong> • {isVi ? 'Người mua:' : 'Buyer:'} {o.buyerName}
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="button"
+                      className="mp-btn-buy"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      onClick={() => {
+                        onDisputeResolve(o.id, 'release_to_seller');
+                        alert(isVi ? `Trọng tài đã giải ngân tiền cho Người Bán đơn ${o.id}!` : `Arbitration released funds to Seller for ${o.id}!`);
+                      }}
+                    >
+                      ✓ {isVi ? 'Phán quyết: Giải ngân cho Người Bán' : 'Release to Seller'}
+                    </button>
+                    <button
+                      type="button"
+                      className="mp-btn-detail"
+                      style={{ padding: '6px 12px', fontSize: '12px', color: '#fca5a5' }}
+                      onClick={() => {
+                        onDisputeResolve(o.id, 'refund_buyer');
+                        alert(isVi ? `Trọng tài đã hoàn tiền 100% cho Người Mua đơn ${o.id}!` : `Arbitration refunded 100% to Buyer for ${o.id}!`);
+                      }}
+                    >
+                      ↩ {isVi ? 'Phán quyết: Hoàn tiền cho Người Mua' : 'Refund to Buyer'}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
