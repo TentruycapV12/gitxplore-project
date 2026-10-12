@@ -12,13 +12,12 @@ import {
   PRODUCT_CONDITIONS,
   SHIPPING_CARRIERS,
   PLATFORM_VOUCHERS,
-  INITIAL_MARKET_PRODUCTS,
 } from '../data/marketplaceData.js';
 import { getMarketplaceText } from '../data/marketplaceTranslations.js';
 import { sendMarketplaceNotification } from '../hooks/useNotifications.js';
 import './MarketplacePage.css';
 
-const STORAGE_PRODUCTS_KEY = 'gx_marketplace_products_v4';
+const STORAGE_PRODUCTS_KEY = 'gx_marketplace_products_v5';
 const STORAGE_ORDERS_KEY = 'gx_marketplace_orders_v3';
 const STORAGE_VOUCHERS_KEY = 'gx_marketplace_saved_vouchers_v3';
 const STORAGE_SELLER_KYC_KEY = 'gx_marketplace_seller_kyc_v3';
@@ -53,11 +52,22 @@ export default function MarketplacePage() {
     user?.role === 'admin'
   );
 
-  // 1. Quản lý danh sách sản phẩm (Mặc định ban đầu trống - Người bán đăng tải qua Seller Central)
+  // 1. Quản lý danh sách sản phẩm (Mặc định sạch 100% - Chỉ hiển thị sản phẩm do Người bán thực tế đăng tải)
   const [products, setProducts] = useState(() => {
     try {
+      // Dọn dẹp triệt để các key phiên bản cũ từng lưu dữ liệu mẫu
+      ['gx_marketplace_products_v1', 'gx_marketplace_products_v2', 'gx_marketplace_products_v3', 'gx_marketplace_products_v4'].forEach((k) => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+
       const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
-      if (saved !== null) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Chỉ giữ lại sản phẩm thật do người dùng tạo (loại bỏ mock prod-1 đến prod-17)
+          return parsed.filter((p) => p && p.id && !p.id.match(/^prod-([1-9]|1[0-7])$/));
+        }
+      }
     } catch {
       // ignore
     }
@@ -100,13 +110,20 @@ export default function MarketplacePage() {
           .from('marketplace_products')
           .select('*')
           .order('created_at', { ascending: false });
-        if (!pErr && Array.isArray(cloudProds) && cloudProds.length > 0 && isMounted) {
-          setProducts((prev) => {
-            const map = new Map();
-            cloudProds.forEach((p) => map.set(p.id, p));
-            prev.forEach((p) => { if (!map.has(p.id)) map.set(p.id, p); });
-            return Array.from(map.values());
-          });
+        if (!pErr && Array.isArray(cloudProds) && isMounted) {
+          const realCloudProds = cloudProds.filter((p) => p && p.id && !p.id.match(/^prod-([1-9]|1[0-7])$/));
+          if (realCloudProds.length > 0) {
+            setProducts((prev) => {
+              const map = new Map();
+              realCloudProds.forEach((p) => map.set(p.id, p));
+              prev.forEach((p) => {
+                if (!map.has(p.id) && !p.id.match(/^prod-([1-9]|1[0-7])$/)) {
+                  map.set(p.id, p);
+                }
+              });
+              return Array.from(map.values());
+            });
+          }
         }
       } catch (err) {
         console.warn('Supabase marketplace_products fetch fallback:', err);
@@ -853,17 +870,8 @@ export default function MarketplacePage() {
             <option value="price_desc">{txt('sort_price_desc')}</option>
           </select>
 
-          {/* Quick Demo Catalog / Clear Catalog Toggle */}
-          {products.length === 0 ? (
-            <button
-              type="button"
-              className="mp-cat-pill"
-              style={{ borderColor: '#f59e0b', color: '#fef08a', padding: '8px 14px' }}
-              onClick={() => setProducts(INITIAL_MARKET_PRODUCTS)}
-            >
-              🎲 {txt('btn_load_demo_catalog')}
-            </button>
-          ) : (
+          {/* Quick Clear Catalog Toggle if products exist */}
+          {products.length > 0 && (
             <button
               type="button"
               className="mp-cat-pill"
@@ -902,13 +910,6 @@ export default function MarketplacePage() {
                 }}
               >
                 <span>🚀 {txt('btn_open_seller_central')}</span>
-              </button>
-              <button
-                type="button"
-                className="mp-btn-orders"
-                onClick={() => setProducts(INITIAL_MARKET_PRODUCTS)}
-              >
-                <span>🎲 {txt('btn_load_demo_catalog')}</span>
               </button>
             </div>
           </div>
