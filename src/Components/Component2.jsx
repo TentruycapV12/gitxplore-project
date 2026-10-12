@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
 
 function Component2({ project, onSelect }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const catLabel = t(`cat_${project.category}`) === `cat_${project.category}` ? project.categoryName : t(`cat_${project.category}`);
   const cardRef = useRef(null);
   const handleSelect = useCallback(() => onSelect(project), [onSelect, project]);
