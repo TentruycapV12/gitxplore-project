@@ -142,7 +142,6 @@
 }
 
 .tn-tab-wrap:hover .tn-sub-dropdown,
-.tn-tab-wrap:focus-within .tn-sub-dropdown,
 .tn-sub-dropdown.is-open {
   opacity: 1;
   pointer-events: auto;

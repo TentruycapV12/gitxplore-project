@@ -50,10 +50,8 @@ const insertWithFallback = async (table, row, optionalKeys) => {
 
 export default function CommunityForum() {
   const { user } = useAuth();
-  const { lang, setLang, languages } = useLanguage();
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const { lang } = useLanguage();
   const ft = FORUM_TEXT[lang] || FORUM_TEXT['en'];
-  const currentLang = languages?.find((l) => l.code === lang) || { code: 'en', label: 'English', flag: '🇺🇸' };
 
   const navigate = useNavigate();
   const onBack = () => navigate('/');            // <-- dòng mới: về thẳng trang chủ
@@ -495,139 +493,6 @@ export default function CommunityForum() {
     <div className="cf" style={{ width: '100%', minHeight: '100vh', background: '#090505', color: '#fff', display: 'flex', flexDirection: 'column' }}>
       <TopNav />
       
-      {/* HEADER */}
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 5vw',
-          background: 'rgba(18, 9, 9, 0.9)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid #2b1414',
-          position: 'sticky',
-          top: '56px',
-          zIndex: 40,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <button
-            type="button"
-            onClick={activeTopic ? handleBackToList : onBack}
-            className="link-btn btn-secondary"
-            style={{ padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}
-          >
-            ← {activeTopic ? ft.nav_all_topics : ft.nav_home}
-          </button>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#fef08a', letterSpacing: '1px' }}>
-            GIT<span style={{ color: '#ef4444' }}>XPLORE</span> FORUM
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {/* NÚT CHỌN NGÔN NGỮ (LANGUAGE SELECTOR) TRỰC TIẾP TRÊN HEADER DIỄN ĐÀN */}
-          <div style={{ position: 'relative' }}>
-            <button
-              type="button"
-              onClick={() => setShowLangDropdown((v) => !v)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
-                color: '#fef08a',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '12.5px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'background 0.15s, border-color 0.15s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
-              title="Đổi ngôn ngữ / Change Language"
-            >
-              <span>{currentLang.flag}</span>
-              <span>{currentLang.label.split(' ')[0]}</span>
-              <span style={{ fontSize: '9px', opacity: 0.7 }}>▼</span>
-            </button>
-
-            {showLangDropdown && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '6px',
-                  background: '#190d0d',
-                  border: '1px solid #4a2121',
-                  borderRadius: '10px',
-                  padding: '6px',
-                  minWidth: '160px',
-                  boxShadow: '0 12px 30px rgba(0, 0, 0, 0.8)',
-                  zIndex: 250,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px'
-                }}
-              >
-                {languages.map((l) => (
-                  <button
-                    key={l.code}
-                    type="button"
-                    onClick={() => {
-                      setLang(l.code);
-                      setShowLangDropdown(false);
-                    }}
-                    style={{
-                      background: l.code === lang ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
-                      color: l.code === lang ? '#fef08a' : '#cbd5e1',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '7px 10px',
-                      fontSize: '12.5px',
-                      fontWeight: l.code === lang ? 700 : 500,
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <span>{l.flag}</span>
-                    <span>{l.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {isStaff && (
-            <button
-              onClick={() => setShowAdminModal(true)}
-              style={{
-                background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
-                color: '#fff',
-                border: 'none',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontWeight: 600,
-                fontSize: '12px',
-                cursor: 'pointer',
-              }}
-            >
-              👑 {isAdmin ? 'Admin Console' : access.role === 'editor' ? 'Moderator Console' : 'Support Console'}
-            </button>
-          )}
-          <div style={{ fontSize: '13px', color: '#a8a29e' }}>
-            {user ? (
-              <span>{ft.welcome_user} <strong style={{ color: isStaff ? '#ef4444' : '#fef08a' }}>{user.name}</strong><UidTag id={user.publicId} /></span>
-            ) : ft.guest_mode}
-          </div>
-        </div>
-      </header>
-
       {/* THÔNG BÁO CỦA ADMIN */}
       {announcements.map((a) => {
         const tone = { info: ['#1e3a8a', '#93c5fd', '📢'], warning: ['#78350f', '#fde047', '⚠️'], danger: ['#7f1d1d', '#fca5a5', '🚨'] }[a.level] || ['#1e3a8a', '#93c5fd', '📢'];
@@ -699,32 +564,60 @@ export default function CommunityForum() {
                 </div>
               </div>
 
-              {/* Nút Tạo Chủ Đề Nổi Bật */}
-              <button
-                type="button"
-                onClick={() => (canPost ? setShowCreateModal(true) : alert(isBanned ? 'Tài khoản của bạn đang bị khóa.' : 'Bạn đang bị tắt tiếng và không thể đăng bài.'))}
-                style={{
-                  background: 'linear-gradient(135deg, #ef4444, #d97706)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '14px 28px',
-                  borderRadius: '14px',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  cursor: canPost ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  boxShadow: '0 6px 20px rgba(239, 68, 68, 0.45)',
-                  transition: 'all 0.2s',
-                  opacity: canPost ? 1 : 0.6
-                }}
-                onMouseEnter={(e) => { if (canPost) e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <span style={{ fontSize: '18px' }}>✏️</span>
-                <span>{ft.btn_new_topic}</span>
-              </button>
+              {/* Cụm hành động: Admin Console (nếu là Staff) + Nút Tạo Chủ Đề Nổi Bật */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                {isStaff && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminModal(true)}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.25), rgba(185, 28, 28, 0.15))',
+                      border: '1px solid rgba(239, 68, 68, 0.5)',
+                      color: '#fca5a5',
+                      padding: '13px 20px',
+                      borderRadius: '14px',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.35)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.25), rgba(185, 28, 28, 0.15))'; }}
+                  >
+                    <span>👑</span>
+                    <span>{isAdmin ? 'Admin Console' : access.role === 'editor' ? 'Moderator Console' : 'Support Console'}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => (canPost ? setShowCreateModal(true) : alert(isBanned ? 'Tài khoản của bạn đang bị khóa.' : 'Bạn đang bị tắt tiếng và không thể đăng bài.'))}
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #d97706)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '14px 28px',
+                    borderRadius: '14px',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    cursor: canPost ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    boxShadow: '0 6px 20px rgba(239, 68, 68, 0.45)',
+                    transition: 'all 0.2s',
+                    opacity: canPost ? 1 : 0.6
+                  }}
+                  onMouseEnter={(e) => { if (canPost) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <span style={{ fontSize: '18px' }}>✏️</span>
+                  <span>{ft.btn_new_topic}</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1188,6 +1081,27 @@ export default function CommunityForum() {
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {isStaff && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminModal(true)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#fca5a5',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    👑 {isAdmin ? 'Admin Console' : access.role === 'editor' ? 'Moderator' : 'Support'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleToggleLike}

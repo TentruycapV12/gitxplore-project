@@ -78,6 +78,11 @@ export default function TopNav() {
   };
 
   useEffect(() => {
+    setHoveredSubmenu(false);
+    if (submenuTimerRef.current) clearTimeout(submenuTimerRef.current);
+  }, [pathname]);
+
+  useEffect(() => {
     if (pathname === '/search') setQuery(new URLSearchParams(search).get('q') || '');
   }, [pathname, search]);
 
@@ -108,6 +113,9 @@ export default function TopNav() {
 
   const onTab = (tab) => {
     setMenu(null);
+    setHoveredSubmenu(false);
+    if (submenuTimerRef.current) clearTimeout(submenuTimerRef.current);
+    if (document.activeElement) document.activeElement.blur();
     if (tab.to) navigate(tab.to);
     else if (tab.modal) openModal(tab.modal);
   };
@@ -120,7 +128,13 @@ export default function TopNav() {
     navigate(`/search?q=${encodeURIComponent(q)}`);
   };
 
-  const go = (path) => { setMenu(null); navigate(path); };
+  const go = (path) => {
+    setMenu(null);
+    setHoveredSubmenu(false);
+    if (submenuTimerRef.current) clearTimeout(submenuTimerRef.current);
+    if (document.activeElement) document.activeElement.blur();
+    navigate(path);
+  };
 
   return (
     <header className="tn" ref={rootRef}>
@@ -181,6 +195,7 @@ export default function TopNav() {
                 <button
                   type="button"
                   className="tn-sub-item"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={(e) => {
                     e.stopPropagation();
                     setHoveredSubmenu(false);
@@ -196,6 +211,7 @@ export default function TopNav() {
                 <button
                   type="button"
                   className="tn-sub-item"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={(e) => {
                     e.stopPropagation();
                     setHoveredSubmenu(false);
