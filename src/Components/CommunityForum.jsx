@@ -6,6 +6,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { FORUM_TEXT, formatForumStr } from './forumText';
 import AdminDashboardModal from './AdminDashboardModal';
 import UidTag from './UidTag';
+import TopNav from './TopNav';
+import Footer from './Footer';
 
 const PREFIX_MAP = {
   'General': { label: 'General', bg: '#291818', color: '#fef08a', border: '#f59e0b' },
@@ -490,7 +492,8 @@ export default function CommunityForum() {
   });
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', background: '#090505', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div className="cf" style={{ width: '100%', minHeight: '100vh', background: '#090505', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+      <TopNav />
       
       {/* HEADER */}
       <header
@@ -498,12 +501,13 @@ export default function CommunityForum() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '16px 5vw',
-          background: '#120909',
+          padding: '12px 5vw',
+          background: 'rgba(18, 9, 9, 0.9)',
+          backdropFilter: 'blur(12px)',
           borderBottom: '1px solid #2b1414',
           position: 'sticky',
-          top: 0,
-          zIndex: 100,
+          top: '56px',
+          zIndex: 40,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -1941,6 +1945,7 @@ export default function CommunityForum() {
       {showAdminModal && (
         <AdminDashboardModal role={access.role} onClose={() => setShowAdminModal(false)} onChanged={fetchTopics} />
       )}
+      <Footer />
     </div>
   );
 }

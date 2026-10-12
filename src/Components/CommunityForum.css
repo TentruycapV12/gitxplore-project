@@ -28,6 +28,16 @@
 .cf button { font-family: inherit; }
 .cf :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* Sticky TopNav trên trang Diễn đàn */
+.cf .tn {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(13, 9, 9, 0.94);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+
 /* ---------- Buttons ---------- */
 .cf-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;

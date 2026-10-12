@@ -4,6 +4,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useNewsFeed } from '../hooks/useNewsFeed';
 import { useProjectSearch } from '../hooks/useProjectSearch';
 import { KINDS, SEARCH_SOURCES, SOURCES } from '../lib/newsSources';
+import TopNav from '../Components/TopNav.jsx';
+import Footer from '../Components/Footer.jsx';
 import './NewsPage.css';
 
 const PAGE = 24; // chỉ vẽ 24 thẻ mỗi lượt -> không lag, bấm "Show more" mới vẽ thêm
@@ -111,43 +113,49 @@ export default function NewsPage() {
 
   return (
     <div className="nw">
+      <TopNav />
       <header className="nw-top">
-        <button type="button" className="nw-back" onClick={() => navigate('/')}>
-          {t('nw_back')}
-        </button>
-        <span className="nw-brand">
-          GIT<span>XPLORE</span> {t('news')}
-        </span>
-        <div className="nw-live" title={feed.lastUpdated ? new Date(feed.lastUpdated).toLocaleString(locale) : ''}>
-          {mode === 'search' ? (
-            <>
-              <i className={`nw-dot ${search.searching ? 'is-loading' : 'is-live'}`} />
-              {search.searching ? t('nw_searching') : t('nw_results', { n: list.length })}
-            </>
-          ) : (
-            <>
-              <i className={`nw-dot ${feed.loading ? 'is-loading' : intervalMs ? 'is-live' : ''}`} />
-              {feed.loading
-                ? t('nw_updating')
-                : feed.lastUpdated
-                  ? t('nw_updated', { t: relTime(feed.lastUpdated, now, t, locale) })
-                  : t('nw_waiting')}
-            </>
-          )}
+        <div className="nw-top-left">
+          <span className="nw-brand-tag">
+            <span>📰</span>
+            <span>{t('news')}</span>
+          </span>
+          <div className="nw-live" title={feed.lastUpdated ? new Date(feed.lastUpdated).toLocaleString(locale) : ''}>
+            {mode === 'search' ? (
+              <>
+                <i className={`nw-dot ${search.searching ? 'is-loading' : 'is-live'}`} />
+                <span>{search.searching ? t('nw_searching') : t('nw_results', { n: list.length })}</span>
+              </>
+            ) : (
+              <>
+                <i className={`nw-dot ${feed.loading ? 'is-loading' : intervalMs ? 'is-live' : ''}`} />
+                <span>
+                  {feed.loading
+                    ? t('nw_updating')
+                    : feed.lastUpdated
+                      ? t('nw_updated', { t: relTime(feed.lastUpdated, now, t, locale) })
+                      : t('nw_waiting')}
+                </span>
+              </>
+            )}
+          </div>
         </div>
-        <label className="nw-select">
-          {t('nw_auto')}
-          <select value={intervalMs} onChange={(e) => changeInterval(Number(e.target.value))}>
-            {INTERVALS.map((i) => (
-              <option key={i.ms} value={i.ms}>
-                {i.ms ? t('nw_min', { n: i.ms / 60000 }) : t('nw_off')}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="nw-btn" onClick={feed.refresh} disabled={feed.loading || mode === 'search'}>
-          {t('nw_refresh')}
-        </button>
+
+        <div className="nw-top-right">
+          <label className="nw-select">
+            {t('nw_auto')}
+            <select value={intervalMs} onChange={(e) => changeInterval(Number(e.target.value))}>
+              {INTERVALS.map((i) => (
+                <option key={i.ms} value={i.ms}>
+                  {i.ms ? t('nw_min', { n: i.ms / 60000 }) : t('nw_off')}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="nw-btn nw-btn--refresh" onClick={feed.refresh} disabled={feed.loading || mode === 'search'}>
+            ↻ {t('nw_refresh')}
+          </button>
+        </div>
       </header>
 
       <main className="nw-main">
@@ -272,6 +280,7 @@ export default function NewsPage() {
           </button>
         )}
       </main>
+      <Footer />
     </div>
   );
 }
