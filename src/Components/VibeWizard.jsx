@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useUI } from '../context/UIContext';
+import { playTing } from '../utils/soundEffects';
+import { showToast } from './ToastNotice';
 import './VibeWizard.css';
 
 const APP_TYPES = [
@@ -116,6 +118,12 @@ Requirements:
     try {
       await navigator.clipboard.writeText(generatedPrompt);
       setCopied(true);
+      playTing();
+      showToast(
+        isVi ? '📋 Đã sao chép câu lệnh Vibe Prompt thành công!' : '📋 Vibe Prompt copied to clipboard!',
+        '⚡',
+        'success'
+      );
       setTimeout(() => setCopied(false), 2200);
     } catch {
       // fallback

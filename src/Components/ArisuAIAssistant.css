@@ -663,10 +663,52 @@
 
 /* Responsive */
 @media (max-width: 640px) {
+  .arisu-assistant-container {
+    bottom: 16px;
+    right: 16px;
+  }
+  .arisu-speech-bubble {
+    display: none; /* Avoid obstructing mobile screen */
+  }
+  .arisu-chibi-button {
+    width: 58px;
+    height: 58px;
+  }
   .arisu-chat-modal {
-    width: 95vw;
-    height: 75vh;
-    bottom: 80px;
-    right: 2.5vw;
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    height: calc(100dvh - 110px);
+    max-height: 580px;
+    bottom: 78px;
+    right: 12px;
+    border-radius: 20px;
+  }
+  .arisu-starter-chips {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .arisu-starter-chip {
+    width: 100%;
+    text-align: left;
+    min-height: 38px;
   }
 }
+
+@media (max-width: 375px) {
+  .arisu-assistant-container {
+    bottom: 12px;
+    right: 12px;
+  }
+  .arisu-chibi-button {
+    width: 52px;
+    height: 52px;
+  }
+  .arisu-chat-modal {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    bottom: 70px;
+    right: 8px;
+    border-radius: 16px;
+  }
+}
+

@@ -335,3 +335,66 @@
   border-color: rgba(16, 185, 129, 0.4);
   color: #6ee7b7;
 }
+
+/* ========================================================
+   MOBILE RESPONSIVENESS (< 640px & < 375px)
+   ======================================================== */
+@media (max-width: 640px) {
+  .gxa-container {
+    padding: 18px 14px;
+    margin: 20px 0;
+    border-radius: 18px;
+  }
+  .gxa-header {
+    margin-bottom: 20px;
+  }
+  .gxa-title {
+    font-size: 19px;
+  }
+  .gxa-sub {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .gxa-progress-card {
+    padding: 12px;
+  }
+  .gxa-progress-top {
+    font-size: 12px;
+  }
+  .gxa-badge-complete {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  .gxa-chapter-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+  .gxa-lesson-header {
+    padding: 10px 12px;
+  }
+  .gxa-lesson-title {
+    font-size: 13px;
+  }
+  .gxa-act-btn,
+  .gxa-mark-btn {
+    min-height: 44px; /* Touch target standard */
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 375px) {
+  .gxa-container {
+    padding: 14px 10px;
+    border-radius: 14px;
+  }
+  .gxa-title {
+    font-size: 17px;
+  }
+  .gxa-chapter-title {
+    font-size: 14px;
+  }
+}
+

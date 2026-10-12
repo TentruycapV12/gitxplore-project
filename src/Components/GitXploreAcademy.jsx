@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useUI } from '../context/UIContext';
+import { playTing, playSuccess } from '../utils/soundEffects';
+import ConfettiEffect from './ConfettiEffect';
+import { showToast } from './ToastNotice';
 import './GitXploreAcademy.css';
 
 const ACADEMY_STORAGE_KEY = 'gx_academy_completed_lessons';
@@ -186,6 +189,7 @@ export default function GitXploreAcademy() {
   const isVi = lang === 'vi';
 
   const [activeLesson, setActiveLesson] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [completedLessons, setCompletedLessons] = useState(() => {
     try {
       const saved = localStorage.getItem(ACADEMY_STORAGE_KEY);
@@ -197,10 +201,34 @@ export default function GitXploreAcademy() {
 
   const toggleComplete = (lessonId) => {
     setCompletedLessons((prev) => {
-      const updated = prev.includes(lessonId)
+      const isAlreadyDone = prev.includes(lessonId);
+      const updated = isAlreadyDone
         ? prev.filter((id) => id !== lessonId)
         : [...prev, lessonId];
       localStorage.setItem(ACADEMY_STORAGE_KEY, JSON.stringify(updated));
+
+      if (!isAlreadyDone) {
+        if (updated.length === 6) {
+          playSuccess();
+          setShowConfetti(true);
+          showToast(
+            isVi
+              ? '🏆 Chúc mừng bạn đã tốt nghiệp xuất sắc GitXplore Academy!'
+              : '🏆 Congratulations on graduating GitXplore Academy!',
+            '🎓',
+            'success'
+          );
+        } else {
+          playTing();
+          showToast(
+            isVi
+              ? `✓ Đã hoàn thành nhiệm vụ! (${updated.length}/6)`
+              : `✓ Quest completed! (${updated.length}/6)`,
+            '✨',
+            'info'
+          );
+        }
+      }
       return updated;
     });
   };
@@ -228,6 +256,8 @@ export default function GitXploreAcademy() {
 
   return (
     <div className="gxa-container">
+      <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
+
       {/* Header & Progress */}
       <div className="gxa-header">
         <div className="gxa-badge-wrap">
@@ -256,9 +286,22 @@ export default function GitXploreAcademy() {
               <strong>{completedLessons.length}/6 {isVi ? 'bài hoàn thành' : 'lessons completed'} ({progressPercent}%)</strong>
             </div>
             {progressPercent === 100 && (
-              <span className="gxa-badge-complete">
+              <button
+                type="button"
+                className="gxa-badge-complete"
+                onClick={() => {
+                  playSuccess();
+                  setShowConfetti(true);
+                  showToast(
+                    isVi ? '🏆 Vinh danh: Bạn đã nắm trọn bí kíp tạo app bằng AI!' : '🏆 Honors: You mastered AI app creation!',
+                    '🎓',
+                    'success'
+                  );
+                }}
+                title={isVi ? 'Bấm để ăn mừng tốt nghiệp!' : 'Click to celebrate!'}
+              >
                 🏆 {isVi ? 'ĐÃ TỐT NGHIỆP XUẤT SẮC!' : 'GRADUATION UNLOCKED!'}
-              </span>
+              </button>
             )}
           </div>
           <div className="gxa-progress-bar-bg">

@@ -215,6 +215,13 @@ export default function BeginnerQuickStart() {
             >
               {t('bqs_btn_explore')}
             </button>
+            <button
+              type="button"
+              className="bqs-btn-secondary"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-quick-tour'))}
+            >
+              🧭 {lang === 'vi' ? 'Xem Tour 30s' : '30s Tour'}
+            </button>
           </div>
         </div>
       </div>

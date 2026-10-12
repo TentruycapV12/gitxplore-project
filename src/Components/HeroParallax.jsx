@@ -303,6 +303,36 @@ export default function HeroParallax() {
           >
             {t('hero_btn_dev')}
           </button>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-quick-tour'))}
+            style={{
+              background: 'rgba(56, 189, 248, 0.12)',
+              color: '#7dd3fc',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              padding: '12px 20px',
+              borderRadius: '24px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(56, 189, 248, 0.4)';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#7dd3fc';
+            }}
+          >
+            {t('hero_btn_tour')}
+          </button>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -10,6 +10,8 @@ import NavModals from './Components/NavModals.jsx';
 import SupportModal from './Components/SupportModal.jsx';
 import ArisuAIAssistant from './Components/ArisuAIAssistant.jsx';
 import GlobalCommandPalette from './Components/GlobalCommandPalette.jsx';
+import ToastNotice from './Components/ToastNotice.jsx';
+import QuickTourModal from './Components/QuickTourModal.jsx';
 import './App.css';
 
 // TỐI ƯU HÓA TẢI TRANG ĐẦU (CODE SPLITTING): Lazy-load toàn bộ các trang phụ
@@ -82,6 +84,13 @@ function RouteLoadingFallback() {
 
 export default function App() {
   const { modalType, closeModal, selectedProject, compareProjects, playgroundTemplate } = useUI();
+  const [tourOpen, setTourOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenTour = () => setTourOpen(true);
+    window.addEventListener('open-quick-tour', handleOpenTour);
+    return () => window.removeEventListener('open-quick-tour', handleOpenTour);
+  }, []);
 
   return (
     <>
@@ -140,6 +149,12 @@ export default function App() {
 
       {/* Trợ lý AI Arisu (Blue Archive & Dev Expert) */}
       <ArisuAIAssistant />
+
+      {/* Thông báo Toast toàn cục */}
+      <ToastNotice />
+
+      {/* Tour trải nghiệm nhanh 30s cho người mới */}
+      <QuickTourModal isOpen={tourOpen} onClose={() => setTourOpen(false)} />
     </>
   );
 }

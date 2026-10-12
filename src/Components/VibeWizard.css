@@ -307,3 +307,87 @@
   border-color: rgba(255, 255, 255, 0.35);
   transform: translateY(-2px);
 }
+
+/* ========================================================
+   MOBILE RESPONSIVENESS (< 640px & < 375px)
+   ======================================================== */
+@media (max-width: 640px) {
+  .vwz-wrapper {
+    padding: 16px 12px;
+    margin: 20px 0;
+    border-radius: 18px;
+  }
+  .vwz-header {
+    margin-bottom: 20px;
+  }
+  .vwz-title {
+    font-size: 18px;
+  }
+  .vwz-desc {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .vwz-step-card {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+  .vwz-step-num {
+    margin-bottom: 14px;
+  }
+  .vwz-type-btn {
+    padding: 10px 12px;
+    min-height: 48px;
+  }
+  .vwz-type-name {
+    font-size: 13px;
+  }
+  .vwz-feature-item {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+  .vwz-prompt-box {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+  .vwz-prompt-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .vwz-copy-btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .vwz-prompt-preview {
+    font-size: 11.5px;
+    padding: 10px;
+    max-height: 180px;
+  }
+  .vwz-action-dock {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+  .vwz-dock-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 375px) {
+  .vwz-wrapper {
+    padding: 12px 8px;
+    border-radius: 14px;
+  }
+  .vwz-title {
+    font-size: 16px;
+  }
+  .vwz-step-card {
+    padding: 10px 8px;
+  }
+}
+

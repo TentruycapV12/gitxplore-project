@@ -1,0 +1,38 @@
+.gx-confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999999;
+  overflow: hidden;
+}
+
+.gx-confetti-piece {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  opacity: 0.95;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation-name: gxConfettiFall;
+  animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation-fill-mode: forwards;
+}
+
+.gx-confetti-piece.is-circle {
+  border-radius: 50%;
+}
+
+@keyframes gxConfettiFall {
+  0% {
+    top: -20px;
+    transform: translateY(0) rotate(0deg) scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    top: 105vh;
+    transform: translateY(0) rotate(720deg) scale(1);
+    opacity: 0;
+  }
+}
