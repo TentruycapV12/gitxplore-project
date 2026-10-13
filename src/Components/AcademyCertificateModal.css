@@ -1,0 +1,227 @@
+/* ============================================================
+   GITXPLORE ACADEMY CERTIFICATE MODAL
+   Luxury Obsidian & Gold Styling • High-res Canvas Export
+   ============================================================ */
+
+.cert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: certFadeIn 0.25s ease-out;
+}
+
+@keyframes certFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cert-modal {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  background: #0d0707;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 70px rgba(0, 0, 0, 0.85),
+    0 0 50px rgba(245, 158, 11, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 94vh;
+}
+
+.cert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(22, 11, 11, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cert-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fef08a;
+  letter-spacing: 0.5px;
+}
+
+.cert-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #cbd5e1;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.15s ease;
+}
+
+.cert-close-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  transform: rotate(90deg);
+}
+
+.cert-body {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Canvas Preview Frame */
+.cert-canvas-wrap {
+  width: 100%;
+  max-width: 820px;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: #080404;
+}
+
+.cert-canvas-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Name Edit Bar */
+.cert-name-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 16px;
+  border-radius: 14px;
+}
+
+.cert-name-input-row label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fef08a;
+  white-space: nowrap;
+}
+
+.cert-name-input-row input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  outline: none;
+}
+
+/* Action Buttons Dock */
+.cert-actions-dock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.cert-btn-download {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  padding: 13px 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cert-btn-download:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.6);
+}
+
+.cert-btn-share {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fef08a;
+  padding: 13px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.cert-btn-share:hover {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: #fef08a;
+  transform: translateY(-2px);
+}
+
+.cert-btn-confetti {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #7dd3fc;
+  padding: 13px 20px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.cert-btn-confetti:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .cert-modal {
+    border-radius: 18px;
+  }
+  .cert-body {
+    padding: 16px 12px;
+  }
+  .cert-actions-dock {
+    flex-direction: column;
+    width: 100%;
+  }
+  .cert-btn-download,
+  .cert-btn-share,
+  .cert-btn-confetti {
+    width: 100%;
+    justify-content: center;
+  }
+}

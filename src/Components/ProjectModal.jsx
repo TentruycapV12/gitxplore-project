@@ -37,6 +37,27 @@ export default function ProjectModal() {
     }
   };
 
+  const handleAskArisu = () => {
+    const p = project;
+    closeProjectModal();
+    window.dispatchEvent(
+      new CustomEvent('open-arisu-ai', {
+        detail: {
+          query: `Hãy tóm tắt và hướng dẫn mình cách chạy dự án "${p.name}" nhé!`,
+          project: {
+            name: p.name,
+            category: p.categoryName || p.category,
+            description: p.description,
+            stars: p.stars,
+            forks: p.forks,
+            githubUrl: p.githubUrl,
+            demoUrl: p.demoUrl,
+          },
+        },
+      })
+    );
+  };
+
   return (
     <div className="modal-overlay" onClick={closeProjectModal}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -72,6 +93,23 @@ export default function ProjectModal() {
           </div>
 
           <div className="modal-footer-btns">
+            <button
+              type="button"
+              onClick={handleAskArisu}
+              className="link-btn btn-secondary"
+              title="Nhờ AI Arisu tóm tắt & hướng dẫn chạy dự án"
+              style={{
+                background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(129, 140, 248, 0.18))',
+                borderColor: 'rgba(56, 189, 248, 0.5)',
+                color: '#7dd3fc',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>🤖</span> {t('ask_arisu') || 'Nhờ Arisu Hướng Dẫn'}
+            </button>
             <button
               type="button"
               onClick={handleCompare}

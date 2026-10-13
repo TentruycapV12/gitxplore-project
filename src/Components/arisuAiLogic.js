@@ -315,6 +315,57 @@ Bạn có muốn mình tạo ngay một đoạn câu lệnh gợi ý cho ý tư�
 3. **Step 3:** Paste it into ChatGPT, Claude, or Cursor IDE, or hit **"Try in Sandbox"** on GitXplore to see it live!`;
   }
 
+  // PHÂN TÍCH DỰ ÁN CỤ THỂ (CONTEXTUAL REPO EXPLAINER)
+  if (q.includes('dự án') && (q.includes('hướng dẫn') || q.includes('tóm tắt') || q.includes('cách chạy') || q.includes('phân tích'))) {
+    const match = text.match(/["“](.+?)["”]/);
+    const projName = match ? match[1] : 'dự án mã nguồn mở này';
+    if (isVi) {
+      return `### 🤖 Phân Tích & Hướng Dẫn Chạy Dự Án: **${projName}**
+
+Chào bạn! Mình đã quét qua thông tin của **${projName}**. Đây là bản tóm tắt nhanh và các bước thực hành dễ hiểu nhất:
+
+---
+
+#### 📌 1. Dự án này là gì?
+- **Mục tiêu:** Đây là một kho mã nguồn mở chất lượng cao được tuyển chọn trên GitXplore.
+- **Giá trị thực tế:** Dự án cung cấp giải pháp hoàn chỉnh, có thể ứng dụng trực tiếp làm sản phẩm hoặc tài liệu học tập chuẩn mực.
+
+#### 🚀 2. Hướng dẫn 3 bước chạy thử trên máy tính của bạn:
+1. **Tải mã nguồn về máy:**
+${B}bash
+git clone <đường-dẫn-repo>.git
+cd <tên-thư-mục>
+${B}
+2. **Cài đặt các thư viện cần thiết:**
+${B}bash
+npm install  # (hoặc pnpm install / yarn)
+${B}
+3. **Khởi chạy ứng dụng:**
+${B}bash
+npm run dev
+${B}
+*(Sau đó mở trình duyệt tại địa chỉ ${C}http://localhost:5173${C} hoặc ${C}http://localhost:3000${C} để trải nghiệm!)*
+
+---
+
+#### 🪄 3. Mẹo Vibe Coding với AI:
+Nếu bạn muốn tùy biến lại dự án này theo ý mình:
+- Mở thư mục này bằng **Cursor IDE** hoặc **VS Code**.
+- Dùng tổ hợp phím **Ctrl + L** (hoặc ⌘L) và ra lệnh cho AI:  
+  > *"Hãy giải thích cho tôi cấu trúc thư mục của dự án này và giúp tôi đổi màu giao diện sang phong cách Cyberpunk tối màu."*
+
+Bạn cần mình hỗ trợ thêm phần nào về dự án này không? 😊`;
+    }
+    return `### 🤖 Project Summary & Run Guide: **${projName}**
+
+Here is a quick overview and runnable instructions:
+1. **Clone Repo:** ${C}git clone <repo-url>.git${C}
+2. **Install Dependencies:** ${C}npm install${C}
+3. **Launch Local Server:** ${C}npm run dev${C}
+
+Feel free to ask me if you want to customize any features in this repo!`;
+  }
+
   // Câu hỏi chung Arisu
   if (isVi) {
     return pick([

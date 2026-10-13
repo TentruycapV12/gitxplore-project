@@ -5,6 +5,7 @@ import { useUI } from '../context/UIContext';
 import { playTing, playSuccess } from '../utils/soundEffects';
 import ConfettiEffect from './ConfettiEffect';
 import { showToast } from './ToastNotice';
+import AcademyCertificateModal from './AcademyCertificateModal.jsx';
 import './GitXploreAcademy.css';
 
 const ACADEMY_STORAGE_KEY = 'gx_academy_completed_lessons';
@@ -190,6 +191,7 @@ export default function GitXploreAcademy() {
 
   const [activeLesson, setActiveLesson] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showCertModal, setShowCertModal] = useState(false);
   const [completedLessons, setCompletedLessons] = useState(() => {
     try {
       const saved = localStorage.getItem(ACADEMY_STORAGE_KEY);
@@ -211,6 +213,7 @@ export default function GitXploreAcademy() {
         if (updated.length === 6) {
           playSuccess();
           setShowConfetti(true);
+          setShowCertModal(true);
           showToast(
             isVi
               ? '🏆 Chúc mừng bạn đã tốt nghiệp xuất sắc GitXplore Academy!'
@@ -286,22 +289,46 @@ export default function GitXploreAcademy() {
               <strong>{completedLessons.length}/6 {isVi ? 'bài hoàn thành' : 'lessons completed'} ({progressPercent}%)</strong>
             </div>
             {progressPercent === 100 && (
-              <button
-                type="button"
-                className="gxa-badge-complete"
-                onClick={() => {
-                  playSuccess();
-                  setShowConfetti(true);
-                  showToast(
-                    isVi ? '🏆 Vinh danh: Bạn đã nắm trọn bí kíp tạo app bằng AI!' : '🏆 Honors: You mastered AI app creation!',
-                    '🎓',
-                    'success'
-                  );
-                }}
-                title={isVi ? 'Bấm để ăn mừng tốt nghiệp!' : 'Click to celebrate!'}
-              >
-                🏆 {isVi ? 'ĐÃ TỐT NGHIỆP XUẤT SẮC!' : 'GRADUATION UNLOCKED!'}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="gxa-badge-complete"
+                  onClick={() => {
+                    playSuccess();
+                    setShowConfetti(true);
+                    setShowCertModal(true);
+                  }}
+                  title={isVi ? 'Bấm để xem và tải bằng tốt nghiệp!' : 'Click to view & download degree!'}
+                >
+                  🏆 {isVi ? 'ĐÃ TỐT NGHIỆP XUẤT SẮC!' : 'GRADUATION UNLOCKED!'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCertModal(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25))',
+                    border: '1px solid #f59e0b',
+                    color: '#fef08a',
+                    padding: '8px 16px',
+                    borderRadius: '999px',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.25)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  title={isVi ? 'Mở chứng nhận & tải file ảnh PNG' : 'Open certificate & download PNG'}
+                >
+                  <span>📜</span>
+                  <span>{isVi ? 'Nhận Bằng Khen (PNG)' : 'Get Degree (PNG)'}</span>
+                </button>
+              </div>
             )}
           </div>
           <div className="gxa-progress-bar-bg">
@@ -409,6 +436,13 @@ export default function GitXploreAcademy() {
           </div>
         ))}
       </div>
+
+      {/* Graduation Certificate Modal */}
+      <AcademyCertificateModal
+        isOpen={showCertModal}
+        onClose={() => setShowCertModal(false)}
+        onCelebrate={() => setShowConfetti(true)}
+      />
     </div>
   );
 }

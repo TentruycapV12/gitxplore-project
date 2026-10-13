@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useUI } from '../context/UIContext';
-import { playTing } from '../utils/soundEffects';
+import { playTing, playSuccess } from '../utils/soundEffects';
 import { showToast } from './ToastNotice';
+import { PLAYGROUND_TEMPLATES } from '../data/playgroundTemplates';
 import './VibeWizard.css';
 
 const APP_TYPES = [
@@ -130,6 +131,120 @@ Requirements:
     }
   };
 
+  const handleDownloadZip = async () => {
+    try {
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+
+      const typeObj = APP_TYPES.find((t) => t.id === selectedType) || APP_TYPES[0];
+      const templateKey = selectedType === 'store' ? 'cafe' : selectedType === 'game' ? 'snake' : 'todo';
+      const tmpl = PLAYGROUND_TEMPLATES.find((t) => t.id === templateKey) || PLAYGROUND_TEMPLATES[0];
+
+      const slug = (customName || typeObj.defaultName)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/gi, '-')
+        .replace(/-+/g, '-');
+
+      // 1. index.html
+      zip.file('index.html', tmpl.code || `<!DOCTYPE html><html><head><title>${customName}</title></head><body><h1>${customName}</h1></body></html>`);
+
+      // 2. .cursorrules
+      const cursorRulesContent = `# Cursor Rules for ${customName} (${typeObj.titleVi})
+You are an expert AI software engineer building a high-performance web application.
+
+## Project Vision:
+- Name: ${customName || typeObj.defaultName}
+- Category: ${typeObj.titleVi} (${typeObj.titleEn})
+
+## Architecture & Code Guidelines:
+1. Tech Stack: Modern HTML5, Tailwind CSS / Vanilla CSS, Modern ES6+ JavaScript.
+2. Design Style: High-tech Glassmorphism with obsidian dark background (#090505), golden amber (#f59e0b) and ruby red (#ef4444) accents.
+3. Keep code modular, accessible, 60fps responsive for both Mobile and Desktop.
+4. Auto-persist state to localStorage where appropriate.
+`;
+      zip.file('.cursorrules', cursorRulesContent);
+
+      // 3. README.md
+      const readmeContent = `# ${customName || typeObj.defaultName}
+
+Ứng dụng được tạo bởi **GitXplore Vibe Wizard (Vibe Coding)**.
+
+## 🚀 Cách chạy thử:
+1. Mở file \`index.html\` trực tiếp trên bất kỳ trình duyệt nào (Chrome, Safari, Edge, Firefox).
+2. Không cần cài đặt Node.js hay môi trường phát triển phức tạp!
+
+## 🪄 Cách phát triển tiếp bằng AI (Cursor / ChatGPT / Claude):
+- Mở thư mục này trong **Cursor IDE** hoặc **VS Code**.
+- File \`.cursorrules\` đã được cấu hình sẵn để AI hiểu rõ luật và phong cách của dự án.
+- Sử dụng prompt sau để ra lệnh cho AI mở rộng tính năng:
+
+> "${generatedPrompt}"
+
+---
+Tạo bởi GitXplore — Khám phá Mã Nguồn Mở & Tự Tạo Ứng Dụng Với AI.
+`;
+      zip.file('README.md', readmeContent);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${slug || 'gitxplore-project'}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      playSuccess();
+      showToast(
+        isVi ? '📦 Đã tải trọn bộ mã nguồn (.zip) thành công!' : '📦 Project .zip downloaded successfully!',
+        '🚀',
+        'success'
+      );
+    } catch (err) {
+      console.error(err);
+      showToast(isVi ? 'Không thể tạo file zip, vui lòng thử lại.' : 'Could not generate zip file.', '⚠️', 'error');
+    }
+  };
+
+  const handleDownloadCursorRules = () => {
+    try {
+      const typeObj = APP_TYPES.find((t) => t.id === selectedType) || APP_TYPES[0];
+      const cursorRulesContent = `# Cursor Rules for ${customName || typeObj.defaultName}
+You are an expert AI software engineer.
+
+## Goal:
+Build and enhance: "${customName || typeObj.defaultName}"
+
+## Vibe Coding Prompt:
+${generatedPrompt}
+
+## Rules:
+- Clean standalone code
+- Responsive design
+- Beautiful dark theme glassmorphism
+`;
+      const blob = new Blob([cursorRulesContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '.cursorrules';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      playTing();
+      showToast(
+        isVi ? '📄 Đã tải file .cursorrules về máy!' : '📄 .cursorrules downloaded!',
+        '✨',
+        'success'
+      );
+    } catch {
+      // fallback
+    }
+  };
+
   return (
     <div className="vwz-wrapper">
       <div className="vwz-header">
@@ -229,19 +344,51 @@ Requirements:
                 {isVi ? 'Bước 3: Câu Lệnh AI (Vibe Prompt) Của Bạn Đã Sẵn Sàng!' : 'Step 3: Your Ready-to-Run Vibe Prompt is Ready!'}
               </div>
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                {isVi ? 'Copy câu lệnh này và dán vào ChatGPT / Cursor hoặc chạy thử trực tiếp trong Sandbox' : 'Copy this prompt to ChatGPT / Cursor, or test live in Sandbox'}
+                {isVi ? 'Tải mã nguồn về máy, copy vào ChatGPT / Cursor hoặc chạy thử trực tiếp trong Sandbox' : 'Download project code, copy to ChatGPT / Cursor, or test live in Sandbox'}
               </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="vwz-copy-btn"
-            onClick={handleCopy}
-          >
-            <span>{copied ? '✓' : '📋'}</span>
-            <span>{copied ? (isVi ? 'Đã Sao Chép!' : 'Copied!') : (isVi ? 'Sao Chép Câu Lệnh' : 'Copy Prompt')}</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="vwz-copy-btn"
+              onClick={handleDownloadZip}
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                borderColor: '#10b981',
+                color: '#ffffff',
+              }}
+              title={isVi ? 'Tải trọn bộ mã nguồn chạy ngay dạng .zip' : 'Download complete runnable project as .zip'}
+            >
+              <span>📦</span>
+              <span>{isVi ? 'Tải Code (.zip)' : 'Download .zip'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="vwz-copy-btn"
+              onClick={handleDownloadCursorRules}
+              style={{
+                background: 'rgba(56, 189, 248, 0.15)',
+                borderColor: 'rgba(56, 189, 248, 0.45)',
+                color: '#7dd3fc',
+              }}
+              title={isVi ? 'Tải file cấu hình .cursorrules cho Cursor IDE' : 'Download .cursorrules for Cursor IDE'}
+            >
+              <span>📄</span>
+              <span>{isVi ? 'Tải .cursorrules' : '.cursorrules'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="vwz-copy-btn"
+              onClick={handleCopy}
+            >
+              <span>{copied ? '✓' : '📋'}</span>
+              <span>{copied ? (isVi ? 'Đã Sao Chép!' : 'Copied!') : (isVi ? 'Sao Chép Prompt' : 'Copy Prompt')}</span>
+            </button>
+          </div>
         </div>
 
         <pre className="vwz-prompt-preview">
