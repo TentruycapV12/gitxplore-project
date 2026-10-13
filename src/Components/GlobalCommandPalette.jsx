@@ -54,7 +54,7 @@ export default function GlobalCommandPalette() {
     { id: 'nav-playground', type: 'action-playground', title: '⚡ Vibe Coding Playground (Thử Code Trực Tiếp)', sub: 'Code Sandbox 1-chạm: Chạy Cafe web, Game Snake, Pomodoro ngay', icon: '⚡' },
     { id: 'nav-compare', type: 'action-compare', title: '⚖️ So sánh Dự án (Repo Battle Arena)', sub: 'Đối đầu trực diện 2 repo: React vs Vue, Supabase vs Firebase...', icon: '⚖️' },
     { id: 'nav-market', type: 'nav', title: '🛒 Chợ Công Nghệ & Sàn Trung Gian (Marketplace)', sub: 'Mua bán thiết bị điện tử, vi mạch, piano, AI tools an toàn qua Escrow', icon: '🛒', path: '/market' },
-    { id: 'nav-home', type: 'nav', title: 'Trang chủ (Home)', sub: '3D Iron Man, Kho mã nguồn & Vibe Coding', icon: '🏠', path: '/' },
+    { id: 'nav-home', type: 'nav', title: 'Trang chủ (Home)', sub: 'Kho mã nguồn, Live Demo & Vibe Coding', icon: '🏠', path: '/' },
     { id: 'nav-guide', type: 'guide', title: 'Nhập môn trong 3 phút (Beginner Guide)', sub: 'Hiểu ngay mã nguồn mở & Vibe Coding cho người mới', icon: '🌱', path: '/#beginner-guide' },
     { id: 'nav-vibe', type: 'nav', title: 'Vibe Coding Hub', sub: 'Mẫu .cursorrules, MCP Servers & AI Prompts', icon: '⚡', path: '/vibe' },
     { id: 'nav-forum', type: 'nav', title: 'Diễn đàn Cộng đồng (Forum)', sub: 'Thảo luận realtime & phòng trà tân thủ', icon: '💬', path: '/forum' },

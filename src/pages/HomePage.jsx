@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLenis } from '../hooks/useLenis';
 import { useProjectFilters } from '../hooks/useProjectFilters';
 import { useUI } from '../context/UIContext';
-import HeroParallax from '../Components/HeroParallax.jsx';
+import HeroSection from '../Components/HeroSection.jsx';
 import BeginnerQuickStart from '../Components/BeginnerQuickStart.jsx';
 import HomeHubSpotlight from '../Components/HomeHubSpotlight.jsx';
 import Component1 from '../Components/Component1.jsx';
@@ -28,7 +28,7 @@ export default function HomePage() {
 
   return (
     <>
-      <HeroParallax />
+      <HeroSection />
       <BeginnerQuickStart />
 
       <main className="lusion-container" id="explore">
