@@ -1,0 +1,241 @@
+// =============================================================================
+// SUBMIT PROJECT SCSS - GIẢNG DẠY CHUẨN SLIDE 10 (SASS / SCSS & BEM)
+// =============================================================================
+
+// 1. SCSS Variables (Biến quy chuẩn)
+$gx-primary: #f59e0b;
+$gx-primary-hover: #d97706;
+$gx-primary-glow: rgba(245, 158, 11, 0.35);
+$gx-accent-cyan: #38bdf8;
+$gx-accent-emerald: #10b981;
+$gx-bg-obsidian: #080505;
+$gx-bg-surface: #120c0c;
+$gx-bg-card: rgba(18, 12, 12, 0.85);
+$gx-border: rgba(245, 158, 11, 0.22);
+$gx-border-light: rgba(255, 255, 255, 0.08);
+$gx-text-main: #f8fafc;
+$gx-text-muted: #94a3b8;
+$gx-text-accent: #fef08a;
+$gx-radius-sm: 8px;
+$gx-radius-md: 14px;
+$gx-radius-lg: 20px;
+$gx-transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+// 2. SCSS Mixins (Tái sử dụng logic giao diện)
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin glass-panel($blur: 16px, $bg: $gx-bg-card) {
+  background: $bg;
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid $gx-border;
+  border-radius: $gx-radius-md;
+}
+
+@mixin hover-lift {
+  transition: $gx-transition;
+  &:hover {
+    transform: translateY(-2px);
+    border-color: $gx-primary;
+    box-shadow: 0 8px 24px $gx-primary-glow;
+  }
+}
+
+// 3. BEM Methodology Architecture (.submit-project)
+.submit-project {
+  min-height: 100vh;
+  background-color: $gx-bg-obsidian;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 60%, rgba(56, 189, 248, 0.05) 0%, transparent 45%);
+  color: $gx-text-main;
+  padding: 80px 20px 100px;
+  font-family: inherit;
+
+  // BEM Element: &__container
+  &__container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  // BEM Element: &__hero
+  &__hero {
+    text-align: center;
+    margin-bottom: 40px;
+
+    // BEM Element + Modifiers
+    &--pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: $gx-text-accent;
+      margin-bottom: 16px;
+    }
+
+    &--title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 40%, #fef08a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    &--subtitle {
+      font-size: 15px;
+      color: $gx-text-muted;
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+  }
+
+  // BEM Element: &__grid
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+
+    @media (min-width: 900px) {
+      grid-template-columns: 1.7fr 1.1fr;
+    }
+  }
+
+  // BEM Element: &__card
+  &__card {
+    @include glass-panel;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+
+    &--interactive {
+      @include hover-lift;
+    }
+
+    &--highlight {
+      border-color: rgba(56, 189, 248, 0.35);
+      background: rgba(18, 12, 12, 0.95);
+    }
+  }
+
+  // BEM Element: &__section-title
+  &__section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: $gx-text-accent;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  // BEM Element: &__api-feed
+  &__api-feed {
+    margin-top: 24px;
+
+    &--item {
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid $gx-border-light;
+      border-radius: $gx-radius-sm;
+      transition: $gx-transition;
+
+      &:hover {
+        background: rgba(245, 158, 11, 0.06);
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+
+      h4 {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: $gx-text-main;
+        margin: 0 0 6px;
+        text-transform: capitalize;
+      }
+
+      p {
+        font-size: 12px;
+        color: $gx-text-muted;
+        margin: 0;
+        line-height: 1.5;
+      }
+    }
+  }
+
+  // BEM Element: &__response-preview
+  &__response-preview {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: $gx-radius-sm;
+    background: #030202;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    color: #a7f3d0;
+    max-height: 220px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  // BEM Element: &__tags
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  &__tag-chip {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: $gx-transition;
+
+    &:hover {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: $gx-primary;
+      color: $gx-text-accent;
+    }
+
+    &--active {
+      background: $gx-primary;
+      border-color: $gx-primary;
+      color: #000000;
+      font-weight: 700;
+    }
+  }
+
+  // BEM Element: &__footer-note
+  &__footer-note {
+    margin-top: 40px;
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid $gx-border-light;
+    font-size: 13px;
+    color: $gx-text-muted;
+
+    strong {
+      color: $gx-text-accent;
+    }
+  }
+}

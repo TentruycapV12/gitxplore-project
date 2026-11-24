@@ -279,6 +279,38 @@ export default function TopNav() {
           <span>Sandbox</span>
         </button>
 
+        {/* Cổng Đăng Dự Án & Dev Lab (Slide 10-13) */}
+        <button
+          type="button"
+          onClick={() => go('/submit-project')}
+          title="Cổng Đóng Góp Dự Án & Thử Nghiệm API (Slide 10-13: SCSS, MUI, Form Yup, Axios)"
+          style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(245, 158, 11, 0.2))',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            borderRadius: '999px',
+            padding: '6px 12px',
+            color: '#a7f3d0',
+            fontSize: '12px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.35)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          <span>🚀</span>
+          <span>{lang === 'vi' ? 'Đăng Dự Án' : 'Submit'}</span>
+        </button>
+
         <div className="tn-wrap">
           <button
             type="button"
@@ -302,6 +334,9 @@ export default function TopNav() {
                 </button>
                 <button type="button" onClick={() => go('/market')}>
                   <span style={{ fontSize: '18px' }}>🛒</span><span>{MARKET_LABEL[lang] || MARKET_LABEL.en}</span>
+                </button>
+                <button type="button" onClick={() => go('/submit-project')}>
+                  <span style={{ fontSize: '18px' }}>🚀</span><span>{lang === 'vi' ? 'Đăng Dự Án (MUI Form)' : 'Submit Project'}</span>
                 </button>
                 <button type="button" onClick={() => go('/vibe')}>{ICONS.vibe}<span>{t('vibe_nav') || 'Vibe Coding'}</span></button>
                 <button type="button" onClick={() => go('/news')}>{ICONS.news}<span>{t('news')}</span></button>
