@@ -1,27 +1,33 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
+const SvgIcon = ({ children }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
 const About = () => {
   const { t } = useLanguage();
 
   const features = [
     {
-      icon: '🔍',
+      icon: <SvgIcon><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></SvgIcon>,
       title: t('ab_f1_t'),
       desc: t('ab_f1_d'),
     },
     {
-      icon: '⚡',
+      icon: <SvgIcon><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></SvgIcon>,
       title: t('ab_f2_t'),
       desc: t('ab_f2_d'),
     },
     {
-      icon: '🌐',
+      icon: <SvgIcon><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></SvgIcon>,
       title: t('ab_f3_t'),
       desc: t('ab_f3_d'),
     },
     {
-      icon: '🤝',
+      icon: <SvgIcon><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></SvgIcon>,
       title: t('ab_f4_t'),
       desc: t('ab_f4_d'),
     },
@@ -136,9 +142,7 @@ const styles = {
   },
   gradientText: {
     fontFamily: 'Cormorant Garamond, serif',
-    background: 'linear-gradient(135deg, #fde047 0%, #f97316 60%, #ef4444 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    color: '#fbbf24',
     fontStyle: 'italic',
   },
   subtitle: {

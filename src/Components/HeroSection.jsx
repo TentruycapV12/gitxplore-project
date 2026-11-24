@@ -180,8 +180,7 @@ export default function HeroSection() {
                 className={`hero-tab-btn ${activeTab === 'prompt' ? 'is-active' : ''}`}
                 onClick={() => setActiveTab('prompt')}
               >
-                <span>⚡</span>
-                <span>{isVi ? 'Vibe Prompt' : 'Vibe Prompt'}</span>
+                <span>Vibe Prompt</span>
               </button>
 
               <button
@@ -189,8 +188,7 @@ export default function HeroSection() {
                 className={`hero-tab-btn ${activeTab === 'sandbox' ? 'is-active' : ''}`}
                 onClick={() => setActiveTab('sandbox')}
               >
-                <span>💻</span>
-                <span>{isVi ? 'Live Sandbox' : 'Live Sandbox'}</span>
+                <span>Live Sandbox</span>
               </button>
 
               <button
@@ -198,7 +196,6 @@ export default function HeroSection() {
                 className={`hero-tab-btn ${activeTab === 'arisu' ? 'is-active' : ''}`}
                 onClick={() => setActiveTab('arisu')}
               >
-                <span>🤖</span>
                 <span>{isVi ? 'Trợ Lý Arisu' : 'Arisu AI'}</span>
               </button>
             </div>
@@ -209,7 +206,7 @@ export default function HeroSection() {
                 <div>
                   <div className="hero-prompt-preview">
                     <div className="hero-prompt-label">
-                      <span>✨ PROMPT SPECIFICATION</span>
+                      <span>PROMPT SPECIFICATION</span>
                       <span style={{ opacity: 0.5, fontSize: '10px' }}>(One-Click Copy)</span>
                     </div>
                     <p className="hero-prompt-text">
@@ -223,7 +220,6 @@ export default function HeroSection() {
                       className="hero-action-copy"
                       onClick={handleCopyPrompt}
                     >
-                      <span>{copied ? '✅' : '📋'}</span>
                       <span>{copied ? (isVi ? 'Đã sao chép!' : 'Copied!') : (isVi ? 'Sao Chép Prompt' : 'Copy Prompt')}</span>
                     </button>
 
@@ -232,7 +228,6 @@ export default function HeroSection() {
                       className="hero-action-launch"
                       onClick={() => navigate('/vibe')}
                     >
-                      <span>🚀</span>
                       <span>{isVi ? 'Tạo Tại Vibe Hub ↗' : 'Open Vibe Hub ↗'}</span>
                     </button>
                   </div>
@@ -269,7 +264,6 @@ export default function HeroSection() {
                       style={{ color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
                       onClick={() => scrollToId('explore')}
                     >
-                      <span>🔍</span>
                       <span>{isVi ? 'Khám Phá 50+ Live Demo Ở Dưới ↓' : 'Explore 50+ Demos Below ↓'}</span>
                     </button>
                   </div>
@@ -280,7 +274,7 @@ export default function HeroSection() {
                 <div>
                   <div className="hero-arisu-view">
                     <div className="hero-arisu-avatar">
-                      <span>🤖</span>
+                      <span style={{ fontWeight: 800, fontSize: '12px', color: '#fef08a' }}>AI</span>
                     </div>
                     <p className="hero-arisu-bubble">
                       {isVi
@@ -295,14 +289,14 @@ export default function HeroSection() {
                       className="hero-arisu-chip"
                       onClick={() => handleAskArisu(isVi ? 'Làm sao để tạo website bằng AI khi không biết code?' : 'How can I build a web app using AI with zero coding experience?')}
                     >
-                      💬 {isVi ? '1. "Làm sao tự tạo web bằng AI khi không biết code?"' : '1. "How to build apps with AI without coding?"'}
+                      {isVi ? '1. "Làm sao tự tạo web bằng AI khi không biết code?"' : '1. "How to build apps with AI without coding?"'}
                     </button>
                     <button
                       type="button"
                       className="hero-arisu-chip"
                       onClick={() => handleAskArisu(isVi ? 'Gợi ý các dự án mã nguồn mở hay nhất cho người mới bắt đầu' : 'Recommend the best open-source projects for beginners')}
                     >
-                      💬 {isVi ? '2. "Gợi ý dự án mã nguồn mở hay nhất cho người mới"' : '2. "Recommend best repos for beginners"'}
+                      {isVi ? '2. "Gợi ý dự án mã nguồn mở hay nhất cho người mới"' : '2. "Recommend best repos for beginners"'}
                     </button>
                   </div>
                 </div>
@@ -315,8 +309,7 @@ export default function HeroSection() {
       {/* Copy Toast Indicator */}
       {copied && (
         <div className="hero-toast">
-          <span>🎉</span>
-          <span>{isVi ? 'Đã sao chép Prompt vào bộ nhớ tạm!' : 'Prompt copied to clipboard!'}</span>
+          <span>{isVi ? 'Đã sao chép Prompt vào bộ nhớ tạm' : 'Prompt copied to clipboard'}</span>
         </div>
       )}
     </section>

@@ -74,42 +74,29 @@ export default function Component1() {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '14px',
-          margin: '0 0 24px',
-          padding: '14px 20px',
-          background: audienceMode === 'beginner'
-            ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.2) 100%)'
-            : 'linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(120, 53, 15, 0.2) 100%)',
-          border: audienceMode === 'beginner'
-            ? '1px solid rgba(16, 185, 129, 0.35)'
-            : '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: '18px',
-          backdropFilter: 'blur(16px)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          transition: 'all 0.3s ease',
+          gap: '12px',
+          margin: '0 0 20px',
+          padding: '10px 18px',
+          background: 'rgba(18, 12, 12, 0.75)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '14px',
+          backdropFilter: 'blur(12px)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: audienceMode === 'beginner' ? '#6ee7b7' : '#fef08a' }}>
-              {audienceMode === 'beginner'
-                ? (lang === 'vi' ? 'Chế độ Người Mới Bắt Đầu (Beginner Mode)' : 'Beginner-Friendly View')
-                : (lang === 'vi' ? 'Chế độ Lập Trình Viên (Developer Mode)' : 'Full Developer View')}
-            </div>
-            <div style={{ fontSize: '12px', color: '#cbd5e1', opacity: 0.9 }}>
-              {audienceMode === 'beginner'
-                ? (lang === 'vi' ? 'Các ứng dụng được tinh chọn dễ dùng, có thể bấm "Live Demo" trải nghiệm ngay không cần biết code.' : 'Curated apps with instant live web demos, simplified without technical jargon.')
-                : (lang === 'vi' ? 'Hiển thị đầy đủ mọi kho mã nguồn, lệnh terminal git clone và các thông số chuyên sâu.' : 'Full repositories, terminal clone commands, and specialized frameworks.')}
-            </div>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '13.5px', fontWeight: 700, color: audienceMode === 'beginner' ? '#6ee7b7' : '#fef08a' }}>
+            {audienceMode === 'beginner'
+              ? (lang === 'vi' ? 'Chế độ Người Mới (Tinh Chọn Live Demo)' : 'Beginner View (Curated Live Demos)')
+              : (lang === 'vi' ? 'Chế độ Lập Trình Viên (Đầy Đủ Repo & Git Clone)' : 'Developer View (Full Repos & Git Clone)')}
+          </span>
         </div>
 
         {/* 2-Way Pill Switcher */}
         <div
           style={{
             display: 'inline-flex',
-            background: 'rgba(0, 0, 0, 0.55)',
-            padding: '4px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            padding: '3px',
             borderRadius: '999px',
             border: '1px solid rgba(255, 255, 255, 0.15)',
           }}

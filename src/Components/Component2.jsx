@@ -124,7 +124,7 @@ function Component2({ project, onSelect }) {
               }}
               title={lang === 'vi' ? 'Trải nghiệm ứng dụng thực tế' : 'Open live demo'}
             >
-              🚀 {lang === 'vi' ? 'Dùng Thử Ngay ↗' : 'Live Demo ↗'}
+              {lang === 'vi' ? 'Dùng Thử Ngay ↗' : 'Live Demo ↗'}
             </a>
           ) : (
             <a
