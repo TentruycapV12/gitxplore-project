@@ -150,7 +150,12 @@ body::before {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Retain gentle state feedback transitions for opacity and color without spatial displacement */
+  button, a, input, select, textarea, [role="button"] {
+    transition-duration: 0.15s !important;
+    transition-property: opacity, background-color, border-color, color, box-shadow !important;
+    transform: none !important;
   }
 }
