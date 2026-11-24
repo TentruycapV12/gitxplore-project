@@ -117,7 +117,10 @@ export default function NewsPage() {
       <header className="nw-top">
         <div className="nw-top-left">
           <span className="nw-brand-tag">
-            <span>📰</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: '6px' }}>
+              <rect x="3" y="4" width="14" height="16" rx="2" />
+              <path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M7 8h6M7 12h6M7 16h4" />
+            </svg>
             <span>{t('news')}</span>
           </span>
           <div className="nw-live" title={feed.lastUpdated ? new Date(feed.lastUpdated).toLocaleString(locale) : ''}>
