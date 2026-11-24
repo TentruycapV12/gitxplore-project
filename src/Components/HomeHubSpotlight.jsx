@@ -47,7 +47,6 @@ export default function HomeHubSpotlight() {
             color: activeTab === 'market' ? '#fef08a' : '#94a3b8',
           }}
         >
-          <span>🛒</span>
           <span>{isVi ? 'Sàn Chợ Công Nghệ' : 'Tech Marketplace'}</span>
         </button>
         <button
@@ -70,7 +69,6 @@ export default function HomeHubSpotlight() {
             color: activeTab === 'vibe' ? '#38bdf8' : '#94a3b8',
           }}
         >
-          <span>⚡</span>
           <span>Vibe Coding Hub</span>
         </button>
       </div>

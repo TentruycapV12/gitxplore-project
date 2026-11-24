@@ -16,7 +16,7 @@ export default function MarketplaceFeaturedBanner() {
       {/* Cột trái: Thông điệp & Phân loại */}
       <div className="mfb-left">
         <div className="mfb-badge">
-          <span>{isVi ? '🛡️ SÀN THƯƠNG MẠI ĐIỆN TỬ & KÝ QUỸ ESCROW' : '🛡️ ELECTRONICS & ESCROW MARKETPLACE'}</span>
+          <span>{isVi ? 'SÀN THƯƠNG MẠI ĐIỆN TỬ & KÝ QUỸ ESCROW' : 'ELECTRONICS & ESCROW MARKETPLACE'}</span>
           <span className="mfb-badge-tag">{isVi ? 'PHÍ SÀN 2.5%' : 'FEE 2.5%'}</span>
         </div>
 
@@ -37,28 +37,28 @@ export default function MarketplaceFeaturedBanner() {
         {/* Category tags */}
         <div className="mfb-categories" onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={() => navigate('/market?cat=phones-tablets')}>
-            📱 {getMarketplaceText(lang, 'cat_phones')}
+            {getMarketplaceText(lang, 'cat_phones')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=computers-laptops')}>
-            💻 {getMarketplaceText(lang, 'cat_computers')}
+            {getMarketplaceText(lang, 'cat_computers')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=components-circuits')}>
-            🔌 {getMarketplaceText(lang, 'cat_components')}
+            {getMarketplaceText(lang, 'cat_components')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=smart-home')}>
-            🏠 {getMarketplaceText(lang, 'cat_smarthome')}
+            {getMarketplaceText(lang, 'cat_smarthome')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=audio-music')}>
-            🎧 {getMarketplaceText(lang, 'cat_audio')}
+            {getMarketplaceText(lang, 'cat_audio')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=cameras-drones')}>
-            📷 {getMarketplaceText(lang, 'cat_cameras')}
+            {getMarketplaceText(lang, 'cat_cameras')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=ai-software')}>
-            🤖 {getMarketplaceText(lang, 'cat_ai')}
+            {getMarketplaceText(lang, 'cat_ai')}
           </button>
           <button type="button" onClick={() => navigate('/market?cat=diy-tools')}>
-            🛠️ {getMarketplaceText(lang, 'cat_tools')}
+            {getMarketplaceText(lang, 'cat_tools')}
           </button>
         </div>
 

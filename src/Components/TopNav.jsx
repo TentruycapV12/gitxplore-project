@@ -138,31 +138,13 @@ export default function TopNav() {
 
   return (
     <header className="tn" ref={rootRef}>
-      {/* ===== TRÁI: logo + tìm kiếm ===== */}
+      {/* ===== TRÁI: logo ===== */}
       <div className="tn-left">
         <button type="button" className="tn-logo" onClick={() => go('/')} aria-label={`GitXplore - ${t('ui_home')}`}>
           <span className="tn-logo-mark">⚡</span>
           <span className="tn-logo-text">GitXplore</span>
           <span className="tn-logo-pill">VIBE</span>
         </button>
-
-        <form className={`tn-search ${searchOpen ? 'is-open' : ''}`} onSubmit={onSearch} role="search">
-          <button
-            type="button"
-            className="tn-search-icon"
-            aria-label={t('search_placeholder')}
-            onClick={() => setSearchOpen((v) => !v)}
-          >
-            {ICONS.search}
-          </button>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('search_placeholder')}
-            aria-label={t('search_placeholder')}
-          />
-        </form>
       </div>
 
       {/* ===== GIỮA: tab icon ===== */}
@@ -202,7 +184,7 @@ export default function TopNav() {
                     go('/community');
                   }}
                 >
-                  <span style={{ fontSize: '18px' }}>👥</span>
+                  <span className="tn-sub-icon">{ICONS.community}</span>
                   <div style={{ textAlign: 'left' }}>
                     <div style={{ fontWeight: 700, fontSize: '13px', color: '#fef08a' }}>{t('community')}</div>
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>{lang === 'vi' ? 'Dự án & Thành viên' : 'Members & Projects'}</div>
@@ -218,7 +200,7 @@ export default function TopNav() {
                     go('/forum');
                   }}
                 >
-                  <span style={{ fontSize: '18px' }}>💬</span>
+                  <span className="tn-sub-icon">{ICONS.forum}</span>
                   <div style={{ textAlign: 'left' }}>
                     <div style={{ fontWeight: 700, fontSize: '13px', color: '#fef08a' }}>{FORUM_LABEL[lang] || FORUM_LABEL.en}</div>
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>{lang === 'vi' ? 'Diễn đàn Thảo luận' : 'Discussion Forum'}</div>
@@ -232,7 +214,7 @@ export default function TopNav() {
 
       {/* ===== PHẢI: nút tròn + avatar ===== */}
       <div className="tn-right">
-        {/* Universal ⌘K Search Pill */}
+        {/* Universal ⌘K Search Pill (Thanh tìm kiếm duy nhất, mở Command Palette toàn năng) */}
         <button
           type="button"
           className="tn-search-pill"
@@ -260,8 +242,8 @@ export default function TopNav() {
             e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
           }}
         >
-          <span>🔍</span>
-          <span style={{ opacity: 0.85 }}>{lang === 'vi' ? 'Tìm kiếm...' : 'Search...'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center' }}>{ICONS.search}</span>
+          <span style={{ opacity: 0.85 }}>{lang === 'vi' ? 'Tìm kiếm nhanh...' : 'Quick search...'}</span>
           <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#fef08a' }}>⌘K</kbd>
         </button>
 

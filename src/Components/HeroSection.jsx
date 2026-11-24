@@ -76,8 +76,8 @@ export default function HeroSection() {
             <span className="hero-badge-dot" />
             <span>
               {isVi
-                ? '✨ NỀN TẢNG MÃ NGUỒN MỞ THẾ HỆ MỚI • AI & VIBE CODING'
-                : '✨ NEXT-GEN OPEN SOURCE • AI & VIBE CODING PLATFORM'}
+                ? 'NỀN TẢNG MÃ NGUỒN MỞ & VIBE CODING'
+                : 'OPEN SOURCE & VIBE CODING PLATFORM'}
             </span>
           </div>
 
@@ -96,16 +96,15 @@ export default function HeroSection() {
               : 'Explore 50+ curated open-source projects with zero-setup Live Demos. Generate code from plain ideas with Vibe Hub and learn effortlessly with AI Companion Arisu.'}
           </p>
 
-          {/* CTA Action Buttons */}
+          {/* CTA Action Buttons: Phân cấp rõ ràng 1 Chính + 1 Phụ + 1 Tour */}
           <div className="hero-cta-group">
             <button
               type="button"
               className="hero-btn-primary"
-              onClick={() => scrollToId('beginner-guide')}
-              title={isVi ? 'Nhập môn trong 3 phút' : '3-Minute Crash Course'}
+              onClick={() => scrollToId('explore')}
+              title={isVi ? 'Trải nghiệm các Live Demo ngay' : 'Explore Live Demos'}
             >
-              <span>🌱</span>
-              <span>{isVi ? '3 Phút Nhập Môn ↓' : '3-Min Crash Course ↓'}</span>
+              <span>{isVi ? 'Khám Phá Live Demo ↓' : 'Explore Live Demos ↓'}</span>
             </button>
 
             <button
@@ -114,8 +113,7 @@ export default function HeroSection() {
               onClick={() => navigate('/vibe')}
               title={isVi ? 'Tự tạo ứng dụng tại Vibe Hub' : 'Build Apps in Vibe Hub'}
             >
-              <span>⚡</span>
-              <span>{isVi ? 'Tự Làm App (Vibe Hub) ↗' : 'Build App (Vibe Hub) ↗'}</span>
+              <span>{isVi ? 'Tự Tạo App (Vibe Hub) ↗' : 'Vibe Coding Hub ↗'}</span>
             </button>
 
             <button
@@ -124,32 +122,7 @@ export default function HeroSection() {
               onClick={handleOpenTour}
               title={isVi ? 'Dạo quanh trang web trong 30 giây' : '30-second guided tour'}
             >
-              <span>🧭</span>
               <span>{isVi ? 'Tour 30 Giây' : '30s Tour'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => scrollToId('explore')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
-                color: '#fcd34d',
-                padding: '13px 20px',
-                borderRadius: '999px',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
-            >
-              <span>🚀</span>
-              <span>{isVi ? 'Live Demo ↓' : 'Live Demos ↓'}</span>
             </button>
           </div>
 

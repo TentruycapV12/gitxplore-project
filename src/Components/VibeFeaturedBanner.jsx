@@ -38,19 +38,19 @@ export default function VibeFeaturedBanner() {
         {/* Quick Category Badges */}
         <div className="vfb-categories" onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={() => navigate('/vibe?cat=skills')}>
-            ⚡ Skills (8)
+            Skills (8)
           </button>
           <button type="button" onClick={() => navigate('/vibe?cat=agents')}>
-            🤖 AI Agents (6)
+            AI Agents (6)
           </button>
           <button type="button" onClick={() => navigate('/vibe?cat=commands')}>
-            ⌨️ Commands (5)
+            Commands (5)
           </button>
           <button type="button" onClick={() => navigate('/vibe?cat=mcps')}>
-            🔌 MCPs (5)
+            MCPs (5)
           </button>
           <button type="button" onClick={() => navigate('/vibe?cat=rules')}>
-            📜 .cursorrules (4)
+            .cursorrules (4)
           </button>
         </div>
 

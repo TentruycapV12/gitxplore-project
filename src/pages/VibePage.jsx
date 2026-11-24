@@ -321,17 +321,7 @@ export default function VibePage() {
               border: 'none',
             }}
           >
-            <span style={{ fontSize: '16px' }}>⚡</span>
             <span>{lang === 'vi' ? 'Thử Vibe Sandbox Trực Tiếp' : 'Try Live Sandbox'}</span>
-          </button>
-          <button
-            type="button"
-            className="vb-btn vb-btn-secondary"
-            onClick={() => openCompare()}
-            style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}
-          >
-            <span style={{ fontSize: '15px' }}>⚖️</span>
-            <span>{lang === 'vi' ? 'So sánh Repo' : 'Repo Battle'}</span>
           </button>
           <button
             type="button"
@@ -344,20 +334,19 @@ export default function VibePage() {
           <button
             type="button"
             className="vb-btn vb-btn-secondary"
+            onClick={() => openCompare()}
+            style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}
+          >
+            <span>{lang === 'vi' ? 'So sánh Repo' : 'Repo Battle'}</span>
+          </button>
+          <button
+            type="button"
+            className="vb-btn vb-btn-secondary"
             onClick={() => setShowSubmitModal(true)}
           >
             <Ico d={ICONS.plus} size={16} />
             <span>{t('vb_btn_submit')}</span>
           </button>
-          <a
-            href="https://aitmpl.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="vb-btn vb-btn-ghost"
-          >
-            <span>{t('vb_btn_original')}</span>
-            <Ico d={ICONS.external} size={14} />
-          </a>
         </div>
 
         {/* Guide & Onboarding Toggle Button */}
@@ -382,11 +371,10 @@ export default function VibePage() {
               boxShadow: showGuide ? '0 0 20px rgba(245, 158, 11, 0.28)' : 'none',
             }}
           >
-            <span>💡</span>
             <span>
               {showGuide
                 ? (lang === 'vi' ? 'Thu gọn Cẩm nang & Video Vibe Coding' : 'Hide Vibe Guide & Videos')
-                : (lang === 'vi' ? '✨ Vibe Coding Là Gì? Xem Video Hướng Dẫn & 5 Code Test Mẫu' : '✨ What is Vibe Coding? Watch Videos & 5 Test Starters')}
+                : (lang === 'vi' ? 'Cẩm nang Vibe Coding & Video Hướng Dẫn' : 'Vibe Coding Guide & Video Starters')}
             </span>
             <span style={{ fontSize: '11px' }}>{showGuide ? '▲' : '▼'}</span>
           </button>

@@ -87,9 +87,6 @@
 
 .vfb-title span {
   color: #f59e0b;
-  background: linear-gradient(135deg, #fbbf24, #ea580c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .vfb-desc {

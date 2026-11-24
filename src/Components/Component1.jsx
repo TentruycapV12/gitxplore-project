@@ -90,7 +90,6 @@ export default function Component1() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '24px' }}>{audienceMode === 'beginner' ? '🌱' : '⚡'}</span>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: audienceMode === 'beginner' ? '#6ee7b7' : '#fef08a' }}>
               {audienceMode === 'beginner'
@@ -131,7 +130,7 @@ export default function Component1() {
               boxShadow: audienceMode === 'beginner' ? '0 2px 12px rgba(16, 185, 129, 0.5)' : 'none',
             }}
           >
-            🌱 {lang === 'vi' ? 'Người Mới' : 'Beginner'}
+            {lang === 'vi' ? 'Người Mới' : 'Beginner'}
           </button>
           <button
             type="button"
@@ -149,7 +148,7 @@ export default function Component1() {
               boxShadow: audienceMode === 'dev' ? '0 2px 12px rgba(245, 158, 11, 0.5)' : 'none',
             }}
           >
-            💻 {lang === 'vi' ? 'Developer' : 'Developer'}
+            {lang === 'vi' ? 'Lập Trình Viên' : 'Developer'}
           </button>
         </div>
       </div>
@@ -171,7 +170,7 @@ export default function Component1() {
           <input
             type="text"
             className="lusion-search"
-            placeholder={t('search_placeholder')}
+            placeholder={lang === 'vi' ? 'Lọc nhanh dự án theo tên hoặc công nghệ...' : 'Filter projects by name or stack...'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />

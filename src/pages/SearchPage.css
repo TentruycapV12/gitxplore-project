@@ -69,7 +69,7 @@
   text-align: left; cursor: pointer; transition: background 0.15s;
 }
 .sr-filter:hover { background: var(--surface-2); }
-.sr-filter.is-on { background: var(--surface-2); color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
+.sr-filter.is-on { background: var(--surface-2); color: #fff; border: 1px solid rgba(245, 158, 11, 0.4); }
 .sr-filter b {
   min-width: 24px; padding: 1px 8px; border-radius: 999px; text-align: center;
   background: rgba(245, 158, 11, 0.16); color: var(--accent); font-size: 12px; font-weight: 700;

@@ -67,7 +67,6 @@ export default function BeginnerQuickStart() {
               boxShadow: activeTab === 'academy' ? '0 4px 16px rgba(245, 158, 11, 0.45)' : 'none',
             }}
           >
-            <span>🎓</span>
             <span>{isVi ? 'Lộ Trình Tạo App Đầu Tay' : '15-Min App Course'}</span>
             <span style={{ fontSize: '10px', background: activeTab === 'academy' ? '#000' : '#f59e0b', color: activeTab === 'academy' ? '#fef08a' : '#000', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>HOT</span>
           </button>
@@ -92,7 +91,6 @@ export default function BeginnerQuickStart() {
               boxShadow: activeTab === 'overview' ? '0 4px 16px rgba(16, 185, 129, 0.45)' : 'none',
             }}
           >
-            <span>🌱</span>
             <span>{isVi ? '3 Phút Hiểu Căn Bản' : '3-Min Core Concepts'}</span>
           </button>
         </div>
@@ -214,13 +212,6 @@ export default function BeginnerQuickStart() {
               onClick={handleExploreBeginner}
             >
               {t('bqs_btn_explore')}
-            </button>
-            <button
-              type="button"
-              className="bqs-btn-secondary"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-quick-tour'))}
-            >
-              🧭 {lang === 'vi' ? 'Xem Tour 30s' : '30s Tour'}
             </button>
           </div>
         </div>

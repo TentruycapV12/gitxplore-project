@@ -614,7 +614,6 @@ export default function CommunityForum() {
                   onMouseEnter={(e) => { if (canPost) e.currentTarget.style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  <span style={{ fontSize: '18px' }}>✏️</span>
                   <span>{ft.btn_new_topic}</span>
                 </button>
               </div>
@@ -637,7 +636,6 @@ export default function CommunityForum() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
-              <span style={{ fontSize: '26px', background: 'rgba(16, 185, 129, 0.2)', padding: '6px 10px', borderRadius: '12px' }}>🌱</span>
               <div>
                 <strong style={{ color: '#6ee7b7', fontSize: '15px', display: 'block', marginBottom: '3px' }}>
                   {lang === 'vi' ? 'Khu Vực Tân Thủ: Hỏi Đáp Mọi Thắc Mắc Về Lập Trình & Mã Nguồn Mở' : 'Beginner Friendly Zone: Ask Anything About Code & Open Source'}
@@ -668,7 +666,7 @@ export default function CommunityForum() {
                 whiteSpace: 'nowrap'
               }}
             >
-              ✍️ {lang === 'vi' ? 'Đặt câu hỏi đầu tiên' : 'Ask First Question'}
+              {lang === 'vi' ? 'Đặt câu hỏi đầu tiên' : 'Ask First Question'}
             </button>
           </div>
 

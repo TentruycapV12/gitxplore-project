@@ -113,9 +113,6 @@
 
 .vb-hero-title span {
   color: var(--vb-accent);
-  background: linear-gradient(135deg, #fbbf24 0%, #ea580c 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .vb-hero-subtitle {

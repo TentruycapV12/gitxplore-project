@@ -630,7 +630,7 @@ export default function MarketplacePage() {
               className="mp-btn-post mp-btn-admin-portal"
               onClick={() => setShowAdminModal(true)}
             >
-              <span>👑 {txt('admin_portal_btn')}</span>
+              <span>{txt('admin_portal_btn')}</span>
             </button>
           ) : (
             <button
@@ -644,7 +644,7 @@ export default function MarketplacePage() {
                 }
               }}
             >
-              <span>🚀 {txt('btn_open_seller_central')}</span>
+              <span>{txt('btn_open_seller_central')}</span>
             </button>
           )}
 
