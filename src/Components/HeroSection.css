@@ -116,6 +116,13 @@
   }
 }
 
+@media (max-width: 600px) {
+  .hero-container {
+    padding: 72px 4vw 36px;
+    gap: 28px;
+  }
+}
+
 /* Left Content Column */
 .hero-left {
   flex: 1.1;
