@@ -56,6 +56,7 @@ function Component2({ project, onSelect }) {
             alt={project.name}
             className="media-asset"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = FALLBACK_IMAGE;

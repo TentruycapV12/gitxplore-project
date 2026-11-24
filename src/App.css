@@ -146,10 +146,12 @@
   border: 1px solid rgba(245, 158, 11, 0.25);
   transform-style: preserve-3d;
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
-  will-change: transform;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 450px;
 }
 
 .project-card:hover {
+  will-change: transform;
   border-color: rgba(245, 158, 11, 0.7);
   box-shadow: 
     0 24px 50px -10px rgba(0, 0, 0, 0.9),

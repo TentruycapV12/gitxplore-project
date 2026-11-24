@@ -1057,7 +1057,12 @@ function ProductCard({ product, lang, onOpenDetail, onBuyNow }) {
   return (
     <div className={`mp-product-card ${product.isFeatured ? 'is-featured' : ''}`}>
       <div className="mp-card-thumb" onClick={onOpenDetail}>
-        <img src={product.images?.[0] || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600'} alt={displayTitle} />
+        <img
+          src={product.images?.[0] || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600'}
+          alt={displayTitle}
+          loading="lazy"
+          decoding="async"
+        />
         <span className="mp-badge-tag" style={{ color: condConfig.color }}>
           ● {condLabel}
         </span>
@@ -1084,7 +1089,13 @@ function ProductCard({ product, lang, onOpenDetail, onBuyNow }) {
         </div>
 
         <div className="mp-card-seller">
-          <img src={product.seller?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80'} alt="" className="mp-seller-avatar" />
+          <img
+            src={product.seller?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80'}
+            alt=""
+            className="mp-seller-avatar"
+            loading="lazy"
+            decoding="async"
+          />
           <span className="mp-seller-name">{product.seller?.name || 'Verified Tech Shop'}</span>
           <span className="mp-seller-rating">⭐ {product.seller?.rating || '5.0'}</span>
         </div>
