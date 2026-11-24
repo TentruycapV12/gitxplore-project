@@ -32,14 +32,14 @@
   color: inherit; cursor: pointer; flex: none;
 }
 .tn-logo-mark {
-  width: 32px; height: 32px; display: grid; place-items: center;
-  border-radius: 9px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: #ffffff;
-  font-size: 16px; font-weight: 800; line-height: 1;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: #ffffff;
+  font-size: 17px; font-weight: 900; line-height: 1;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
 }
 .tn-logo-text {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; font-size: 16.5px; font-weight: 800;
-  letter-spacing: -0.02em; color: #ffffff;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; font-size: 17.5px; font-weight: 900;
+  letter-spacing: -0.03em; color: #ffffff;
 }
 .tn-logo-pill {
   font-size: 9px; font-weight: 700; letter-spacing: 0.8px;

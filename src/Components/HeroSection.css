@@ -175,10 +175,10 @@
 /* Hero Typography */
 .hero-heading {
   font-family: 'Cormorant Garamond', 'Plus Jakarta Sans', serif;
-  font-size: clamp(44px, 6.5vw, 84px);
-  font-weight: 800;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
+  font-size: clamp(48px, 7vw, 92px);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
   color: #ffffff;
   margin: 0 0 18px;
   text-transform: uppercase;
@@ -188,25 +188,25 @@
   display: block;
   color: #f59e0b;
   font-style: italic;
-  text-shadow: 0 0 28px rgba(245, 158, 11, 0.45);
+  text-shadow: 0 0 32px rgba(245, 158, 11, 0.55);
 }
 
 .hero-description {
-  font-size: clamp(14.5px, 1.8vw, 16.5px);
+  font-size: clamp(15px, 1.8vw, 17px);
   line-height: 1.7;
   color: #e2e8f0;
   max-width: 580px;
-  margin: 0 0 28px;
-  opacity: 0.92;
+  margin: 0 0 32px;
+  opacity: 0.95;
 }
 
 /* Call to Action (CTA) Buttons */
 .hero-cta-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: 34px;
+  margin-bottom: 36px;
 }
 
 @media (max-width: 1024px) {
@@ -219,32 +219,32 @@
   background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
   border: none;
-  padding: 13px 26px;
+  padding: 15px 32px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
 }
 
 .hero-btn-primary:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.55);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.6);
 }
 
 .hero-btn-secondary {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.22));
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25));
   color: #fef08a;
-  border: 1px solid rgba(245, 158, 11, 0.55);
-  padding: 13px 24px;
+  border: 1px solid rgba(245, 158, 11, 0.65);
+  padding: 15px 28px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -254,9 +254,9 @@
 }
 
 .hero-btn-secondary:hover {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.35));
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(239, 68, 68, 0.4));
   border-color: #fef08a;
-  box-shadow: 0 0 24px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 28px rgba(245, 158, 11, 0.45);
   transform: translateY(-2px) scale(1.02);
 }
 
