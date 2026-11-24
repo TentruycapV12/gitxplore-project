@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&subset=latin,vietnamese&display=swap');
 
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-entrance: 500ms;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -136,4 +143,14 @@ body::before {
 ::-webkit-scrollbar-corner { background: transparent; }
 @supports (-moz-appearance: none) {
   html, * { scrollbar-width: thin; scrollbar-color: rgba(245, 158, 11, 0.4) #0a0606; }
+}
+
+/* ==================== GLOBAL MOTION & ACCESSIBILITY ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

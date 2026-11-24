@@ -65,16 +65,16 @@
   100% { transform: translate(-25px, -20px) scale(0.95); }
 }
 
-/* Tech Grid Pattern (Zero KB) */
+/* Tech Particle Field (Zero KB) */
 .hero-grid-pattern {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image: 
-    radial-gradient(rgba(245, 158, 11, 0.12) 1px, transparent 1px),
-    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 28px 28px, 56px 56px, 56px 56px;
+    radial-gradient(rgba(245, 158, 11, 0.16) 1px, transparent 1px),
+    radial-gradient(rgba(239, 68, 68, 0.08) 1.5px, transparent 1.5px);
+  background-size: 36px 36px, 72px 72px;
+  background-position: 0 0, 18px 18px;
   opacity: 0.75;
   mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, black 40%, transparent 95%);
   -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, black 40%, transparent 95%);
@@ -123,6 +123,18 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  animation: heroEntranceLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes heroEntranceLeft {
+  from {
+    opacity: 0.2;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -315,12 +327,30 @@
 }
 
 /* Right Interactive Studio Mockup Card */
+.hero-btn-primary:active,
+.hero-btn-secondary:active,
+.hero-btn-tour:active {
+  transform: translateY(0) scale(0.98);
+}
+
 .hero-right {
   flex: 0.95;
   width: 100%;
   max-width: 580px;
   display: flex;
   justify-content: center;
+  animation: heroEntranceRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+@keyframes heroEntranceRight {
+  from {
+    opacity: 0.2;
+    transform: translateY(22px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .hero-mockup-card {

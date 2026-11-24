@@ -639,6 +639,10 @@
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(245, 158, 11, 0.15);
 }
 
+.mp-product-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
 .mp-product-card.is-featured {
   border-color: rgba(245, 158, 11, 0.35);
   box-shadow: 0 8px 28px rgba(245, 158, 11, 0.1);

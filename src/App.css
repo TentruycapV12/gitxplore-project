@@ -82,6 +82,10 @@
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
 }
 
+.tag-btn:active {
+  transform: scale(0.96);
+}
+
 .tag-btn.active {
   background: linear-gradient(135deg, #dc2626, #d97706);
   color: #ffffff;
@@ -140,7 +144,7 @@
   overflow: hidden;
   border: 1px solid rgba(245, 158, 11, 0.25);
   transform-style: preserve-3d;
-  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
   will-change: transform;
 }
 
@@ -250,10 +254,14 @@
   font-weight: 600;
   padding: 12px 24px;
   border-radius: 12px;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.link-btn:active {
+  transform: scale(0.96);
 }
 
 .btn-primary {

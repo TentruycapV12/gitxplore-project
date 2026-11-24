@@ -73,7 +73,7 @@
   display: grid;
   place-items: center;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 25px rgba(56, 189, 248, 0.45);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
 }
 
 .arisu-chibi-button:hover {
@@ -709,6 +709,16 @@
     bottom: 70px;
     right: 8px;
     border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arisu-assistant-container,
+  .arisu-chibi-button,
+  .arisu-chat-modal,
+  .arisu-aura-ring {
+    animation: none !important;
+    transition: opacity 0.15s ease-out !important;
   }
 }
 
