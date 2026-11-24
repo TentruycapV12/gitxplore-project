@@ -280,26 +280,26 @@
 }
 
 .hero-btn-tour {
-  background: rgba(56, 189, 248, 0.12);
-  color: #7dd3fc;
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 13px 20px;
-  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  padding: 12px 16px;
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
   transition: all 0.2s ease;
 }
 
 .hero-btn-tour:hover {
-  background: rgba(56, 189, 248, 0.22);
-  border-color: #38bdf8;
-  color: #ffffff;
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
-  transform: translateY(-2px);
+  background: transparent;
+  color: #38bdf8;
+  box-shadow: none;
+  transform: translateY(-1px);
 }
 
 /* Hero Micro Trust Metrics */

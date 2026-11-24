@@ -333,18 +333,17 @@ export default function VibePage() {
           </button>
           <button
             type="button"
-            className="vb-btn vb-btn-secondary"
+            className="vb-btn vb-btn-ghost"
             onClick={() => openCompare()}
-            style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}
           >
             <span>{lang === 'vi' ? 'So sánh Repo' : 'Repo Battle'}</span>
           </button>
           <button
             type="button"
-            className="vb-btn vb-btn-secondary"
+            className="vb-btn vb-btn-ghost"
             onClick={() => setShowSubmitModal(true)}
           >
-            <Ico d={ICONS.plus} size={16} />
+            <Ico d={ICONS.plus} size={15} />
             <span>{t('vb_btn_submit')}</span>
           </button>
         </div>

@@ -564,14 +564,14 @@ export default function MarketplacePage() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '12px', color: '#fef08a' }}>
-                💰 {txt('admin_fee_balance')} <strong>{formatCurrency(adminTreasury.totalFeesCollected, lang)}</strong>
+                {txt('admin_fee_balance')} <strong>{formatCurrency(adminTreasury.totalFeesCollected, lang)}</strong>
               </span>
               <button
                 type="button"
                 className="mp-btn-admin-portal"
                 onClick={() => setShowAdminModal(true)}
               >
-                👑 {txt('admin_portal_btn')}
+                {txt('admin_portal_btn')}
               </button>
             </div>
           </div>
@@ -593,28 +593,36 @@ export default function MarketplacePage() {
         {/* Live Platform Highlights */}
         <div className="mp-stats-bar">
           <div className="mp-stat-card">
-            <div className="mp-stat-icon">🛡️</div>
+            <div className="mp-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
             <div className="mp-stat-info">
               <strong>{txt('stat_escrow_title')}</strong>
               <span>{txt('stat_escrow_desc')}</span>
             </div>
           </div>
           <div className="mp-stat-card">
-            <div className="mp-stat-icon">⚡</div>
+            <div className="mp-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
             <div className="mp-stat-info">
               <strong>{txt('stat_fee_title')}</strong>
               <span>{txt('stat_fee_desc')}</span>
             </div>
           </div>
           <div className="mp-stat-card">
-            <div className="mp-stat-icon">⏱️</div>
+            <div className="mp-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
             <div className="mp-stat-info">
               <strong>{txt('stat_trial_title')}</strong>
               <span>{txt('stat_trial_desc')}</span>
             </div>
           </div>
           <div className="mp-stat-card">
-            <div className="mp-stat-icon">🚚</div>
+            <div className="mp-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
             <div className="mp-stat-info">
               <strong>{txt('stat_logistics_title')}</strong>
               <span>{txt('stat_logistics_desc')}</span>
