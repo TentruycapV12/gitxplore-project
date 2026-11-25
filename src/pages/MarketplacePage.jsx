@@ -101,6 +101,63 @@ export default function MarketplacePage() {
     }
   }, [orders]);
 
+  // 3. Quản lý Giỏ hàng (Slide 5-6 Homework: useState + useEffect Shopping Cart)
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('gx_marketplace_cart_v1');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('gx_marketplace_cart_v1', JSON.stringify(cart));
+    } catch {
+      // ignore
+    }
+  }, [cart]);
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const addToCart = (product) => {
+    setCart((prevCart) => {
+      const existing = prevCart.find((item) => item.id === product.id);
+      if (existing) {
+        return prevCart.map((item) =>
+          item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
+        );
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const updateCartQuantity = (productId, delta) => {
+    setCart((prevCart) =>
+      prevCart
+        .map((item) => {
+          if (item.id === productId) {
+            const newQty = (item.quantity || 1) + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean)
+    );
+  };
+
+  const removeFromCart = (productId) => {
+    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+  };
+
+  const clearCart = () => setCart([]);
+
+  const totalCartCount = useMemo(() => cart.reduce((sum, item) => sum + (item.quantity || 1), 0), [cart]);
+  const totalCartPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0), [cart]);
+
   // Tự động đồng bộ sản phẩm & đơn hàng từ Supabase Cloud (với fallback localStorage)
   useEffect(() => {
     let isMounted = true;
@@ -812,6 +869,7 @@ export default function MarketplacePage() {
                 lang={lang}
                 onOpenDetail={() => setSelectedProduct(p)}
                 onBuyNow={() => setCheckoutProduct(p)}
+                onAddToCart={() => addToCart(p)}
               />
             ))}
           </div>
@@ -948,6 +1006,7 @@ export default function MarketplacePage() {
                 lang={lang}
                 onOpenDetail={() => setSelectedProduct(p)}
                 onBuyNow={() => setCheckoutProduct(p)}
+                onAddToCart={() => addToCart(p)}
               />
             ))}
           </div>
@@ -961,6 +1020,7 @@ export default function MarketplacePage() {
           lang={lang}
           onClose={() => setSelectedProduct(null)}
           onOpenChat={(p) => setChatProduct(p)}
+          onAddToCart={(p) => addToCart(p)}
           onBuyNow={() => {
             const p = selectedProduct;
             setSelectedProduct(null);
@@ -1040,6 +1100,70 @@ export default function MarketplacePage() {
         />
       )}
 
+      {/* ===== 14. MODAL GIỎ HÀNG MINI (SLIDE 5-6 HOMEWORK) ===== */}
+      <MiniCartModal
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cart={cart}
+        updateQuantity={updateCartQuantity}
+        removeFromCart={removeFromCart}
+        onClearCart={clearCart}
+        onCheckoutItem={(prod) => setCheckoutProduct(prod)}
+        lang={lang}
+      />
+
+      {/* Nút nổi giỏ hàng (Slide 5-6: useState + useEffect Shopping Cart) */}
+      <button
+        type="button"
+        onClick={() => setIsCartOpen(true)}
+        className="gx-floating-cart-btn"
+        title="Mở giỏ hàng (Slide 5-6: useState + useEffect)"
+        style={{
+          position: 'fixed',
+          bottom: '88px',
+          right: '24px',
+          zIndex: 99,
+          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          color: '#080505',
+          border: '2px solid rgba(254, 240, 138, 0.4)',
+          borderRadius: '999px',
+          padding: '11px 18px',
+          boxShadow: '0 8px 24px rgba(245, 158, 11, 0.4)',
+          fontWeight: 700,
+          fontSize: '13.5px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
+          e.currentTarget.style.boxShadow = '0 12px 30px rgba(245, 158, 11, 0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(245, 158, 11, 0.4)';
+        }}
+      >
+        <span style={{ fontSize: '18px' }}>🛒</span>
+        <span>{lang === 'vi' ? 'Giỏ hàng' : 'Cart'}</span>
+        {totalCartCount > 0 && (
+          <span
+            style={{
+              background: '#ef4444',
+              color: '#ffffff',
+              borderRadius: '999px',
+              padding: '2px 7px',
+              fontSize: '11px',
+              fontWeight: 800,
+            }}
+          >
+            {totalCartCount}
+          </span>
+        )}
+      </button>
+
       <Footer />
     </div>
   );
@@ -1048,7 +1172,7 @@ export default function MarketplacePage() {
 /* ========================================================
    SUB-COMPONENT: PRODUCT CARD
 ======================================================== */
-function ProductCard({ product, lang, onOpenDetail, onBuyNow }) {
+function ProductCard({ product, lang, onOpenDetail, onBuyNow, onAddToCart }) {
   const isVi = lang === 'vi';
   const condConfig = PRODUCT_CONDITIONS[product.condition] || PRODUCT_CONDITIONS.brand_new;
   const condLabel = isVi ? condConfig.label : (condConfig.label_en || condConfig.label);
@@ -1104,6 +1228,15 @@ function ProductCard({ product, lang, onOpenDetail, onBuyNow }) {
           <button type="button" className="mp-btn-detail" onClick={onOpenDetail}>
             {getMarketplaceText(lang, 'btn_detail')}
           </button>
+          <button
+            type="button"
+            className="mp-btn-detail"
+            onClick={onAddToCart}
+            title={isVi ? 'Thêm vào giỏ hàng' : 'Add to cart'}
+            style={{ minWidth: '40px', padding: '0 8px', fontSize: '15px' }}
+          >
+            🛒
+          </button>
           <button type="button" className="mp-btn-buy" onClick={onBuyNow}>
             {getMarketplaceText(lang, 'btn_buy_escrow')}
           </button>
@@ -1116,7 +1249,7 @@ function ProductCard({ product, lang, onOpenDetail, onBuyNow }) {
 /* ========================================================
    SUB-COMPONENT: PRODUCT DETAIL MODAL
 ======================================================== */
-function ProductDetailModal({ product, lang, onClose, onBuyNow, onOpenChat }) {
+function ProductDetailModal({ product, lang, onClose, onBuyNow, onOpenChat, onAddToCart }) {
   const isVi = lang === 'vi';
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const condConfig = PRODUCT_CONDITIONS[product.condition] || PRODUCT_CONDITIONS.brand_new;
@@ -1236,6 +1369,27 @@ function ProductDetailModal({ product, lang, onClose, onBuyNow, onOpenChat }) {
               >
                 <span>💬</span>
                 <span>{isVi ? 'Chat Với Người Bán' : 'Chat with Seller'}</span>
+              </button>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                style={{
+                  flex: '0 0 auto',
+                  padding: '12px 18px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderColor: 'rgba(245, 158, 11, 0.4)',
+                  color: '#fef08a',
+                }}
+                onClick={() => {
+                  onAddToCart && onAddToCart(product);
+                  onClose();
+                }}
+              >
+                <span>🛒</span>
+                <span>{isVi ? 'Thêm Vào Giỏ' : 'Add to Cart'}</span>
               </button>
               <button
                 type="button"
@@ -2624,6 +2778,231 @@ function MyOrdersModal({ orders, tab, setTab, lang, sellerKYC, onOpenKYC, seller
             >
               💳 {isVi ? 'Rút Tiền Về Tài Khoản Ngân Hàng' : 'Withdraw Funds to Bank Account'}
             </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================
+   SUB-COMPONENT: MINI CART MODAL (SLIDE 5-6 HOMEWORK)
+   Sử dụng useState và useEffect quản lý giỏ hàng sản phẩm
+======================================================== */
+function MiniCartModal({ isOpen, onClose, cart, updateQuantity, removeFromCart, onClearCart, onCheckoutItem, lang }) {
+  if (!isOpen) return null;
+  const isVi = lang === 'vi';
+  const totalCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+
+  return (
+    <div className="mp-modal-backdrop" onClick={onClose}>
+      <div
+        className="mp-modal-card"
+        style={{ maxWidth: '580px', width: '92%', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mp-modal-header" style={{ paddingBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '20px' }}>🛒</span>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: '#fef08a' }}>
+                {isVi ? 'Giỏ Hàng Công Nghệ' : 'Tech Shopping Cart'}
+              </h2>
+              <span
+                style={{
+                  background: 'rgba(245, 158, 11, 0.2)',
+                  color: '#f59e0b',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                }}
+              >
+                Slide 5-6 Lab
+              </span>
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8' }}>
+              {isVi
+                ? 'Quản lý trạng thái giỏ hàng bằng React Hook (useState & useEffect) lưu trữ LocalStorage'
+                : 'Shopping cart state managed with useState & synced via useEffect'}
+            </p>
+          </div>
+          <button type="button" className="mp-modal-close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
+          {cart.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
+              <div style={{ fontSize: '42px', marginBottom: '12px' }}>🛒</div>
+              <p style={{ fontSize: '15px', fontWeight: 600, color: '#f8fafc', margin: '0 0 6px' }}>
+                {isVi ? 'Giỏ hàng của bạn đang trống' : 'Your cart is empty'}
+              </p>
+              <p style={{ fontSize: '13px', margin: 0 }}>
+                {isVi
+                  ? 'Hãy chọn sản phẩm yêu thích và bấm biểu tượng 🛒 để thêm vào giỏ!'
+                  : 'Select tech items and click the 🛒 icon to add them here!'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {cart.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    padding: '12px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '10px',
+                  }}
+                >
+                  <img
+                    src={item.images?.[0] || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=120'}
+                    alt={item.title}
+                    style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4
+                      style={{
+                        margin: '0 0 4px',
+                        fontSize: '13.5px',
+                        fontWeight: 700,
+                        color: '#f8fafc',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {isVi ? item.title : (item.title_en || item.title)}
+                    </h4>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#f59e0b' }}>
+                      {formatCurrency(item.price, lang)}
+                    </div>
+                  </div>
+
+                  {/* Nút tăng giảm số lượng */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'rgba(0, 0, 0, 0.4)',
+                      padding: '4px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, -1)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#e2e8f0',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        padding: '0 4px',
+                        fontWeight: 700,
+                      }}
+                      title="Giảm 1"
+                    >
+                      −
+                    </button>
+                    <span style={{ fontSize: '13px', fontWeight: 800, minWidth: '18px', textAlign: 'center', color: '#fef08a' }}>
+                      {item.quantity || 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, 1)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#e2e8f0',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        padding: '0 4px',
+                        fontWeight: 700,
+                      }}
+                      title="Tăng 1"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeFromCart(item.id)}
+                    title={isVi ? 'Xóa khỏi giỏ' : 'Remove item'}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '4px 6px',
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {cart.length > 0 && (
+          <div
+            style={{
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                {isVi ? `Tổng số lượng: ${totalCount} món` : `Total items: ${totalCount}`}
+              </span>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>
+                  {isVi ? 'Tổng tiền giỏ hàng:' : 'Subtotal:'}
+                </span>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: '#fef08a' }}>
+                  {formatCurrency(totalPrice, lang)}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                className="mp-btn-detail"
+                style={{ flex: 1, padding: '10px', fontSize: '13px' }}
+                onClick={onClearCart}
+              >
+                {isVi ? 'Xóa Giỏ Hàng' : 'Clear Cart'}
+              </button>
+              <button
+                type="button"
+                className="mp-btn-buy"
+                style={{ flex: 2, padding: '10px', fontSize: '13px', fontWeight: 700 }}
+                onClick={() => {
+                  if (cart.length > 0) {
+                    onCheckoutItem(cart[0]);
+                    onClose();
+                  }
+                }}
+              >
+                {isVi ? '🚀 Tiến Hành Đặt Hàng' : '🚀 Checkout Now'}
+              </button>
+            </div>
           </div>
         )}
       </div>

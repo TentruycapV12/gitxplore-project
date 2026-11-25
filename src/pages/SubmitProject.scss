@@ -239,3 +239,105 @@ $gx-transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
   }
 }
+
+// =============================================================================
+// SLIDE 10 LAB (Slide 12): CARD UI COMPONENT (SCSS + BEM + NESTING + HOVER)
+// =============================================================================
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: $gx-bg-surface;
+  border: 1px solid $gx-border;
+  border-radius: $gx-radius-md;
+  overflow: hidden;
+  transition: $gx-transition;
+  margin: 0 auto;
+
+  &:hover {
+    transform: translateY(-6px);
+    border-color: $gx-primary;
+    box-shadow: 0 16px 36px $gx-primary-glow;
+  }
+
+  &__image-wrap {
+    width: 100%;
+    height: 190px;
+    overflow: hidden;
+    position: relative;
+    background: #050303;
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+
+    .card:hover & {
+      transform: scale(1.06);
+    }
+  }
+
+  &__content {
+    padding: 22px;
+    text-align: left;
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: $gx-text-accent;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__title {
+    font-size: 19px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 10px;
+    line-height: 1.35;
+  }
+
+  &__description {
+    font-size: 13.5px;
+    color: $gx-text-muted;
+    line-height: 1.6;
+    margin: 0 0 20px;
+  }
+
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+    border: 1px solid $gx-primary;
+    border-radius: $gx-radius-sm;
+    color: $gx-text-accent;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: $gx-transition;
+
+    &:hover {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #080505;
+      box-shadow: 0 6px 18px $gx-primary-glow;
+      transform: translateX(3px);
+    }
+  }
+
+  // BEM Modifier
+  &--highlighted {
+    border-color: $gx-accent-cyan;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
+  }
+}
+

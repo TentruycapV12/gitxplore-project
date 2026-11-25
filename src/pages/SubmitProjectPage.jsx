@@ -26,6 +26,9 @@ import {
   Snackbar,
   Typography,
   Divider,
+  AppBar,
+  Toolbar,
+  Paper,
 } from '@mui/material';
 import TopNav from '../Components/TopNav.jsx';
 import Footer from '../Components/Footer.jsx';
@@ -546,6 +549,113 @@ export default function SubmitProjectPage() {
             </aside>
 
           </div>
+
+          {/* ========================================================================= */}
+          {/* KHỐI TRÌNH DIỄN BỔ SUNG: SLIDE 10 LAB (BEM CARD) & SLIDE 11 LAB (MUI APPBAR) */}
+          {/* ========================================================================= */}
+          <Box sx={{ mt: 6, pt: 5, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#fef08a', mb: 1, textAlign: 'center' }}>
+              🔬 Khu Vực Trình Diễn Chi Tiết Thực Hành Slide 10 & Slide 11
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#94a3b8', textAlign: 'center', mb: 4 }}>
+              Đối chiếu chuẩn mã nguồn theo đúng từng slide bài tập do giảng viên yêu cầu
+            </Typography>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1.3fr' }, gap: 4, alignItems: 'start' }}>
+              
+              {/* CỘT 1: THẺ CARD BEM THEO ĐÚNG SLIDE 10 LAB */}
+              <Box className="submit-project__card">
+                <Typography sx={{ fontWeight: 700, fontSize: '15px', color: '#fef08a', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>🎨</span> Slide 10 LAB: Thẻ Card UI (SCSS + BEM + Hover)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#94a3b8', fontSize: '12.5px', mb: 2.5 }}>
+                  Yêu cầu bài Lab: Tạo Card UI gồm Ảnh, Tiêu đề, Mô tả ngắn, Nút "Read More", dùng biến SCSS và hiệu ứng hover.
+                </Typography>
+
+                {/* THE BEM CARD COMPONENT */}
+                <div className="card">
+                  <div className="card__image-wrap">
+                    <img
+                      src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600"
+                      alt="Demo BEM Card"
+                      className="card__image"
+                    />
+                  </div>
+                  <div className="card__content">
+                    <span className="card__tag">Slide 10 Demo</span>
+                    <h3 className="card__title">Kiến Trúc BEM trong SCSS</h3>
+                    <p className="card__description">
+                      Thành phần giao diện tuân thủ quy tắc Block-Element-Modifier, biến <code>$gx-primary</code>, nesting SCSS và hiệu ứng scale mượt mà.
+                    </p>
+                    <button type="button" className="card__button" onClick={() => alert('Thao tác mở bài viết (Read More) thành công!')}>
+                      Read More →
+                    </button>
+                  </div>
+                </div>
+              </Box>
+
+              {/* CỘT 2: MUI APPBAR & TOOLBAR THEO ĐÚNG SLIDE 11 LAB */}
+              <Box className="submit-project__card">
+                <Typography sx={{ fontWeight: 700, fontSize: '15px', color: '#38bdf8', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>🧱</span> Slide 11 LAB: Layout với MUI AppBar & Toolbar
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#94a3b8', fontSize: '12.5px', mb: 2.5 }}>
+                  Yêu cầu bài Lab: Kết hợp Header (AppBar + Toolbar) và Footer (Paper/Box) vào một Layout chuẩn Material Design.
+                </Typography>
+
+                {/* KHUNG MÔ PHỎNG LAYOUT MUI */}
+                <Paper
+                  elevation={3}
+                  sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    background: '#0a0a0c',
+                  }}
+                >
+                  {/* Header Exam (Slide 11 - Slide 22) */}
+                  <AppBar position="static" sx={{ bgcolor: 'rgba(30, 41, 59, 0.95)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fef08a' }}>
+                        ⚡ My Website (MUI AppBar)
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button color="inherit" size="small">Home</Button>
+                        <Button color="inherit" size="small">About</Button>
+                        <Button color="inherit" size="small">Contact</Button>
+                      </Box>
+                    </Toolbar>
+                  </AppBar>
+
+                  {/* Body Content (Slide 11 - Slide 24) */}
+                  <Box sx={{ p: 3, minHeight: 120, bgcolor: 'rgba(15, 23, 42, 0.5)' }}>
+                    <Typography variant="body2" sx={{ color: '#e2e8f0', mb: 1, fontWeight: 600 }}>
+                      📌 Vùng Nội Dung Chính (Main Layout Content):
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#94a3b8', lineHeight: 1.6, display: 'block' }}>
+                      Thành phần được bọc trong <code>Layout(&#123; children &#125;)</code> với Header và Footer trải rộng toàn màn hình theo đúng mã nguồn mẫu trong Slide 11 (Slide 21–24).
+                    </Typography>
+                  </Box>
+
+                  {/* Footer Exam (Slide 11 - Slide 23) */}
+                  <Box
+                    sx={{
+                      py: 1.5,
+                      px: 2,
+                      bgcolor: 'rgba(15, 23, 42, 0.95)',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      © 2025 GitXplore • Material UI Layout Demo (Slide 11 Completed)
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Box>
+
+            </Box>
+          </Box>
 
           <footer className="submit-project__footer-note">
             <span>GitXplore Dev Portal • <strong>100% Hoàn Chỉnh Yêu Cầu Học Phần ReactJS</strong></span>
