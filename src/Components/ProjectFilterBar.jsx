@@ -25,7 +25,7 @@ const BEGINNER_CATEGORIES = [
   { id: 'web', key: 'cat_web' },
 ];
 
-export default function Component1() {
+export default function ProjectFilterBar() {
   const { category, search, setCategory, setSearch } = useProjectFilters();
   const { t, lang } = useLanguage();
 

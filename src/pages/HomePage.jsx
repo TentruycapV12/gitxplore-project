@@ -6,8 +6,8 @@ import { useUI } from '../context/UIContext';
 import HeroSection from '../Components/HeroSection.jsx';
 import BeginnerQuickStart from '../Components/BeginnerQuickStart.jsx';
 import HomeHubSpotlight from '../Components/HomeHubSpotlight.jsx';
-import Component1 from '../Components/Component1.jsx';
-import Component2 from '../Components/Component2.jsx';
+import ProjectFilterBar from '../Components/ProjectFilterBar.jsx';
+import ProjectCard from '../Components/ProjectCard.jsx';
 import About from '../Components/About.jsx';
 import Footer from '../Components/Footer.jsx';
 
@@ -33,11 +33,11 @@ export default function HomePage() {
 
       <main className="lusion-container" id="explore">
         <HomeHubSpotlight />
-        <Component1 />
+        <ProjectFilterBar />
 
         <section className="projects-grid">
           {projects.map((project) => (
-            <Component2 key={project.id} project={project} onSelect={selectProject} />
+            <ProjectCard key={project.id} project={project} onSelect={selectProject} />
           ))}
         </section>
       </main>

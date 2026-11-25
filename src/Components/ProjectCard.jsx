@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 // Ảnh nền công nghệ dự phòng khi link gốc bị lỗi
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
 
-function Component2({ project, onSelect }) {
+function ProjectCard({ project, onSelect }) {
   const { t, lang } = useLanguage();
   const catLabel = t(`cat_${project.category}`) === `cat_${project.category}` ? project.categoryName : t(`cat_${project.category}`);
   const cardRef = useRef(null);
@@ -144,4 +144,4 @@ function Component2({ project, onSelect }) {
 }
 
 // memo: card chỉ render lại khi `project` hoặc `onSelect` đổi (không render lại khi gõ ô tìm kiếm...).
-export default memo(Component2);
+export default memo(ProjectCard);
