@@ -8,6 +8,7 @@ import AdminDashboardModal from './AdminDashboardModal';
 import UidTag from './UidTag';
 import TopNav from './TopNav';
 import Footer from './Footer';
+import './CommunityForum.css';
 
 const PREFIX_MAP = {
   'General': { label: 'General', bg: '#291818', color: '#fef08a', border: '#f59e0b' },

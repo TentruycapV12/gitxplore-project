@@ -243,7 +243,7 @@ export default function TopNav() {
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center' }}>{ICONS.search}</span>
-          <span style={{ opacity: 0.85 }}>{lang === 'vi' ? 'Tìm kiếm nhanh...' : 'Quick search...'}</span>
+          <span className="tn-search-pill-text" style={{ opacity: 0.85 }}>{lang === 'vi' ? 'Tìm kiếm nhanh...' : 'Quick search...'}</span>
           <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#fef08a' }}>⌘K</kbd>
         </button>
 
@@ -276,7 +276,7 @@ export default function TopNav() {
           }}
         >
           <span>⚡</span>
-          <span>Sandbox</span>
+          <span className="tn-action-text">Sandbox</span>
         </button>
 
         {/* Cổng Đăng Dự Án & Dev Lab (Slide 10-13) */}
@@ -308,7 +308,7 @@ export default function TopNav() {
           }}
         >
           <span>🚀</span>
-          <span>{lang === 'vi' ? 'Đăng Dự Án' : 'Submit'}</span>
+          <span className="tn-action-text">{lang === 'vi' ? 'Đăng Dự Án' : 'Submit'}</span>
         </button>
 
         <div className="tn-wrap">
