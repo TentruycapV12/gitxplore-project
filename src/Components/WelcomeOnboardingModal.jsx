@@ -40,7 +40,9 @@ export default function WelcomeOnboardingModal({ onClose }) {
         {/* Header with Step Indicator */}
         <div className="ob-modal-header">
           <div className="ob-brand-badge">
-            <span className="ob-brand-icon">⚡</span>
+            <span className="ob-brand-icon" style={{ overflow: 'hidden', padding: 0 }}>
+              <img src="/brand-logo.png" alt="GitXplore" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </span>
             <span className="ob-brand-title">GITXPLORE • DEVELOPER PLATFORM</span>
           </div>
 

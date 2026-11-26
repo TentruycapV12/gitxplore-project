@@ -141,7 +141,9 @@ export default function TopNav() {
       {/* ===== TRÁI: logo ===== */}
       <div className="tn-left">
         <button type="button" className="tn-logo" onClick={() => go('/')} aria-label={`GitXplore - ${t('ui_home')}`}>
-          <span className="tn-logo-mark">⚡</span>
+          <span className="tn-logo-mark">
+            <img src="/brand-logo.png" alt="GitXplore Mascot Logo" className="tn-logo-img" />
+          </span>
           <span className="tn-logo-text">GitXplore</span>
           <span className="tn-logo-pill">VIBE</span>
         </button>
