@@ -330,7 +330,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 ref={iframeRef}
                 srcDoc={code}
                 title="Vibe Sandbox Preview"
-                sandbox="allow-scripts allow-modals allow-same-origin"
+                sandbox="allow-scripts allow-forms allow-modals allow-same-origin allow-popups"
                 className={`vp-preview-frame ${device === 'tablet' ? 'is-tablet' : (device === 'mobile' ? 'is-mobile' : '')}`}
               />
             </div>

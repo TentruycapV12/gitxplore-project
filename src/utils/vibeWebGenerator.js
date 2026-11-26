@@ -175,19 +175,22 @@ function buildStudentManagerApp(prompt) {
     .title-group h1 { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
     .title-group p { color: #94a3b8; font-size: 13px; margin-top: 4px; }
     .badge-prompt { background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 24px; }
-    .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; }
-    .stat-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
-    .stat-value { font-size: 26px; font-weight: 800; color: #fff; margin-top: 6px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+    @media (max-width: 680px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; }
+    .stat-label { font-size: 11.5px; color: #94a3b8; font-weight: 600; }
+    .stat-value { font-size: 22px; font-weight: 800; color: #fff; margin-top: 4px; }
     .stat-value.amber { color: #fbbf24; }
     .stat-value.green { color: #34d399; }
-    .panel { background: #11111b; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-bottom: 22px; }
-    .panel h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #f8fafc; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+    .panel { background: #11111b; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .panel h3 { font-size: 14.5px; font-weight: 700; color: #f8fafc; margin: 0; }
+    .toast-msg { font-size: 12px; font-weight: 700; color: #34d399; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
     .field label { display: block; font-size: 11.5px; color: #94a3b8; margin-bottom: 5px; font-weight: 600; }
-    .field input, .field select { width: 100%; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.4); color: #fff; font-size: 13px; }
+    .field input, .field select { width: 100%; height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.4); color: #fff; font-size: 13px; }
     .field input:focus, .field select:focus { outline: none; border-color: #f59e0b; }
-    .btn { height: 40px; padding: 0 18px; border-radius: 10px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; transition: .15s; }
+    .btn { height: 38px; padding: 0 16px; border-radius: 9px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; transition: .15s; user-select: none; }
     .btn-primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1006; }
     .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -226,8 +229,11 @@ function buildStudentManagerApp(prompt) {
     </div>
 
     <div class="panel">
-      <h3 id="form-title">➕ Thêm Sinh Viên Mới</h3>
-      <form id="student-form" class="form-grid">
+      <div class="panel-head">
+        <h3 id="form-title">➕ Thêm Sinh Viên Mới</h3>
+        <span class="toast-msg" id="toast-msg"></span>
+      </div>
+      <form id="student-form" class="form-grid" onsubmit="return window.handleSaveStudent(event)">
         <div class="field"><label>Mã SV</label><input id="sv-id" placeholder="VD: SV005" required /></div>
         <div class="field"><label>Họ và Tên</label><input id="sv-name" placeholder="VD: Nguyễn Văn An" required /></div>
         <div class="field"><label>Ngành học</label>
@@ -239,7 +245,7 @@ function buildStudentManagerApp(prompt) {
             <option value="Thiết kế đồ họa">Thiết kế đồ họa</option>
           </select>
         </div>
-        <div class="field"><label>Điểm GPA (0 - 4.0)</label><input id="sv-gpa" type="number" step="0.01" min="0" max="4" placeholder="3.50" required /></div>
+        <div class="field"><label>Điểm GPA (0 - 4.0)</label><input id="sv-gpa" type="number" step="any" min="0" max="4" placeholder="3.50" required /></div>
         <div class="field"><label>Trạng thái</label>
           <select id="sv-status">
             <option value="Đang học">Đang học</option>
@@ -247,7 +253,7 @@ function buildStudentManagerApp(prompt) {
             <option value="Cảnh báo học vụ">Cảnh báo học vụ</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary" id="submit-btn">Lưu Sinh Viên</button>
+        <button type="button" class="btn btn-primary" id="submit-btn" onclick="window.handleSaveStudent(event)">Lưu Sinh Viên</button>
       </form>
     </div>
 
@@ -356,26 +362,48 @@ function buildStudentManagerApp(prompt) {
       render();
     };
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
+    function showToast(msg, isError) {
+      const el = document.getElementById('toast-msg');
+      if (!el) return;
+      el.style.color = isError ? '#f87171' : '#34d399';
+      el.textContent = msg;
+      setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2600);
+    }
+
+    window.handleSaveStudent = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      const idVal = document.getElementById('sv-id').value.trim().toUpperCase();
+      const nameVal = document.getElementById('sv-name').value.trim();
+      const gpaRaw = document.getElementById('sv-gpa').value;
+
+      if (!idVal || !nameVal || gpaRaw === '') {
+        showToast('⚠ Vui lòng nhập đầy đủ Mã SV, Họ tên và Điểm GPA!', true);
+        return false;
+      }
+
+      const gpaNum = Math.min(4, Math.max(0, parseFloat(gpaRaw) || 0));
       const item = {
-        id: document.getElementById('sv-id').value.trim().toUpperCase(),
-        name: document.getElementById('sv-name').value.trim(),
+        id: idVal,
+        name: nameVal,
         major: document.getElementById('sv-major').value,
-        gpa: parseFloat(document.getElementById('sv-gpa').value) || 0,
+        gpa: gpaNum,
         status: document.getElementById('sv-status').value
       };
+
       if (editingIdx >= 0) {
         students[editingIdx] = item;
         editingIdx = -1;
         document.getElementById('form-title').textContent = '➕ Thêm Sinh Viên Mới';
         document.getElementById('submit-btn').textContent = 'Lưu Sinh Viên';
+        showToast('✓ Đã cập nhật sinh viên ' + item.name + '!', false);
       } else {
         students.unshift(item);
+        showToast('✓ Đã thêm sinh viên ' + item.name + ' (' + item.id + ')!', false);
       }
       form.reset();
       render();
-    });
+      return false;
+    };
 
     searchInput.addEventListener('input', render);
     majorFilter.addEventListener('change', render);
