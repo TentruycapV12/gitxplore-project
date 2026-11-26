@@ -232,6 +232,8 @@ export default function TopNav() {
             gap: '8px',
             cursor: 'pointer',
             transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.5)';
@@ -250,6 +252,7 @@ export default function TopNav() {
         {/* Quick Vibe Sandbox Pill */}
         <button
           type="button"
+          className="tn-action-pill"
           onClick={() => openPlayground()}
           title="Vibe Coding Playground - Thử code 1-chạm"
           style={{
@@ -265,6 +268,8 @@ export default function TopNav() {
             gap: '5px',
             cursor: 'pointer',
             transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-1px)';
@@ -282,6 +287,7 @@ export default function TopNav() {
         {/* Cổng Đăng Dự Án & Dev Lab (Slide 10-13) */}
         <button
           type="button"
+          className="tn-action-pill"
           onClick={() => go('/submit-project')}
           title="Cổng Đóng Góp Dự Án & Thử Nghiệm API (Slide 10-13: SCSS, MUI, Form Yup, Axios)"
           style={{
@@ -297,6 +303,8 @@ export default function TopNav() {
             gap: '5px',
             cursor: 'pointer',
             transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-1px)';
@@ -371,10 +379,10 @@ export default function TopNav() {
         )}
 
         {!user ? (
-          <>
+          <div className="tn-auth-wrap">
             <button type="button" className="tn-btn tn-btn--ghost" onClick={() => openModal('signin')}>{t('signin')}</button>
             <button type="button" className="tn-btn tn-btn--solid" onClick={() => openModal('register')}>{t('register')}</button>
-          </>
+          </div>
         ) : (
           <div className="tn-wrap">
             <button
