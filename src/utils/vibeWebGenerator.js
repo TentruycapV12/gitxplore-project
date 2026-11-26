@@ -2,11 +2,15 @@ import { supabase } from '../supabaseClient.js';
 
 const GEMINI_KEY_STORAGE = 'gx_gemini_api_key';
 
+function sanitizeApiKey(raw) {
+  return String(raw || '').trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+}
+
 /**
  * Kiểm tra chuỗi HTML trả về từ Gemini/AI có đầy đủ cấu trúc hiển thị không
  */
 function isValidCompleteHtml(html) {
-  if (!html || typeof html !== 'string' || html.length < 200) return false;
+  if (!html || typeof html !== 'string' || html.length < 180) return false;
 
   const lower = html.toLowerCase();
   const hasHtmlClose = lower.includes('</html>');
@@ -22,7 +26,7 @@ function isValidCompleteHtml(html) {
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   if (!bodyMatch) return false;
   const visibleMarkup = bodyMatch[1].replace(/<script[\s\S]*?<\/script>/gi, '').trim();
-  return visibleMarkup.length >= 60;
+  return visibleMarkup.length >= 40;
 }
 
 /**
@@ -42,6 +46,9 @@ function extractHtmlFromReply(raw) {
 
   if (startIdx !== -1) {
     candidate = candidate.slice(startIdx);
+  } else if (/^\s*<(?:div|main|section|header|nav|body)/i.test(candidate)) {
+    // Nếu AI chỉ trả phần body HTML thuần, tự động bọc thành file HTML hoàn chỉnh với Tailwind CDN
+    candidate = `<!DOCTYPE html>\n<html lang="vi">\n<head>\n<meta charset="UTF-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1.0" />\n<script src="https://cdn.tailwindcss.com"></script>\n</head>\n<body class="bg-slate-950 text-slate-100">\n${candidate}\n</body>\n</html>`;
   }
 
   const endHtmlIdx = candidate.toLowerCase().lastIndexOf('</html>');
@@ -59,7 +66,7 @@ export function getGeminiApiKey() {
   try {
     const localKey = typeof localStorage !== 'undefined' ? localStorage.getItem(GEMINI_KEY_STORAGE) : '';
     const envKey = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '';
-    return (localKey || envKey || '').trim();
+    return sanitizeApiKey(localKey || envKey || '');
   } catch {
     return '';
   }
@@ -68,7 +75,7 @@ export function getGeminiApiKey() {
 export function saveGeminiApiKey(key) {
   try {
     if (typeof localStorage !== 'undefined') {
-      const cleaned = (key || '').trim();
+      const cleaned = sanitizeApiKey(key);
       if (cleaned) localStorage.setItem(GEMINI_KEY_STORAGE, cleaned);
       else localStorage.removeItem(GEMINI_KEY_STORAGE);
     }
@@ -99,7 +106,7 @@ export async function fetchSupabaseGeminiKey() {
       .maybeSingle();
 
     if (!error && data?.value) {
-      return String(data.value).trim();
+      return sanitizeApiKey(data.value);
     }
   } catch {
     // ignore if table not created yet
@@ -111,7 +118,7 @@ export async function fetchSupabaseGeminiKey() {
  * Lưu Gemini API Key lên bảng public.app_settings trên Supabase (dùng chung cho toàn web)
  */
 export async function saveSupabaseGeminiKey(key) {
-  const cleaned = (key || '').trim();
+  const cleaned = sanitizeApiKey(key);
   if (!cleaned) {
     return { error: 'Vui lòng nhập Gemini API Key hợp lệ.' };
   }
@@ -129,74 +136,121 @@ export async function saveSupabaseGeminiKey(key) {
 }
 
 /**
- * Gọi trực tiếp Google Gemini API (ưu tiên gemini-2.5-flash với 8192 token)
+ * Tự động gọi ListModels để tìm tên model hợp lệ mà API Key hiện tại được phép dùng
  */
-async function generateWithDirectGemini(generationPrompt, apiKey) {
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-  let lastError = null;
+async function discoverGeminiModels(apiKey) {
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    const json = await res.json();
+    if (!res.ok || !Array.isArray(json?.models)) return [];
 
-  for (const model of models) {
-    const useZeroThinking = model.startsWith('gemini-2.5');
-    for (const includeThinkingCfg of useZeroThinking ? [true, false] : [false]) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 45000);
+    return json.models
+      .filter((m) =>
+        Array.isArray(m.supportedGenerationMethods) &&
+        m.supportedGenerationMethods.includes('generateContent') &&
+        /gemini/i.test(m.name) &&
+        !/embedding|imagen|veo|tts|audio|robotics|computer-use|aqa/i.test(m.name)
+      )
+      .map((m) => m.name.replace(/^models\//, ''))
+      .sort((a, b) => {
+        const score = (n) => (n.includes('2.5-flash') ? 0 : n.includes('flash') ? 1 : n.includes('pro') ? 2 : 3);
+        return score(a) - score(b);
+      });
+  } catch {
+    return [];
+  }
+}
 
-        const generationConfig = {
-          maxOutputTokens: 8192,
-          temperature: 0.75,
-          ...(includeThinkingCfg ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-        };
+async function callSingleGeminiModel(model, generationPrompt, apiKey) {
+  const useZeroThinking = model.startsWith('gemini-2.5');
+  for (const includeThinkingCfg of useZeroThinking ? [true, false] : [false]) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 45000);
 
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: controller.signal,
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: generationPrompt }] }],
-              generationConfig,
-            }),
-          }
-        );
-        clearTimeout(timer);
+      const generationConfig = {
+        maxOutputTokens: 8192,
+        temperature: 0.75,
+        ...(includeThinkingCfg ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      };
 
-        const json = await res.json();
-        if (!res.ok) {
-          const msg = json?.error?.message || `HTTP ${res.status}`;
-          if (includeThinkingCfg && /thinking/i.test(msg)) {
-            continue;
-          }
-          if (res.status === 403 || /api key|api_key|key not valid|permission/i.test(msg)) {
-            return { error: 'API Key Gemini không hợp lệ hoặc chưa được kích hoạt. Vui lòng kiểm tra lại Key!' };
-          }
-          lastError = `${model}: ${msg}`;
-          break;
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: generationPrompt }] }],
+            generationConfig,
+          }),
         }
+      );
+      clearTimeout(timer);
 
-        const parts = json?.candidates?.[0]?.content?.parts || [];
-        const rawText = parts
-          .filter((part) => !part.thought && typeof part.text === 'string')
-          .map((part) => part.text)
-          .join('\n');
-
-        const extracted = extractHtmlFromReply(rawText);
-        if (extracted) {
-          return { html: extracted, source: 'gemini-direct', modelUsed: model };
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = json?.error?.message || `HTTP ${res.status}`;
+        if (includeThinkingCfg && /thinking/i.test(msg)) {
+          continue;
         }
-        lastError = `${model}: Phản hồi không chứa mã HTML hợp lệ.`;
-        break;
-      } catch (err) {
-        lastError = err?.name === 'AbortError'
-          ? `${model}: Quá thời gian chờ (45s)`
-          : `${model}: ${err?.message || 'Lỗi kết nối mạng'}`;
-        break;
+        if (res.status === 403 || /api key|api_key|key not valid|permission/i.test(msg)) {
+          return { fatalAuth: 'API Key Gemini không hợp lệ hoặc chưa bật Generative Language API. Vui lòng kiểm tra lại Key!' };
+        }
+        return { error: `${model}: ${msg}` };
       }
+
+      const candidate = json?.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+      const rawText = parts
+        .filter((part) => !part.thought && typeof part.text === 'string')
+        .map((part) => part.text)
+        .join('\n');
+
+      const extracted = extractHtmlFromReply(rawText);
+      if (extracted) {
+        return { html: extracted, source: 'gemini-direct', modelUsed: model };
+      }
+
+      const finishReason = candidate?.finishReason ? ` (${candidate.finishReason})` : '';
+      return { error: `${model}: Phản hồi chưa đúng HTML đầy đủ${finishReason}.` };
+    } catch (err) {
+      return {
+        error: err?.name === 'AbortError'
+          ? `${model}: Quá thời gian chờ (45s)`
+          : `${model}: ${err?.message || 'Lỗi kết nối mạng'}`,
+      };
     }
   }
+  return { error: `${model}: Không nhận được phản hồi.` };
+}
 
-  return { error: lastError || 'Không thể kết nối Google Gemini API.' };
+/**
+ * Gọi trực tiếp Google Gemini API (ưu tiên gemini-2.5-flash, tự động dò ListModels nếu cần)
+ */
+async function generateWithDirectGemini(generationPrompt, rawKey) {
+  const apiKey = sanitizeApiKey(rawKey);
+  const preferredModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+  const errors = [];
+
+  for (const model of preferredModels) {
+    const res = await callSingleGeminiModel(model, generationPrompt, apiKey);
+    if (res.html) return res;
+    if (res.fatalAuth) return { error: res.fatalAuth };
+    if (res.error) errors.push(res.error);
+  }
+
+  // Nếu các tên model mặc định không khả dụng trên Key này, tự gọi ListModels để chọn đúng model có sẵn
+  const discovered = await discoverGeminiModels(apiKey);
+  for (const model of discovered) {
+    if (preferredModels.includes(model)) continue;
+    const res = await callSingleGeminiModel(model, generationPrompt, apiKey);
+    if (res.html) return res;
+    if (res.fatalAuth) return { error: res.fatalAuth };
+    if (res.error) errors.push(res.error);
+  }
+
+  return { error: errors[0] || 'Không thể kết nối Google Gemini API.' };
 }
 
 /**
