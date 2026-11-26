@@ -92,9 +92,119 @@ export function isWebCreationPrompt(prompt) {
   return createKeywords.some((kw) => p.includes(kw));
 }
 
+const GEMINI_KEY_STORAGE = 'gx_gemini_api_key';
+
+export function getGeminiApiKey() {
+  try {
+    const localKey = typeof localStorage !== 'undefined' ? localStorage.getItem(GEMINI_KEY_STORAGE) : '';
+    const envKey = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '';
+    return (localKey || envKey || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+export function saveGeminiApiKey(key) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const cleaned = (key || '').trim();
+      if (cleaned) localStorage.setItem(GEMINI_KEY_STORAGE, cleaned);
+      else localStorage.removeItem(GEMINI_KEY_STORAGE);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function clearGeminiApiKey() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(GEMINI_KEY_STORAGE);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 /**
- * Sinh trang web hoàn chỉnh trực tiếp từ Prompt thông qua AI Backend,
- * kết hợp kiểm tra hợp lệ chặt chẽ & Bộ máy Tạo Web Chuyên Sâu dự phòng 100%.
+ * Gọi trực tiếp Google Gemini REST API từ trình duyệt với output limit 8192 token
+ * để sinh trọn vẹn ứng dụng web chi tiết theo đúng bất kỳ prompt nào.
+ */
+async function generateWithDirectGemini(generationPrompt, apiKey) {
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 35000);
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: generationPrompt }] }],
+            generationConfig: {
+              maxOutputTokens: 8192,
+              temperature: 0.7,
+            },
+          }),
+        }
+      );
+      clearTimeout(timer);
+
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = json?.error?.message || `HTTP ${res.status}`;
+        if (res.status === 400 || res.status === 403 || /api key/i.test(msg)) {
+          return { authError: 'API Key Gemini không hợp lệ hoặc chưa được kích hoạt. Vui lòng kiểm tra lại Key!' };
+        }
+        lastError = msg;
+        continue;
+      }
+
+      const rawText = json?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('\n') || '';
+      const extracted = extractHtmlFromReply(rawText);
+      if (extracted) {
+        return { html: extracted, source: 'gemini-direct', modelUsed: model };
+      }
+      lastError = 'Phản hồi chưa đầy đủ HTML';
+    } catch (err) {
+      lastError = err?.message || 'Lỗi kết nối Gemini API';
+    }
+  }
+
+  return { error: lastError || 'Không thể kết nối Gemini API' };
+}
+
+/**
+ * Kiểm tra xem prompt có thiên về Trang Giới Thiệu / Showcase / Game / Landing Page
+ * hay là Trang Quản Lý / Dashboard / Shop / Tài Chính.
+ */
+function isShowcaseTopic(prompt) {
+  const p = (prompt || '').toLowerCase();
+  const isExplicitManagement =
+    p.includes('quản lý') || p.includes('quản lí') || p.includes('dashboard') ||
+    p.includes('admin') || p.includes('gym') || p.includes('sinh viên') ||
+    p.includes('chi tiêu') || p.includes('thu chi') || p.includes('khách sạn') ||
+    p.includes('nhà hàng') || p.includes('pos');
+  if (isExplicitManagement) return false;
+
+  const showcaseKeywords = [
+    'giới thiệu', 'game', 'trò chơi', 'aaa', 'esport', 'review', 'tin tức',
+    'blog', 'landing', 'portfolio', 'du lịch', 'phim', 'âm nhạc', 'showcase', 'sự kiện', 'công nghệ'
+  ];
+  return showcaseKeywords.some((kw) => p.includes(kw));
+}
+
+/**
+ * Sinh trang web hoàn chỉnh trực tiếp từ Prompt:
+ * Ưu tiên #1: Gemini API Key trực tiếp (8192 tokens, thiết kế tự do 100%)
+ * Ưu tiên #2: Supabase Edge Function ('chat-ai')
+ * Ưu tiên #3: Pro Showcase / Pro Domain Engine nội bộ (tự phân biệt Web Giới Thiệu vs Web Quản Lý)
  */
 export async function generateWebFromPrompt(userPrompt) {
   const cleanPrompt = (userPrompt || '').trim();
@@ -103,15 +213,33 @@ export async function generateWebFromPrompt(userPrompt) {
   }
 
   const generationPrompt = [
-    'Bạn là Kỹ sư Frontend Senior. Tạo MỘT trang web hoàn chỉnh, chi tiết, giàu tính năng trong duy nhất 1 file HTML.',
-    `Yêu cầu người dùng: "${cleanPrompt}"`,
-    'Quy tắc kỹ thuật BẮT BUỘC để không bị lỗi hiển thị:',
-    '1. Sử dụng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>) để tiết kiệm độ dài CSS và giao diện sắc nét, responsive Dark Mode sang trọng.',
-    '2. Phải có đầy đủ chức năng tương tác thực tế bằng JavaScript thuần (Tabs điều hướng, Thẻ thống kê KPI tự cập nhật, Thêm/Sửa/Xóa/Tìm kiếm/Lọc dữ liệu, Toast thông báo).',
-    '3. Viết code gọn gàng, sạch sẽ, KHÔNG dùng thư viện JS ngoài phức tạp, đảm bảo đóng đủ </style>, </script>, </body>, </html>.',
-    '4. CHỈ xuất ra mã HTML bắt đầu bằng <!DOCTYPE html> và kết thúc bằng </html>. Không viết lời giải thích.',
+    'Bạn là Kỹ sư Frontend & UI/UX Designer xuất sắc. Hãy tạo MỘT trang web hoàn chỉnh, cực kỳ chi tiết, thẩm mỹ cao và chạy mượt 100% trong duy nhất 1 file HTML.',
+    `Yêu cầu của người dùng: "${cleanPrompt}"`,
+    'Hướng dẫn thiết kế BẮT BUỘC:',
+    '1. PHÂN BIỆT ĐÚNG THỂ LOẠI TRANG WEB: Nếu người dùng yêu cầu "giới thiệu", "game", "tin tức", "blog", "landing page", "portfolio", hãy thiết kế trang web Showcase/Landing Page ấn tượng với Hero Banner, thanh tìm kiếm/lọc thể loại, lưới Card đẹp mắt có ảnh/icon minh họa, nút Xem chi tiết (mở Modal chi tiết) và Yêu thích. Chỉ thiết kế bảng quản lý CRUD khi người dùng yêu cầu "quản lý", "dashboard", "bán hàng", "thu chi"...',
+    '2. Sử dụng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>) để giao diện hiện đại, sắc nét, responsive trên mọi thiết bị.',
+    '3. Tạo dữ liệu mẫu tiếng Việt phong phú, chân thực (ví dụ nếu nói về game thì có các tựa game nổi tiếng thật như Black Myth: Wukong, Elden Ring, Cyberpunk 2077, Baldur\'s Gate 3, Valorant, GTA...), tương tác JS đầy đủ (tìm kiếm, lọc, modal chi tiết, thông báo toast).',
+    '4. Đảm bảo đóng đầy đủ thẻ </style>, </script>, </body>, </html> và KHÔNG dùng thư viện JS ngoài gây lỗi.',
+    '5. CHỈ xuất ra mã HTML thuần bắt đầu bằng <!DOCTYPE html> và kết thúc bằng </html>. Không viết thêm bất kỳ lời giải thích nào bên ngoài.',
   ].join('\n');
 
+  // 1. Thử gọi trực tiếp Gemini API nếu người dùng đã gắn Key
+  const geminiKey = getGeminiApiKey();
+  if (geminiKey) {
+    const geminiResult = await generateWithDirectGemini(generationPrompt, geminiKey);
+    if (geminiResult.html) {
+      return geminiResult;
+    }
+    if (geminiResult.authError) {
+      return {
+        html: generateSmartLocalWeb(cleanPrompt),
+        source: 'smart-engine',
+        warning: geminiResult.authError,
+      };
+    }
+  }
+
+  // 2. Thử gọi qua Supabase Edge Function nếu chưa gắn Key riêng
   try {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('AI request timeout')), 15000)
@@ -134,13 +262,21 @@ export async function generateWebFromPrompt(userPrompt) {
       }
     }
   } catch (err) {
-    console.warn('Chuyển sang Pro Web Generator:', err?.message || err);
+    console.warn('Chuyển sang Smart Local Engine:', err?.message || err);
   }
 
+  // 3. Fallback thông minh: phân tách rõ Web Giới Thiệu Showcase vs Web Quản Lý
   return {
-    html: generateProDomainWeb(cleanPrompt),
+    html: generateSmartLocalWeb(cleanPrompt),
     source: 'smart-engine',
   };
+}
+
+export function generateSmartLocalWeb(prompt) {
+  if (isShowcaseTopic(prompt)) {
+    return buildShowcaseWebApp(prompt);
+  }
+  return generateProDomainWeb(prompt);
 }
 
 /**
@@ -939,3 +1075,396 @@ export function generateProDomainWeb(prompt) {
 </body>
 </html>`;
 }
+
+/**
+ * Xây dựng Trang Web Giới Thiệu / Showcase / Gaming Hub hiện đại (Hero + Bộ lọc + Lưới Card + Modal Chi tiết + Yêu thích)
+ */
+export function buildShowcaseWebApp(prompt) {
+  const p = prompt.toLowerCase();
+  const isGame = p.includes('game') || p.includes('trò chơi') || p.includes('aaa') || p.includes('esport');
+
+  const cleanTopic = escapeHtml(
+    prompt
+      .replace(/^(tạo|làm|xây dựng|thiết kế|viết)\s+(1|một)?\s*(trang\s*web|website|web|ứng\s*dụng|app)?\s*(giới\s*thiệu\s*(về)?)?\s*/i, '')
+      .trim() || prompt
+  );
+
+  const heroTitle = isGame
+    ? 'Khám Phá Thế Giới Game AAA Đỉnh Cao Hiện Nay'
+    : `Khám Phá & Giới Thiệu: ${cleanTopic}`;
+
+  const heroDesc = isGame
+    ? 'Tuyển tập những bom tấn thế giới mở, nhập vai hành động và eSports đình đám nhất được cộng đồng game thủ đánh giá cao.'
+    : `Chuyên trang giới thiệu chi tiết, đánh giá chuyên sâu và trải nghiệm trực quan về ${cleanTopic}.`;
+
+  const items = isGame
+    ? [
+        {
+          id: 1,
+          icon: '🐒',
+          badge: 'BOM TẤN 2024-2026',
+          title: 'Black Myth: Wukong',
+          cat: 'Hành Động RPG',
+          rating: '9.6',
+          platforms: 'PC • PS5',
+          gradient: 'linear-gradient(135deg, #b45309, #7c2d12)',
+          short: 'Tựa game nhập vai hành động lấy cảm hứng từ Tây Du Ký với đồ họa Unreal Engine 5 choáng ngợp.',
+          detail: 'Hóa thân thành Thiên Mệnh Nhân bước vào hành trình khám phá những bí ẩn thần thoại phương Đông. Hệ thống chiến đấu biến hóa 72 phép thần thông, boss thiết kế công phu và âm nhạc sử thi mãn nhãn.',
+          specs: ['Nhà phát triển: Game Science', 'Đồ họa: Unreal Engine 5', 'Thể loại: Action RPG', 'Dung lượng: ~130 GB'],
+        },
+        {
+          id: 2,
+          icon: '⚔️',
+          badge: 'GAME OF THE YEAR',
+          title: 'Elden Ring: Shadow of the Erdtree',
+          cat: 'Thế Giới Mở',
+          rating: '9.8',
+          platforms: 'PC • PS5 • Xbox',
+          gradient: 'linear-gradient(135deg, #ca8a04, #3f2e05)',
+          short: 'Siêu phẩm Soulslike thế giới mở rộng lớn nhất từ FromSoftware và George R.R. Martin.',
+          detail: 'Đặt chân đến Vùng Đất Bóng Tối với hàng trăm vũ khí, phép thuật mới và những trận đấu trùm thử thách kỹ năng cực độ. Tự do khám phá không giới hạn.',
+          specs: ['Nhà phát triển: FromSoftware', 'Đánh giá: 96/100 Metacritic', 'Chế độ: Đơn & Co-op Online', 'Thế giới mở: Cực lớn'],
+        },
+        {
+          id: 3,
+          icon: '🦾',
+          badge: 'NEXT-GEN GRAPHICS',
+          title: 'Cyberpunk 2077: Phantom Liberty',
+          cat: 'Hành Động RPG',
+          rating: '9.4',
+          platforms: 'PC • PS5 • Xbox',
+          gradient: 'linear-gradient(135deg, #be185d, #3b0764)',
+          short: 'Phiêu lưu trong thành phố Night City rực rỡ ánh đèn neon với cốt truyện điệp viên nghẹt thở.',
+          detail: 'Hỗ trợ Ray Tracing toàn phần tạo nên một thành phố tương lai sống động bậc nhất lịch sử ngành game. Tùy biến nhân vật Cyberware đa dạng.',
+          specs: ['Nhà phát triển: CD Projekt Red', 'Công nghệ: Path Tracing DLSS 3.5', 'Bản đồ: Night City & Dogtown', 'Cốt truyện: Nhiều kết thúc'],
+        },
+        {
+          id: 4,
+          icon: '🐉',
+          badge: 'SIÊU PHẨM NHẬP VAI',
+          title: "Baldur's Gate 3",
+          cat: 'Chiến Thuật & Cốt Truyện',
+          rating: '9.9',
+          platforms: 'PC • PS5 • Mac',
+          gradient: 'linear-gradient(135deg, #991b1b, #1e1b4b)',
+          short: 'Kiệt tác nhập vai theo lượt với hơn 17.000 biến thể kết thúc tùy thuộc vào từng lựa chọn của bạn.',
+          detail: 'Xây dựng tổ đội anh hùng theo luật Dungeons & Dragons 5e. Mọi quyết định hội thoại hay chiến thuật đều làm thay đổi hoàn toàn thế giới xung quanh.',
+          specs: ['Nhà phát triển: Larian Studios', 'Thời lượng: 100+ giờ chơi', 'Co-op: Tối đa 4 người', 'Giải thưởng: 5x GOTY'],
+        },
+        {
+          id: 5,
+          icon: '🎯',
+          badge: 'ESPORTS TOP 1',
+          title: 'Valorant',
+          cat: 'Esports / FPS',
+          rating: '9.1',
+          platforms: 'PC • Console',
+          gradient: 'linear-gradient(135deg, #dc2626, #18181b)',
+          short: 'Game bắn súng chiến thuật 5v5 kết hợp kỹ năng đặc vụ siêu mượt ở tốc độ 128-tick.',
+          detail: 'Yêu cầu phản xạ chuẩn xác cùng khả năng phối hợp chiến thuật đồng đội đỉnh cao. Hệ thống giải đấu VCT toàn cầu sôi động quanh năm.',
+          specs: ['Nhà phát triển: Riot Games', 'Thể loại: Tactical Shooter 5v5', 'Chống gian lận: Vanguard', 'Miễn phí: Free-to-Play'],
+        },
+        {
+          id: 6,
+          icon: '🌌',
+          badge: 'ĐỒ HỌA ANIME',
+          title: 'Genshin Impact',
+          cat: 'Thế Giới Mở',
+          rating: '9.2',
+          platforms: 'PC • Mobile • PS5',
+          gradient: 'linear-gradient(135deg, #0284c7, #312e81)',
+          short: 'Thế giới Teyvat rộng lớn với 7 quốc gia nguyên tố, cập nhật cốt truyện liên tục đa nền tảng.',
+          detail: 'Kết hợp phản ứng nguyên tố độc đáo giữa 4 nhân vật trong đội hình. Hỗ trợ chơi chéo (Cross-play) mượt mà giữa điện thoại và máy tính.',
+          specs: ['Nhà phát triển: HoYoverse', 'Nền tảng: Đa nền tảng', 'Cập nhật: Chu kỳ 6 tuần', 'Âm nhạc: Dàn nhạc giao hưởng'],
+        },
+      ]
+    : [
+        {
+          id: 1,
+          icon: '🌟',
+          badge: 'NỔI BẬT #1',
+          title: `Xu Hướng Hàng Đầu: ${cleanTopic}`,
+          cat: 'Tiêu Điểm',
+          rating: '9.7',
+          platforms: 'Phổ Biến Nhất',
+          gradient: 'linear-gradient(135deg, #f59e0b, #78350f)',
+          short: `Tổng hợp những điểm sáng nổi bật nhất hiện nay xoay quanh chủ đề ${cleanTopic}.`,
+          detail: `Đây là chuyên mục nổi bật cung cấp góc nhìn toàn diện, trực quan và cập nhật nhất về ${cleanTopic} dành cho người mới lẫn chuyên gia.`,
+          specs: ['Trạng thái: Đang thịnh hành', 'Độ tin cậy: Xác thực', 'Cập nhật: Mới nhất 2026', 'Đánh giá cộng đồng: 9.7/10'],
+        },
+        {
+          id: 2,
+          icon: '🚀',
+          badge: 'ĐỔI MỚI SÁNG TẠO',
+          title: `Công Nghệ & Trải Nghiệm Mới`,
+          cat: 'Xu Hướng Mới',
+          rating: '9.5',
+          platforms: 'Đột Phá',
+          gradient: 'linear-gradient(135deg, #0ea5e9, #1e3a8a)',
+          short: 'Những bước tiến vượt bậc giúp nâng cao chất lượng và hiệu suất trải nghiệm thực tế.',
+          detail: 'Khám phá cách các xu hướng mới đang thay đổi thói quen người dùng và mở ra nhiều cơ hội sáng tạo hấp dẫn.',
+          specs: ['Tốc độ tiếp cận: Nhanh', 'Tính ứng dụng: Thực tiễn cao', 'Hỗ trợ: Đa thiết bị', 'Đánh giá: 9.5/10'],
+        },
+        {
+          id: 3,
+          icon: '💎',
+          badge: 'TUYỂN CHỌN',
+          title: 'Bộ Sưu Tập Chất Lượng Cao',
+          cat: 'Đánh Giá Cao',
+          rating: '9.6',
+          platforms: 'Khuyên Dùng',
+          gradient: 'linear-gradient(135deg, #8b5cf6, #3b0764)',
+          short: 'Được tuyển chọn kỹ lưỡng dựa trên phản hồi tích cực của hàng nghìn người dùng.',
+          detail: 'Mỗi lựa chọn trong danh sách đều trải qua quá trình đánh giá thực tế về chất lượng, độ bền vững và giá trị mang lại.',
+          specs: ['Tiêu chuẩn: Cao cấp', 'Phản hồi: 98% Tích cực', 'Trải nghiệm: Mượt mà', 'Phân loại: Tuyển chọn'],
+        },
+        {
+          id: 4,
+          icon: '🔥',
+          badge: 'CỘNG ĐỒNG YÊU THÍCH',
+          title: 'Góc Nhìn Cộng Đồng & Thảo Luận',
+          cat: 'Tiêu Điểm',
+          rating: '9.3',
+          platforms: 'Tương Tác',
+          gradient: 'linear-gradient(135deg, #10b981, #064e3b)',
+          short: 'Nơi chia sẻ kinh nghiệm thực tế, mẹo hay và bảng xếp hạng từ người dùng thật.',
+          detail: 'Kết nối cùng những người có chung đam mê để trao đổi, học hỏi và cập nhật thông tin nóng hổi mỗi ngày.',
+          specs: ['Thành viên: Năng động', 'Nội dung: Miễn phí', 'Chia sẻ: Mở rộng', 'Mức độ hài lòng: 9.3/10'],
+        },
+      ];
+
+  const categories = ['Tất cả', ...Array.from(new Set(items.map((i) => i.cat)))];
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(heroTitle)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    body { background: #07070d; color: #f8fafc; min-height: 100vh; }
+    button { user-select: none; font-family: inherit; }
+
+    /* Navbar */
+    .nav {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 14px 28px; background: rgba(7, 7, 13, 0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .logo { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: #ffffff; }
+    .logo span { color: #f59e0b; }
+    .fav-pill {
+      background: rgba(245,158,11,0.14); border: 1px solid rgba(245,158,11,0.4);
+      color: #fde68a; padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    }
+
+    /* Hero Banner */
+    .hero {
+      position: relative; padding: 48px 28px 36px; text-align: center;
+      background: radial-gradient(circle at top center, rgba(245, 158, 11, 0.16), rgba(139, 92, 246, 0.08) 45%, transparent 75%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .hero-badge {
+      display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 11.5px; font-weight: 800;
+      letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 14px;
+      background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24;
+    }
+    .hero h1 { font-size: clamp(26px, 4vw, 40px); font-weight: 800; line-height: 1.2; max-width: 780px; margin: 0 auto 12px; }
+    .hero p { font-size: 15px; color: #94a3b8; max-width: 640px; margin: 0 auto 24px; line-height: 1.6; }
+
+    /* Search & Filter Bar */
+    .filter-bar {
+      max-width: 1100px; margin: 26px auto 0; padding: 0 24px;
+      display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: #cbd5e1; font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .tab-btn.active { background: #f59e0b; color: #1a1006; border-color: #f59e0b; font-weight: 800; }
+    .search-input {
+      height: 40px; min-width: 240px; padding: 0 16px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #fff; font-size: 13px;
+    }
+    .search-input:focus { outline: none; border-color: #f59e0b; }
+
+    /* Showcase Grid */
+    .grid {
+      max-width: 1100px; margin: 22px auto 48px; padding: 0 24px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+    }
+    .card {
+      background: #11111b; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
+      overflow: hidden; display: flex; flex-direction: column; transition: transform .2s, border-color .2s;
+    }
+    .card:hover { transform: translateY(-4px); border-color: rgba(245, 158, 11, 0.5); }
+    .card-cover {
+      height: 150px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;
+      position: relative;
+    }
+    .cover-top { display: flex; justify-content: space-between; align-items: center; }
+    .cover-badge {
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 6px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px; color: #fde68a;
+    }
+    .cover-icon { font-size: 46px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.45)); align-self: center; margin-bottom: 6px; }
+    .card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+    .card-meta { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
+    .rating { color: #fbbf24; font-weight: 800; }
+    .card-title { font-size: 18px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }
+    .card-desc { font-size: 13.5px; color: #94a3b8; line-height: 1.55; margin-bottom: 16px; flex: 1; }
+    .card-actions { display: flex; gap: 8px; }
+    .btn-detail {
+      flex: 1; height: 38px; border-radius: 10px; border: none; background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #1a1006; font-weight: 800; font-size: 13px; cursor: pointer;
+    }
+    .btn-fav {
+      width: 42px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04); color: #cbd5e1; font-size: 16px; cursor: pointer;
+    }
+    .btn-fav.is-fav { background: rgba(239,68,68,0.18); border-color: #ef4444; color: #f87171; }
+
+    /* Detail Modal */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(8px);
+      display: none; place-items: center; padding: 20px; z-index: 100;
+    }
+    .modal-bg.open { display: grid; }
+    .modal-box {
+      width: 100%; max-width: 560px; background: #12121e; border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 20px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+    }
+    .modal-head { padding: 22px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-close { background: rgba(0,0,0,0.4); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+    .modal-content { padding: 22px 24px; }
+    .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+    .spec-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 10px 12px; border-radius: 10px; font-size: 12.5px; color: #e2e8f0; }
+
+    footer { text-align: center; padding: 24px; color: #64748b; font-size: 12.5px; border-top: 1px solid rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="logo">${isGame ? '🎮' : '✨'} <span>${isGame ? 'GameHub' : 'Showcase'}</span> Explorer</div>
+    <button type="button" class="fav-pill" onclick="window.toggleFavFilter()">♥ Đã thích (<span id="fav-count">0</span>)</button>
+  </nav>
+
+  <header class="hero">
+    <span class="hero-badge">${isGame ? '🔥 Bảng Xếp Hạng Game Đỉnh Cao' : '✨ Chuyên Trang Giới Thiệu'}</span>
+    <h1>${escapeHtml(heroTitle)}</h1>
+    <p>${escapeHtml(heroDesc)}</p>
+  </header>
+
+  <section class="filter-bar">
+    <div class="tabs" id="cat-tabs">
+      ${categories.map((c, idx) => `<button type="button" class="tab-btn ${idx === 0 ? 'active' : ''}" onclick="window.setCat('${escapeHtml(c)}', this)">${escapeHtml(c)}</button>`).join('')}
+    </div>
+    <input id="search-box" class="search-input" placeholder="🔍 Tìm kiếm nhanh..." oninput="window.renderCards()" />
+  </section>
+
+  <main class="grid" id="cards-grid"></main>
+
+  <div class="modal-bg" id="detail-modal" onclick="window.closeDetail()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-head" id="m-cover">
+        <div>
+          <span class="cover-badge" id="m-badge"></span>
+          <h2 id="m-title" style="margin-top:8px;font-size:22px;font-weight:800;"></h2>
+        </div>
+        <button type="button" class="modal-close" onclick="window.closeDetail()">✕</button>
+      </div>
+      <div class="modal-content">
+        <p id="m-detail" style="font-size:14px;color:#cbd5e1;line-height:1.65;"></p>
+        <div class="spec-grid" id="m-specs"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Được tạo tự động theo yêu cầu: "${escapeHtml(prompt)}"</footer>
+
+  <script>
+    const ITEMS = ${JSON.stringify(items)};
+    let activeCat = 'Tất cả';
+    let favOnly = false;
+    let favIds = [];
+
+    window.setCat = (cat, btn) => {
+      activeCat = cat;
+      favOnly = false;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      window.renderCards();
+    };
+
+    window.toggleFavFilter = () => {
+      favOnly = !favOnly;
+      window.renderCards();
+    };
+
+    window.toggleFav = (id) => {
+      if (favIds.includes(id)) favIds = favIds.filter(x => x !== id);
+      else favIds.push(id);
+      document.getElementById('fav-count').textContent = favIds.length;
+      window.renderCards();
+    };
+
+    window.openDetail = (id) => {
+      const it = ITEMS.find(x => x.id === id);
+      if (!it) return;
+      document.getElementById('m-cover').style.background = it.gradient;
+      document.getElementById('m-badge').textContent = it.badge;
+      document.getElementById('m-title').textContent = it.icon + ' ' + it.title;
+      document.getElementById('m-detail').textContent = it.detail;
+      document.getElementById('m-specs').innerHTML = it.specs.map(s => '<div class="spec-item">• ' + s + '</div>').join('');
+      document.getElementById('detail-modal').classList.add('open');
+    };
+
+    window.closeDetail = () => {
+      document.getElementById('detail-modal').classList.remove('open');
+    };
+
+    window.renderCards = () => {
+      const q = document.getElementById('search-box').value.toLowerCase().trim();
+      const filtered = ITEMS.filter(it =>
+        (activeCat === 'Tất cả' || it.cat === activeCat) &&
+        (!favOnly || favIds.includes(it.id)) &&
+        (it.title.toLowerCase().includes(q) || it.short.toLowerCase().includes(q) || it.cat.toLowerCase().includes(q))
+      );
+
+      const grid = document.getElementById('cards-grid');
+      if (!filtered.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b;">Không tìm thấy mục nào phù hợp.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(it => {
+        const isFav = favIds.includes(it.id);
+        return '<article class="card">' +
+          '<div class="card-cover" style="background:' + it.gradient + '">' +
+            '<div class="cover-top"><span class="cover-badge">' + it.badge + '</span><span class="cover-badge">★ ' + it.rating + '</span></div>' +
+            '<div class="cover-icon">' + it.icon + '</div>' +
+          '</div>' +
+          '<div class="card-body">' +
+            '<div class="card-meta"><span>' + it.cat + '</span><span class="rating">' + it.platforms + '</span></div>' +
+            '<h3 class="card-title">' + it.title + '</h3>' +
+            '<p class="card-desc">' + it.short + '</p>' +
+            '<div class="card-actions">' +
+              '<button type="button" class="btn-detail" onclick="window.openDetail(' + it.id + ')">Xem Chi Tiết</button>' +
+              '<button type="button" class="btn-fav ' + (isFav ? 'is-fav' : '') + '" onclick="window.toggleFav(' + it.id + ')">' + (isFav ? '♥' : '♡') + '</button>' +
+            '</div>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+    };
+
+    window.renderCards();
+  </script>
+</body>
+</html>`;
+}
+

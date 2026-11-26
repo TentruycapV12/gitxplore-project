@@ -207,6 +207,67 @@
   white-space: nowrap;
 }
 
+/* Gemini API Key Panel */
+.vp-btn--key-ready {
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #6ee7b7;
+}
+
+.vp-btn--key-ready:hover {
+  background: rgba(16, 185, 129, 0.22);
+  color: #ffffff;
+}
+
+.vp-key-panel {
+  padding: 10px 24px;
+  background: rgba(16, 185, 129, 0.07);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.vp-key-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vp-key-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6ee7b7;
+  white-space: nowrap;
+}
+
+.vp-key-input {
+  flex: 1;
+  min-width: 220px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.vp-key-input:focus {
+  outline: none;
+  border-color: #34d399;
+}
+
+.vp-key-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fbbf24;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.vp-key-link:hover {
+  text-decoration: underline;
+}
+
 /* Template Bar */
 .vp-templates-bar {
   padding: 10px 24px;

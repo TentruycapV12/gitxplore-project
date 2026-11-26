@@ -4,14 +4,17 @@ import {
   generateWebFromPrompt,
   isWebCreationPrompt,
   applyTemplateTweak,
+  getGeminiApiKey,
+  saveGeminiApiKey,
+  clearGeminiApiKey,
 } from '../utils/vibeWebGenerator';
 import './VibePlaygroundModal.css';
 
 const QUICK_CUSTOM_PROMPTS = [
+  { label: '🎮 Giới thiệu Game AAA', prompt: 'Tạo 1 trang web giới thiệu về các game AAA nổi bật hiện nay' },
   { label: '🏋️ Quản lý phòng Gym', prompt: 'Tạo hệ thống quản lý phòng Gym hội viên và gói tập' },
   { label: '🎓 Quản lý sinh viên', prompt: 'Tạo 1 trang web quản lí sinh viên đầy đủ chức năng thêm, sửa, xóa và tìm kiếm' },
   { label: '🛍️ Shop bán hàng', prompt: 'Tạo trang web cửa hàng bán giày sneaker hiện đại có giỏ hàng' },
-  { label: '☕ Quản lý Quán Cà Phê', prompt: 'Tạo trang web quản lý quán cà phê và thực đơn POS' },
   { label: '💰 Quản lý chi tiêu', prompt: 'Tạo ứng dụng web quản lý thu chi và ngân sách cá nhân' },
 ];
 
@@ -64,7 +67,25 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genStatus, setGenStatus] = useState('');
+  const [showKeyPanel, setShowKeyPanel] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey());
+  const [hasGeminiKey, setHasGeminiKey] = useState(() => Boolean(getGeminiApiKey()));
   const iframeRef = useRef(null);
+
+  const handleSaveKey = () => {
+    const cleaned = geminiKeyInput.trim();
+    saveGeminiApiKey(cleaned);
+    setHasGeminiKey(Boolean(cleaned));
+    setShowKeyPanel(false);
+    setGenStatus(cleaned ? '🟢 Đã kết nối Gemini API Key thành công!' : 'Đã xóa Gemini API Key.');
+  };
+
+  const handleClearKey = () => {
+    clearGeminiApiKey();
+    setGeminiKeyInput('');
+    setHasGeminiKey(false);
+    setGenStatus('Đã xóa Gemini API Key khỏi trình duyệt.');
+  };
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -128,13 +149,17 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     setGenStatus('Đang khởi tạo mã nguồn trang web...');
 
     try {
-      const { html, source } = await generateWebFromPrompt(targetPrompt);
+      const { html, source, modelUsed, warning } = await generateWebFromPrompt(targetPrompt);
       setCode(html);
-      setGenStatus(
-        source === 'ai'
-          ? '✓ AI đã tự động tạo & chạy trang web thành công!'
-          : '✓ Đã tạo & chạy trang web tương tác thành công!'
-      );
+      if (warning) {
+        setGenStatus(`⚠ ${warning}`);
+      } else if (source === 'gemini-direct') {
+        setGenStatus(`✨ ${modelUsed || 'Gemini AI'} đã tự động tạo & chạy web hoàn chỉnh!`);
+      } else if (source === 'ai') {
+        setGenStatus('✓ AI đã tự động tạo & chạy trang web thành công!');
+      } else {
+        setGenStatus('⚡ Đã tạo web mẫu thông minh (Gắn Gemini API Key để AI thiết kế 100% tự do!)');
+      }
     } catch {
       setGenStatus('Không thể tạo trang web lúc này, vui lòng thử lại.');
     } finally {
@@ -197,6 +222,14 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
           </div>
 
           <div className="vp-header-right">
+            <button
+              type="button"
+              className={`vp-btn ${hasGeminiKey ? 'vp-btn--key-ready' : 'vp-btn--secondary'}`}
+              onClick={() => setShowKeyPanel((v) => !v)}
+              title="Gắn Google Gemini API Key cá nhân để AI tạo mọi loại web không giới hạn"
+            >
+              {hasGeminiKey ? '🟢 Gemini API Ready' : '🔑 Gắn Gemini Key'}
+            </button>
             <button type="button" className="vp-btn vp-btn--secondary" onClick={handleCopy}>
               {copied ? '✓ Đã sao chép' : '⧉ Sao chép code'}
             </button>
@@ -208,6 +241,39 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
             </button>
           </div>
         </div>
+
+        {/* ===== PANEL GẮN GEMINI API KEY TRỰC TIẾP (LƯU TRÌNH DUYỆT) ===== */}
+        {showKeyPanel && (
+          <div className="vp-key-panel">
+            <div className="vp-key-row">
+              <span className="vp-key-label">🔑 Google Gemini API Key:</span>
+              <input
+                type="password"
+                className="vp-key-input"
+                value={geminiKeyInput}
+                onChange={(e) => setGeminiKeyInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
+                placeholder="Dán API Key bắt đầu bằng AIza... (Lưu an toàn trên trình duyệt của bạn)"
+              />
+              <button type="button" className="vp-btn vp-btn--primary" onClick={handleSaveKey}>
+                💾 Lưu Key
+              </button>
+              {hasGeminiKey && (
+                <button type="button" className="vp-btn vp-btn--secondary" onClick={handleClearKey}>
+                  🗑 Xóa Key
+                </button>
+              )}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="vp-key-link"
+              >
+                Lấy Key miễn phí ↗
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* ===== KHU VỰC TRÊN: CHẠY TRỰC TIẾP RIÊNG TỪ PROMPT HOẶC CHỌN TEMPLATE ===== */}
         {studioMode === 'custom' ? (
