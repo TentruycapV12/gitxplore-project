@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import NotificationDropdown from './NotificationDropdown.jsx';
 import WelcomeOnboardingModal from './WelcomeOnboardingModal.jsx';
 import { useNotifications } from '../hooks/useNotifications';
+import { usePlaygroundStore } from '../utils/vibePlaygroundStore';
 import './TopNav.css';
 
 const Svg = ({ children }) => (
@@ -64,6 +65,7 @@ export default function TopNav() {
   const [hoveredSubmenu, setHoveredSubmenu] = useState(false);
   const submenuTimerRef = useRef(null);
   const { unreadCount } = useNotifications();
+  const { isGenerating: isPlaygroundGen, hasUnreadResult: hasSandboxReady } = usePlaygroundStore();
   const rootRef = useRef(null);
 
   const handleSubmenuEnter = () => {
@@ -256,13 +258,23 @@ export default function TopNav() {
           type="button"
           className="tn-action-pill"
           onClick={() => openPlayground()}
-          title="Vibe Coding Playground - Thử code 1-chạm"
+          title={
+            isPlaygroundGen
+              ? 'AI đang tạo web ngầm trong Sandbox — Bấm để xem tiến trình'
+              : hasSandboxReady
+                ? 'AI đã tạo xong trang web mới! Bấm để xem ngay'
+                : 'Vibe Coding Playground - Thử code 1-chạm'
+          }
           style={{
-            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2))',
-            border: '1px solid rgba(245, 158, 11, 0.4)',
+            background: hasSandboxReady
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.22))'
+              : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2))',
+            border: hasSandboxReady
+              ? '1px solid rgba(16, 185, 129, 0.6)'
+              : '1px solid rgba(245, 158, 11, 0.4)',
             borderRadius: '999px',
             padding: '6px 12px',
-            color: '#fef08a',
+            color: hasSandboxReady ? '#6ee7b7' : '#fef08a',
             fontSize: '12px',
             fontWeight: 600,
             display: 'flex',
@@ -282,8 +294,10 @@ export default function TopNav() {
             e.currentTarget.style.boxShadow = 'none';
           }}
         >
-          <span>⚡</span>
-          <span className="tn-action-text">Sandbox</span>
+          <span>{isPlaygroundGen ? '⏳' : hasSandboxReady ? '✨' : '⚡'}</span>
+          <span className="tn-action-text">
+            {isPlaygroundGen ? 'Đang tạo web...' : hasSandboxReady ? 'Sandbox • Xong!' : 'Sandbox'}
+          </span>
         </button>
 
         {/* Cổng Đăng Dự Án & Dev Lab (Slide 10-13) */}

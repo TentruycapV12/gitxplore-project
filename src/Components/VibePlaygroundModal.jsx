@@ -1,46 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { PLAYGROUND_TEMPLATES } from '../data/playgroundTemplates';
 import {
-  generateWebFromPrompt,
-  isWebCreationPrompt,
-  applyTemplateTweak,
   getGeminiApiKey,
   saveGeminiApiKey,
   clearGeminiApiKey,
   fetchSupabaseGeminiKey,
   saveSupabaseGeminiKey,
 } from '../utils/vibeWebGenerator';
+import {
+  usePlaygroundStore,
+  playgroundActions,
+} from '../utils/vibePlaygroundStore';
 import './VibePlaygroundModal.css';
-
-const SAVED_WEBS_STORAGE = 'gx_saved_vibe_webs';
-
-function readSavedWebs() {
-  try {
-    const raw = localStorage.getItem(SAVED_WEBS_STORAGE);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeSavedWebs(list) {
-  try {
-    localStorage.setItem(SAVED_WEBS_STORAGE, JSON.stringify(list.slice(0, 25)));
-  } catch {
-    // ignore storage quota errors
-  }
-}
-
-function extractWebTitle(html, fallbackPrompt) {
-  const m = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const rawTitle = m ? m[1].trim() : '';
-  if (rawTitle && !/gemini 2\.5 flash live builder/i.test(rawTitle)) {
-    return rawTitle.length > 42 ? `${rawTitle.slice(0, 42)}...` : rawTitle;
-  }
-  const cleanPrompt = String(fallbackPrompt || 'Trang web AI').trim();
-  return cleanPrompt.length > 42 ? `${cleanPrompt.slice(0, 42)}...` : cleanPrompt;
-}
 
 const QUICK_CUSTOM_PROMPTS = [
   { label: '🎮 Giới thiệu Game AAA', prompt: 'Tạo 1 trang web giới thiệu về các game AAA nổi bật hiện nay' },
@@ -50,77 +21,37 @@ const QUICK_CUSTOM_PROMPTS = [
   { label: '💰 Quản lý chi tiêu', prompt: 'Tạo ứng dụng web quản lý thu chi và ngân sách cá nhân' },
 ];
 
-const CUSTOM_STARTER_HTML = `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini 2.5 Flash Live Builder</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-    body {
-      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 36px 24px; text-align: center;
-      background: radial-gradient(circle at top center, rgba(245,158,11,0.14), #09090f 65%); color: #f8fafc;
-    }
-    .pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
-      background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.35);
-      color: #6ee7b7; font-size: 12px; font-weight: 700; margin-bottom: 16px;
-    }
-    h1 { font-size: 26px; font-weight: 800; margin-bottom: 10px; color: #ffffff; max-width: 560px; }
-    p { font-size: 14.5px; color: #94a3b8; line-height: 1.65; max-width: 520px; }
-    strong { color: #fbbf24; }
-  </style>
-</head>
-<body>
-  <div class="pill">⚡ Sẵn sàng tạo web trực tiếp từ Prompt</div>
-  <h1>Nhập ý tưởng ở thanh phía trên để xem trang web chạy thật ngay tại đây</h1>
-  <p>Ví dụ: <strong>"Tạo 1 trang web giới thiệu về các game AAA hiện nay"</strong> hoặc chọn nhanh các gợi ý có sẵn. Toàn bộ giao diện hoàn chỉnh sẽ hiển thị trực tiếp trên màn hình này.</p>
-</body>
-</html>`;
-
 export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
-  const hasExplicitTemplate = Boolean(initialTemplateId);
-  const initialTmpl = PLAYGROUND_TEMPLATES.find((t) => t.id === initialTemplateId) || PLAYGROUND_TEMPLATES[0];
+  const {
+    studioMode,
+    activeTemplate,
+    code,
+    customPrompt,
+    templatePrompt,
+    device,
+    previewOnly,
+    isGenerating,
+    genStatus,
+    savedWebs,
+    activeSavedId,
+  } = usePlaygroundStore();
 
-  const [studioMode, setStudioMode] = useState(hasExplicitTemplate ? 'templates' : 'custom'); // 'custom' | 'templates'
-  const [activeTemplate, setActiveTemplate] = useState(initialTmpl);
-  const [code, setCode] = useState(hasExplicitTemplate ? initialTmpl.code : CUSTOM_STARTER_HTML);
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [templatePrompt, setTemplatePrompt] = useState(initialTmpl.prompt);
-  const [device, setDevice] = useState('desktop');
   const [copied, setCopied] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [genStatus, setGenStatus] = useState('');
   const [showKeyPanel, setShowKeyPanel] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey());
   const [hasGeminiKey, setHasGeminiKey] = useState(() => Boolean(getGeminiApiKey()));
   const [keySource, setKeySource] = useState(() => (getGeminiApiKey() ? 'local' : ''));
   const [savingSupa, setSavingSupa] = useState(false);
-  const [previewOnly, setPreviewOnly] = useState(false);
-  const [savedWebs, setSavedWebs] = useState(() => readSavedWebs());
-  const [activeSavedId, setActiveSavedId] = useState(null);
   const iframeRef = useRef(null);
   const customInputRef = useRef(null);
 
-  const persistSavedWeb = (html, promptText, modelName) => {
-    const newItem = {
-      id: `${Date.now()}`,
-      title: extractWebTitle(html, promptText),
-      prompt: promptText || '',
-      html,
-      model: modelName || 'Gemini AI',
-      createdAt: new Date().toISOString(),
+  // Đồng bộ vòng đời mount/unmount với Global Store (để AI vẫn chạy ngầm khi đóng popup hoặc chuyển trang)
+  useEffect(() => {
+    playgroundActions.setModalMounted(true, initialTemplateId);
+    return () => {
+      playgroundActions.setModalMounted(false);
     };
-    setSavedWebs((prev) => {
-      const next = [newItem, ...prev].slice(0, 25);
-      writeSavedWebs(next);
-      return next;
-    });
-    setActiveSavedId(newItem.id);
-    return newItem;
-  };
+  }, [initialTemplateId]);
 
   useEffect(() => {
     if (getGeminiApiKey()) return;
@@ -133,6 +64,12 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     });
   }, []);
 
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   const handleSaveKey = () => {
     const cleaned = geminiKeyInput.trim();
     saveGeminiApiKey(cleaned);
@@ -143,18 +80,18 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
       if (customPrompt.trim()) {
         runCustomWebGeneration(customPrompt);
       } else {
-        setGenStatus('🟢 Đã gắn Gemini 2.5 Flash! Hãy gõ ý tưởng trang web và bấm Tạo & Chạy Ngay.');
+        playgroundActions.setGenStatus('🟢 Đã gắn Gemini 2.5 Flash! Hãy gõ ý tưởng trang web và bấm Tạo & Chạy Ngay.');
         setTimeout(() => customInputRef.current?.focus(), 60);
       }
     } else {
-      setGenStatus('Đã xóa Gemini API Key.');
+      playgroundActions.setGenStatus('Đã xóa Gemini API Key.');
     }
   };
 
   const handleSaveKeyToSupabase = async () => {
     const cleaned = geminiKeyInput.trim();
     if (!cleaned) {
-      setGenStatus('⚠ Vui lòng dán Gemini API Key trước khi lưu lên Supabase.');
+      playgroundActions.setGenStatus('⚠ Vui lòng dán Gemini API Key trước khi lưu lên Supabase.');
       return;
     }
     setSavingSupa(true);
@@ -165,7 +102,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     if (res.error) {
       setHasGeminiKey(true);
       setKeySource('local');
-      setGenStatus(`⚠ Lưu trình duyệt OK, nhưng Supabase lỗi: ${res.error}`);
+      playgroundActions.setGenStatus(`⚠ Lưu trình duyệt OK, nhưng Supabase lỗi: ${res.error}`);
       return;
     }
 
@@ -175,7 +112,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     if (customPrompt.trim()) {
       runCustomWebGeneration(customPrompt);
     } else {
-      setGenStatus('🟢 Đã lưu Gemini API Key lên Supabase (app_settings)! Toàn web đã sẵn sàng.');
+      playgroundActions.setGenStatus('🟢 Đã lưu Gemini API Key lên Supabase (app_settings)! Toàn web đã sẵn sàng.');
       setTimeout(() => customInputRef.current?.focus(), 60);
     }
   };
@@ -185,83 +122,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     setGeminiKeyInput('');
     setHasGeminiKey(false);
     setKeySource('');
-    setGenStatus('Đã xóa Gemini API Key khỏi trình duyệt.');
-  };
-
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const switchToCustomMode = () => {
-    setStudioMode('custom');
-    setGenStatus('');
-  };
-
-  const switchToTemplatesMode = () => {
-    setStudioMode('templates');
-    setCode(activeTemplate.code);
-    setTemplatePrompt(activeTemplate.prompt);
-    setGenStatus('');
-  };
-
-  const switchToSavedMode = () => {
-    setStudioMode('saved');
-    setGenStatus('');
-    if (savedWebs.length > 0 && (!activeSavedId || !savedWebs.some((s) => s.id === activeSavedId))) {
-      const first = savedWebs[0];
-      setActiveSavedId(first.id);
-      setCode(first.html);
-      if (first.prompt) setCustomPrompt(first.prompt);
-    }
-  };
-
-  const selectSavedWeb = (item) => {
-    setStudioMode('saved');
-    setActiveSavedId(item.id);
-    setCode(item.html);
-    if (item.prompt) setCustomPrompt(item.prompt);
-    setGenStatus(`✓ Đang mở lại: "${item.title}"`);
-  };
-
-  const deleteSavedWeb = (e, id) => {
-    e.stopPropagation();
-    setSavedWebs((prev) => {
-      const next = prev.filter((item) => item.id !== id);
-      writeSavedWebs(next);
-      if (activeSavedId === id) {
-        if (next.length > 0) {
-          setActiveSavedId(next[0].id);
-          setCode(next[0].html);
-        } else {
-          setActiveSavedId(null);
-          setCode(CUSTOM_STARTER_HTML);
-        }
-      }
-      return next;
-    });
-  };
-
-  const clearAllSavedWebs = () => {
-    setSavedWebs([]);
-    setActiveSavedId(null);
-    writeSavedWebs([]);
-    setGenStatus('Đã xóa toàn bộ danh sách web đã lưu.');
-  };
-
-  const handleManualSave = () => {
-    if (!code || code === CUSTOM_STARTER_HTML) return;
-    const saved = persistSavedWeb(code, customPrompt || activeTemplate?.title || 'Bản lưu thủ công', 'Manual Edit');
-    setGenStatus(`💾 Đã lưu "${saved.title}" vào mục Đã Lưu!`);
-  };
-
-  const selectTemplate = (tmpl) => {
-    setStudioMode('templates');
-    setActiveTemplate(tmpl);
-    setCode(tmpl.code);
-    setTemplatePrompt(tmpl.prompt);
-    setGenStatus('');
+    playgroundActions.setGenStatus('Đã xóa Gemini API Key khỏi trình duyệt.');
   };
 
   const handleCopy = async () => {
@@ -279,7 +140,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = studioMode === 'custom' ? 'custom_vibe_app.html' : `${activeTemplate.id}_vibe_app.html`;
+    a.download = studioMode === 'templates' ? `${activeTemplate.id}_vibe_app.html` : 'custom_vibe_app.html';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -291,57 +152,15 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
   };
 
   const runCustomWebGeneration = async (promptToRun) => {
-    const targetPrompt = (typeof promptToRun === 'string' ? promptToRun : customPrompt).trim();
-    if (!targetPrompt || isGenerating) return;
-
-    setStudioMode('custom');
-    setCustomPrompt(targetPrompt);
-    setIsGenerating(true);
-    setGenStatus('⚡ Đang gọi AI API để tự động thiết kế & viết mã nguồn...');
-
-    try {
-      const result = await generateWebFromPrompt(targetPrompt);
-      if (result.html) {
-        setCode(result.html);
-        persistSavedWeb(result.html, targetPrompt, result.modelUsed || 'Gemini 2.5 Flash');
-        if (result.source === 'gemini-direct') {
-          const where = result.keyOrigin === 'supabase' ? ' (Key từ Supabase)' : '';
-          setGenStatus(`✨ ${result.modelUsed || 'Gemini 2.5 Flash'}${where} đã tạo xong & tự động lưu!`);
-        } else if (result.source === 'supabase-edge') {
-          setGenStatus(`✨ Supabase AI (${result.modelUsed || 'Gemini 2.5 Flash'}) đã tạo xong & tự động lưu!`);
-        } else {
-          setGenStatus('✓ AI đã tạo xong & tự động lưu vào mục Đã Lưu!');
-        }
-      } else {
-        setGenStatus(`⚠ ${result.error || 'Chưa nhận được mã web từ AI.'}`);
-        if (/chưa có gemini api key/i.test(result.error || '')) {
-          setShowKeyPanel(true);
-        }
-      }
-    } catch (err) {
-      setGenStatus(`⚠ ${err?.message || 'Lỗi kết nối AI API, vui lòng thử lại.'}`);
-    } finally {
-      setIsGenerating(false);
+    const res = await playgroundActions.startCustomWebGeneration(promptToRun);
+    if (res?.error && /chưa có gemini api key/i.test(res.error)) {
+      setShowKeyPanel(true);
     }
   };
 
-  const handleTemplatePromptRun = async () => {
-    const trimmed = templatePrompt.trim();
-    if (!trimmed || isGenerating) return;
-
-    // Nếu người dùng gõ yêu cầu tạo web mới ngay trong ô Template, tự động chuyển sang tạo web hoàn chỉnh
-    if (isWebCreationPrompt(trimmed)) {
-      await runCustomWebGeneration(trimmed);
-      return;
-    }
-
-    setIsGenerating(true);
-    setTimeout(() => {
-      const updated = applyTemplateTweak(code, trimmed);
-      setCode(updated);
-      setGenStatus('✓ Đã cập nhật giao diện theo yêu cầu!');
-      setIsGenerating(false);
-    }, 250);
+  const handleDeleteSaved = (e, id) => {
+    e.stopPropagation();
+    playgroundActions.deleteSavedWeb(id);
   };
 
   return (
@@ -363,7 +182,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 role="tab"
                 aria-selected={studioMode === 'custom'}
                 className={`vp-mode-tab ${studioMode === 'custom' ? 'is-active' : ''}`}
-                onClick={switchToCustomMode}
+                onClick={() => playgroundActions.switchToCustomMode()}
               >
                 ✨ Tự Tạo Web (Prompt Riêng)
               </button>
@@ -372,7 +191,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 role="tab"
                 aria-selected={studioMode === 'saved'}
                 className={`vp-mode-tab ${studioMode === 'saved' ? 'is-active' : ''}`}
-                onClick={switchToSavedMode}
+                onClick={() => playgroundActions.switchToSavedMode()}
               >
                 💾 Đã Lưu ({savedWebs.length})
               </button>
@@ -381,7 +200,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 role="tab"
                 aria-selected={studioMode === 'templates'}
                 className={`vp-mode-tab ${studioMode === 'templates' ? 'is-active' : ''}`}
-                onClick={switchToTemplatesMode}
+                onClick={() => playgroundActions.switchToTemplatesMode()}
               >
                 🧩 Templates Mẫu ({PLAYGROUND_TEMPLATES.length})
               </button>
@@ -402,7 +221,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
             <button
               type="button"
               className="vp-btn vp-btn--secondary"
-              onClick={handleManualSave}
+              onClick={() => playgroundActions.saveManualSnapshot()}
               title="Lưu phiên bản code hiện tại vào mục Đã Lưu"
             >
               💾 Lưu lại
@@ -413,7 +232,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
             <button type="button" className="vp-btn vp-btn--secondary" onClick={handleDownload}>
               📥 Xuất file HTML
             </button>
-            <button type="button" className="vp-close-btn" onClick={onClose} title="Đóng Sandbox">
+            <button type="button" className="vp-close-btn" onClick={onClose} title="Đóng Sandbox (AI vẫn chạy ngầm nếu đang tạo)">
               ✕
             </button>
           </div>
@@ -462,7 +281,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
           </div>
         )}
 
-        {/* ===== KHU VỰC TRÊN: CHẠY TRỰC TIẾP RIÊNG TỪ PROMPT HOẶC CHỌN TEMPLATE ===== */}
+        {/* ===== KHU VỰC TRÊN: TẠO TỪ PROMPT / ĐÃ LƯU / TEMPLATES MẪU ===== */}
         {studioMode === 'custom' ? (
           <div className="vp-custom-builder-top">
             <div className="vp-prompt-bar vp-prompt-bar--custom">
@@ -472,7 +291,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 type="text"
                 className="vp-prompt-input"
                 value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
+                onChange={(e) => playgroundActions.setCustomPrompt(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && runCustomWebGeneration()}
                 placeholder="Gõ mô tả trang web bạn muốn tạo (VD: Tạo 1 trang web quản lí sinh viên, Shop bán giày...)"
               />
@@ -528,8 +347,8 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                         key={item.id}
                         role="button"
                         tabIndex={0}
-                        onClick={() => selectSavedWeb(item)}
-                        onKeyDown={(e) => e.key === 'Enter' && selectSavedWeb(item)}
+                        onClick={() => playgroundActions.selectSavedWeb(item)}
+                        onKeyDown={(e) => e.key === 'Enter' && playgroundActions.selectSavedWeb(item)}
                         className={`vp-saved-chip ${activeSavedId === item.id ? 'is-active' : ''}`}
                         title={item.prompt || item.title}
                       >
@@ -538,7 +357,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                         <button
                           type="button"
                           className="vp-saved-del"
-                          onClick={(e) => deleteSavedWeb(e, item.id)}
+                          onClick={(e) => handleDeleteSaved(e, item.id)}
                           title="Xóa bản lưu này"
                           aria-label={`Xóa ${item.title}`}
                         >
@@ -551,7 +370,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 <button
                   type="button"
                   className="vp-saved-clear"
-                  onClick={clearAllSavedWebs}
+                  onClick={() => playgroundActions.clearAllSavedWebs()}
                   title="Xóa tất cả trang web đã lưu"
                 >
                   🗑 Xóa hết
@@ -569,7 +388,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                   key={tmpl.id}
                   type="button"
                   className={`vp-template-chip ${activeTemplate.id === tmpl.id ? 'is-active' : ''}`}
-                  onClick={() => selectTemplate(tmpl)}
+                  onClick={() => playgroundActions.selectTemplate(tmpl)}
                 >
                   {tmpl.title}
                 </button>
@@ -582,14 +401,14 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 type="text"
                 className="vp-prompt-input"
                 value={templatePrompt}
-                onChange={(e) => setTemplatePrompt(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleTemplatePromptRun()}
+                onChange={(e) => playgroundActions.setTemplatePrompt(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && playgroundActions.runTemplatePrompt()}
                 placeholder="Gõ prompt chỉnh sửa nhanh (VD: đổi màu tím, thêm tuyết rơi) hoặc mô tả tạo web mới..."
               />
               <button
                 type="button"
                 className="vp-btn vp-btn--primary"
-                onClick={handleTemplatePromptRun}
+                onClick={() => playgroundActions.runTemplatePrompt()}
                 disabled={isGenerating}
               >
                 {isGenerating ? '⚡ Đang xử lý...' : '⚡ Chạy Prompt Vibe'}
@@ -610,7 +429,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
               <textarea
                 className="vp-editor-area"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => playgroundActions.setCode(e.target.value)}
                 spellCheck="false"
               />
             </div>
@@ -624,7 +443,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 <button
                   type="button"
                   className={`vp-device-btn ${previewOnly ? 'is-active' : ''}`}
-                  onClick={() => setPreviewOnly((v) => !v)}
+                  onClick={() => playgroundActions.setPreviewOnly((v) => !v)}
                   title={previewOnly ? 'Hiện lại khung mã nguồn bên trái' : 'Mở rộng Live Preview 100% không bị chia khung'}
                 >
                   {previewOnly ? '⟨/⟩ Hiện Code' : '⛶ Rộng 100%'}
@@ -632,21 +451,21 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 <button
                   type="button"
                   className={`vp-device-btn ${device === 'desktop' ? 'is-active' : ''}`}
-                  onClick={() => setDevice('desktop')}
+                  onClick={() => playgroundActions.setDevice('desktop')}
                 >
                   🖥️ Máy tính
                 </button>
                 <button
                   type="button"
                   className={`vp-device-btn ${device === 'tablet' ? 'is-active' : ''}`}
-                  onClick={() => setDevice('tablet')}
+                  onClick={() => playgroundActions.setDevice('tablet')}
                 >
                   📱 Tablet
                 </button>
                 <button
                   type="button"
                   className={`vp-device-btn ${device === 'mobile' ? 'is-active' : ''}`}
-                  onClick={() => setDevice('mobile')}
+                  onClick={() => playgroundActions.setDevice('mobile')}
                 >
                   📱 Điện thoại
                 </button>
@@ -671,7 +490,9 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                       ? '⚡ Gemini 2.5 Flash đang viết code & dựng giao diện...'
                       : '⚡ Đang khởi tạo trang web từ Prompt...'}
                   </div>
-                  <div className="vp-loading-sub">Kết quả hoàn chỉnh sẽ tự động chạy ngay trong Live Preview</div>
+                  <div className="vp-loading-sub">
+                    Bạn có thể đóng cửa sổ hoặc sang trang khác — AI vẫn tiếp tục tạo ngầm và tự động lưu khi xong!
+                  </div>
                 </div>
               )}
               <iframe
