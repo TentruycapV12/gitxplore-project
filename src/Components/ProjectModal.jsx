@@ -97,7 +97,7 @@ export default function ProjectModal() {
               type="button"
               onClick={handleAskArisu}
               className="link-btn btn-secondary"
-              title="Nhờ AI Arisu tóm tắt & hướng dẫn chạy dự án"
+              title="Hỏi AI tóm tắt & hướng dẫn chạy dự án"
               style={{
                 background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(129, 140, 248, 0.18))',
                 borderColor: 'rgba(56, 189, 248, 0.5)',
@@ -108,7 +108,7 @@ export default function ProjectModal() {
                 gap: '6px',
               }}
             >
-              <span>🤖</span> {t('ask_arisu') || 'Nhờ Arisu Hướng Dẫn'}
+              <span>🤖</span> {t('ask_arisu') || 'Hỏi AI'}
             </button>
             <button
               type="button"

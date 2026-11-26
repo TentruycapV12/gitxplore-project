@@ -488,6 +488,7 @@ const E = {
   arisu_chip_security: ['🛡️ Bảo mật tài khoản', '🛡️ Account security', '🛡️ アカウントセキュリティ', '🛡️ 账号安全中心', '🛡️ 계정 보안', '🛡️ Sécurité du compte', '🛡️ Kontosicherheit', '🛡️ Seguridad de la cuenta', '🛡️ Безопасность аккаунта', '🛡️ Segurança da conta'],
   arisu_chip_who: ['💡 Arisu giúp được gì?', '💡 How can Arisu help?', '💡 アリスができることは？', '💡 爱丽丝能帮什么忙？', '💡 아리스는 무엇을 돕나요?', '💡 Que peut faire Arisu ?', '💡 Wie kann Arisu helfen?', '💡 ¿Cómo puede ayudar Arisu?', '💡 Чем может помочь Арису?', '💡 Como Arisu pode ajudar?'],
   arisu_floating_hint: ['Hỏi Arisu AI ✨', 'Ask Arisu AI ✨', 'アリスAIに質問 ✨', '咨询爱丽丝 AI ✨', '아리스 AI에게 질문 ✨', 'Demander à Arisu IA ✨', 'Arisu KI fragen ✨', 'Preguntar a Arisu IA ✨', 'Спросить Арису ИИ ✨', 'Perguntar para Arisu IA ✨'],
+  ask_arisu: ['Hỏi AI', 'Ask AI', 'AIに質問', '问 AI', 'AI에게 묻기', 'Demander à l’IA', 'KI fragen', 'Preguntar a la IA', 'Спросить ИИ', 'Perguntar à IA'],
 
   // ---------- Thông báo Hệ thống Thực tế (Notifications) ----------
   notif_welcome_title: ['Chào mừng bạn đến với GitXplore! 🎉', 'Welcome to GitXplore! 🎉', 'GitXploreへようこそ！ 🎉', '欢迎来到 GitXplore！ 🎉', 'GitXplore에 오신 것을 환영합니다! 🎉', 'Bienvenue sur GitXplore ! 🎉', 'Willkommen bei GitXplore! 🎉', '¡Bienvenido a GitXplore! 🎉', 'Добро пожаловать в GitXplore! 🎉', 'Bem-vindo ao GitXplore! 🎉'],
