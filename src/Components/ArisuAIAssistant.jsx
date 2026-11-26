@@ -514,9 +514,12 @@ export default function ArisuAIAssistant() {
               <div className="arisu-header-avatar-group">
                 <div className="arisu-avatar-wrap">
                   {aiMode === 'dev' ? (
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', display: 'grid', placeItems: 'center', fontSize: '18px', border: '1.5px solid rgba(245, 158, 11, 0.6)', color: '#fff', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)' }}>
-                      ⚡
-                    </div>
+                    <img
+                      src="/dev-expert-avatar.jpg"
+                      alt="Dev Expert AI"
+                      className="arisu-avatar-img"
+                      style={{ borderColor: 'rgba(245, 158, 11, 0.7)', boxShadow: '0 0 15px rgba(245, 158, 11, 0.45)' }}
+                    />
                   ) : (
                     <img src="/arisu.png" alt="Arisu" className="arisu-avatar-img" />
                   )}
@@ -706,9 +709,7 @@ export default function ArisuAIAssistant() {
                   {!isMe && (
                     <div className="arisu-msg-chibi">
                       {msg.sender === 'dev' ? (
-                        <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: '#f59e0b', color: '#000', fontWeight: 800, fontSize: '13px' }}>
-                          ⚡
-                        </div>
+                        <img src="/dev-expert-avatar.jpg" alt="Dev Expert AI" />
                       ) : (
                         <img src="/arisu.png" alt="Arisu" />
                       )}
@@ -756,9 +757,7 @@ export default function ArisuAIAssistant() {
               <div className="arisu-bubble-row is-arisu">
                 <div className="arisu-msg-chibi">
                   {aiMode === 'dev' ? (
-                    <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: '#f59e0b', color: '#000', fontWeight: 800, fontSize: '13px' }}>
-                      ⚡
-                    </div>
+                    <img src="/dev-expert-avatar.jpg" alt="Dev Expert AI" />
                   ) : (
                     <img src="/arisu.png" alt="Arisu" />
                   )}
