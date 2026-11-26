@@ -1,7 +1,7 @@
 /**
  * Trí tuệ nhận thức kép:
  * 1. DEV EXPERT ENGINE (Chuyên gia Lập trình: Trực diện, code mẫu chuẩn, giải thích sâu)
- * 2. ARISU CHIBI ENGINE (Dũng giả Arisu Blue Archive: Nhập vai vui vẻ, cổ vũ, RPG quest)
+ * 2. ARISU COMPANION ENGINE (Trợ lý đồng hành thân thiện, giải thích công nghệ đơn giản, dễ hiểu)
  */
 
 export const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];

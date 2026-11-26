@@ -29,22 +29,36 @@ const ICONS = {
 };
 
 import { supabase } from '../supabaseClient';
-import { getDevExpertResponse, getArisuAnimeResponse, detectLanguage } from './arisuAiLogic';
+import { getDevExpertResponse, getArisuCompanionResponse, detectLanguage } from './arisuAiLogic';
+
+// Làm sạch mọi cụm từ nhập vai game/anime nếu vô tình xuất hiện trong phản hồi
+function sanitizeAssistantReply(reply) {
+  if (typeof reply !== 'string') return reply;
+  return reply
+    .replace(/\*?\s*Ting!\s*\*?\s*✨?/gi, '')
+    .replace(/panpakapan~?!?(\s*🎉)?/gi, '')
+    .replace(/Dũng giả Arisu/gi, 'Mình')
+    .replace(/\bSensei\b/gi, 'bạn')
+    .replace(/\b"quest"\b/gi, 'chủ đề')
+    .replace(/^\s*\n+/g, '')
+    .trim();
+}
 
 // Gọi Supabase Edge Function 'chat-ai' (LLM Gemini/Groq), tự động fallback về offline engine
 async function requestAIResponse(textToSend, currentAttachments, lang, user, aiMode) {
   try {
     const isVi = lang === 'vi';
     const personaInstruction = aiMode === 'dev'
-      ? `[CHỈ ĐẠO BẮT BUỘC: Bạn là Trợ lý Lập trình viên Cấp cao của GitXplore. Trả lời súc tích, đi thẳng vào trọng tâm, code mẫu sạch, giải thích rõ ràng và thiết thực. Ngôn ngữ phản hồi: ${isVi ? 'tiếng Việt' : 'English'}].\n\n`
-      : `[CHỈ ĐẠO BẮT BUỘC: Bạn là Arisu - người bạn đồng hành AI thông minh, ấm áp và thân thiện của GitXplore. Tuyệt đối KHÔNG dùng các từ Panpakapan, Dũng giả, Sensei, hầm ngục, HP, Mana hay nhập vai game. Hãy trò chuyện tự nhiên như một người bạn thân, xưng "mình" gọi "bạn", nói đúng trọng tâm, đơn giản, dễ hiểu và giúp người dùng tiếp cận công nghệ một cách tự nhiên nhất. Ngôn ngữ phản hồi: ${isVi ? 'tiếng Việt' : 'English'}].\n\n`;
+      ? `[Vai trò: Chuyên gia Lập trình viên Cấp cao của GitXplore. Trả lời súc tích, chuyên nghiệp, đi thẳng vào trọng tâm, cung cấp code mẫu sạch và giải thích thiết thực. Ngôn ngữ phản hồi: ${isVi ? 'tiếng Việt' : 'English'}].\n\n`
+      : `[Vai trò: Trợ lý AI thân thiện và chuyên nghiệp của GitXplore. Hãy giao tiếp tự nhiên, lịch sự, gần gũi (xưng "mình" gọi "bạn"), giải thích công nghệ đơn giản, rõ ràng, dễ hiểu cho mọi người và trả lời thẳng vào câu hỏi của người dùng. Ngôn ngữ phản hồi: ${isVi ? 'tiếng Việt' : 'English'}].\n\n`;
 
     const fullPrompt = personaInstruction + textToSend;
 
+    // Luôn truyền mode: 'dev' lên Edge Function để tránh kích hoạt prompt nhập vai cũ ở backend
     const { data, error } = await supabase.functions.invoke('chat-ai', {
       body: {
         prompt: fullPrompt,
-        mode: aiMode,
+        mode: 'dev',
         appLang: lang,
         userName: user?.name || user?.identifier || null,
         attachments: currentAttachments?.map((a) => ({ name: a.name, type: a.type })) || [],
@@ -58,7 +72,7 @@ async function requestAIResponse(textToSend, currentAttachments, lang, user, aiM
       data.reply.includes('lỗi lúc này');
 
     if (!error && !isFailedReply) {
-      return data.reply;
+      return sanitizeAssistantReply(data.reply);
     }
   } catch (err) {
     console.warn('Supabase Edge Function chưa cấu hình hoặc không kết nối được, chuyển về Offline Engine:', err);
@@ -68,7 +82,7 @@ async function requestAIResponse(textToSend, currentAttachments, lang, user, aiM
   if (aiMode === 'dev') {
     return getDevExpertResponse(textToSend, currentAttachments, lang, user);
   }
-  return getArisuAnimeResponse(textToSend, currentAttachments, lang, user);
+  return getArisuCompanionResponse(textToSend, currentAttachments, lang, user);
 }
 
 function CodeBlock({ code, language }) {
@@ -211,7 +225,15 @@ export default function ArisuAIAssistant() {
   const [messages, setMessages] = useState(() => {
     try {
       const saved = localStorage.getItem('gx_arisu_chat_history');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Lọc bỏ các tin nhắn nhập vai RPG cũ nếu từng lưu trong cache
+          return parsed.filter(
+            (m) => typeof m?.text !== 'string' || !/panpakapan|dũng giả arisu|\bsensei\b|\*ting!\*/i.test(m.text)
+          );
+        }
+      }
     } catch {
       // ignore
     }
@@ -224,6 +246,7 @@ export default function ArisuAIAssistant() {
   const fileInputRef = useRef(null);
   const mediaInputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const handleSendRef = useRef(null);
 
   // Khởi tạo tin nhắn chào nếu chưa có
   useEffect(() => {
@@ -291,7 +314,7 @@ export default function ArisuAIAssistant() {
       const query = e.detail?.query;
       if (query) {
         setTimeout(() => {
-          handleSend(query);
+          handleSendRef.current?.(query);
         }, 120);
       }
     };
@@ -391,6 +414,7 @@ export default function ArisuAIAssistant() {
       setIsTyping(false);
     }
   };
+  handleSendRef.current = handleSend;
 
   // Xử lý gửi tệp tài liệu / code
   const handleFileUpload = (e) => {
@@ -441,7 +465,7 @@ export default function ArisuAIAssistant() {
 
   // Chèn link
   const handleInsertLink = () => {
-    const url = prompt(lang === 'vi' ? 'Nhập đường link nhiệm vụ muốn chia sẻ với Arisu:' : 'Enter URL to share with Arisu:');
+    const url = prompt(lang === 'vi' ? 'Nhập liên kết (URL) muốn chia sẻ:' : 'Enter URL to share:');
     if (url && url.startsWith('http')) {
       setInputText((prev) => (prev ? `${prev} ${url}` : url));
     }
@@ -449,7 +473,7 @@ export default function ArisuAIAssistant() {
 
   // Xóa đoạn chat
   const handleClearChat = () => {
-    if (window.confirm(lang === 'vi' ? 'Sensei có muốn xóa lịch sử chat và quay về Save Point ban đầu?' : 'Reset conversation and return to Save Point?')) {
+    if (window.confirm(lang === 'vi' ? 'Bạn có muốn xóa lịch sử trò chuyện và bắt đầu cuộc hội thoại mới không?' : 'Clear conversation history and start fresh?')) {
       setMessages([
         {
           id: `welcome-${Date.now()}`,
@@ -894,11 +918,11 @@ export default function ArisuAIAssistant() {
           type="button"
           className={`arisu-chibi-button ${isOpen ? 'is-active' : ''}`}
           onClick={() => setIsOpen((prev) => !prev)}
-          title="Arisu • Trợ lý AI Blue Archive"
+          title="Arisu • Trợ lý AI GitXplore"
           aria-label="Arisu AI Assistant"
         >
           <div className="arisu-aura-ring" />
-          <img src="/arisu.png" alt="Arisu Blue Archive" className="arisu-chibi-avatar" />
+          <img src="/arisu.png" alt="Trợ lý AI GitXplore" className="arisu-chibi-avatar" />
           <span className="arisu-badge-dot" />
         </button>
       </div>
