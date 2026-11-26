@@ -47,13 +47,16 @@ function isValidCompleteHtml(html) {
 }
 
 /**
- * Trích xuất mã HTML sạch từ phản hồi của AI
+ * Trích xuất mã HTML sạch từ phản hồi của AI (kể cả khi thiếu thẻ đóng cuối)
  */
 function extractHtmlFromReply(raw) {
   if (!raw || typeof raw !== 'string') return null;
 
-  const fenceMatch = raw.match(/```(?:html)?\s*([\s\S]*?)```/i);
-  let candidate = fenceMatch ? fenceMatch[1].trim() : raw.trim();
+  // Lấy code bên trong ```html ... ``` hoặc cắt bỏ tiền tố ```html nếu chưa kịp đóng ```
+  const closedFenceMatch = raw.match(/```(?:html)?\s*([\s\S]*?)```/i);
+  let candidate = closedFenceMatch
+    ? closedFenceMatch[1].trim()
+    : raw.replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, '').trim();
 
   const doctypeIdx = candidate.search(/<!doctype\s+html/i);
   const htmlIdx = candidate.search(/<html[\s>]/i);
@@ -66,6 +69,10 @@ function extractHtmlFromReply(raw) {
   const endHtmlIdx = candidate.toLowerCase().lastIndexOf('</html>');
   if (endHtmlIdx !== -1) {
     candidate = candidate.slice(0, endHtmlIdx + 7);
+  } else if (/<body[\s>]/i.test(candidate)) {
+    // Tự động đóng thẻ nếu nội dung body đã sinh đủ nhưng thiếu thẻ đóng cuối
+    if (!/<\/body>/i.test(candidate)) candidate += '\n</body>';
+    candidate += '\n</html>';
   }
 
   return isValidCompleteHtml(candidate) ? candidate : null;
@@ -135,45 +142,61 @@ async function generateWithDirectGemini(generationPrompt, apiKey) {
   let lastError = null;
 
   for (const model of models) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 35000);
+    const useZeroThinking = model.startsWith('gemini-2.5');
+    for (const includeThinkingCfg of useZeroThinking ? [true, false] : [false]) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 45000);
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: generationPrompt }] }],
-            generationConfig: {
-              maxOutputTokens: 8192,
-              temperature: 0.7,
-            },
-          }),
+        const generationConfig = {
+          maxOutputTokens: 8192,
+          temperature: 0.7,
+          ...(includeThinkingCfg ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        };
+
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: generationPrompt }] }],
+              generationConfig,
+            }),
+          }
+        );
+        clearTimeout(timer);
+
+        const json = await res.json();
+        if (!res.ok) {
+          const msg = json?.error?.message || `HTTP ${res.status}`;
+          if (includeThinkingCfg && /thinking/i.test(msg)) {
+            continue;
+          }
+          if (res.status === 403 || /api key|api_key|key not valid|permission/i.test(msg)) {
+            return { authError: 'API Key Gemini không hợp lệ hoặc chưa được kích hoạt. Vui lòng kiểm tra lại Key!' };
+          }
+          lastError = msg;
+          break;
         }
-      );
-      clearTimeout(timer);
 
-      const json = await res.json();
-      if (!res.ok) {
-        const msg = json?.error?.message || `HTTP ${res.status}`;
-        if (res.status === 400 || res.status === 403 || /api key/i.test(msg)) {
-          return { authError: 'API Key Gemini không hợp lệ hoặc chưa được kích hoạt. Vui lòng kiểm tra lại Key!' };
+        const parts = json?.candidates?.[0]?.content?.parts || [];
+        const rawText = parts
+          .filter((part) => !part.thought && typeof part.text === 'string')
+          .map((part) => part.text)
+          .join('\n');
+
+        const extracted = extractHtmlFromReply(rawText);
+        if (extracted) {
+          return { html: extracted, source: 'gemini-direct', modelUsed: model };
         }
-        lastError = msg;
-        continue;
+        lastError = 'Phản hồi Gemini chưa đúng định dạng HTML đầy đủ';
+        break;
+      } catch (err) {
+        lastError = err?.name === 'AbortError' ? 'Gemini phản hồi quá thời gian (timeout)' : (err?.message || 'Lỗi kết nối Gemini API');
+        break;
       }
-
-      const rawText = json?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('\n') || '';
-      const extracted = extractHtmlFromReply(rawText);
-      if (extracted) {
-        return { html: extracted, source: 'gemini-direct', modelUsed: model };
-      }
-      lastError = 'Phản hồi chưa đầy đủ HTML';
-    } catch (err) {
-      lastError = err?.message || 'Lỗi kết nối Gemini API';
     }
   }
 
@@ -230,13 +253,11 @@ export async function generateWebFromPrompt(userPrompt) {
     if (geminiResult.html) {
       return geminiResult;
     }
-    if (geminiResult.authError) {
-      return {
-        html: generateSmartLocalWeb(cleanPrompt),
-        source: 'smart-engine',
-        warning: geminiResult.authError,
-      };
-    }
+    return {
+      html: generateSmartLocalWeb(cleanPrompt),
+      source: 'smart-engine',
+      warning: geminiResult.authError || geminiResult.error || 'Gemini API chưa phản hồi, đã dùng Engine dự phòng.',
+    };
   }
 
   // 2. Thử gọi qua Supabase Edge Function nếu chưa gắn Key riêng

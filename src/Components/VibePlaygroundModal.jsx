@@ -23,34 +23,28 @@ const CUSTOM_STARTER_HTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Web Builder — Sẵn Sàng Khởi Tạo</title>
+  <title>Gemini 2.5 Flash Live Builder</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
     body {
-      min-height: 100vh; display: grid; place-items: center; padding: 24px;
-      background: radial-gradient(circle at top, #1b1528 0%, #09090f 70%); color: #f8fafc;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 36px 24px; text-align: center;
+      background: radial-gradient(circle at top center, rgba(245,158,11,0.14), #09090f 65%); color: #f8fafc;
     }
-    .card {
-      max-width: 540px; text-align: center; padding: 36px 28px; border-radius: 20px;
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(245,158,11,0.3);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+      background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.35);
+      color: #6ee7b7; font-size: 12px; font-weight: 700; margin-bottom: 16px;
     }
-    .icon { font-size: 42px; margin-bottom: 14px; }
-    h1 { font-size: 22px; font-weight: 800; margin-bottom: 10px; color: #ffffff; }
-    p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
-    .hint {
-      margin-top: 18px; padding: 10px 14px; border-radius: 10px; font-size: 12.5px;
-      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #fde68a;
-    }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 10px; color: #ffffff; max-width: 560px; }
+    p { font-size: 14.5px; color: #94a3b8; line-height: 1.65; max-width: 520px; }
+    strong { color: #fbbf24; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">✨</div>
-    <h1>Chế Độ Tạo Web Trực Tiếp Từ Prompt</h1>
-    <p>Hãy gõ ý tưởng trang web của bạn vào ô nhập liệu ở phía trên (ví dụ: <strong>"Tạo 1 trang web quản lí sinh viên"</strong>) và bấm nút tạo.</p>
-    <div class="hint">Hệ thống sẽ tự động viết mã nguồn HTML, CSS, JavaScript hoàn chỉnh và chạy thử trực tiếp ngay tại đây!</div>
-  </div>
+  <div class="pill">⚡ Sẵn sàng tạo web trực tiếp từ Prompt</div>
+  <h1>Nhập ý tưởng ở thanh phía trên để xem trang web chạy thật ngay tại đây</h1>
+  <p>Ví dụ: <strong>"Tạo 1 trang web giới thiệu về các game AAA hiện nay"</strong> hoặc chọn nhanh các gợi ý có sẵn. Toàn bộ giao diện hoàn chỉnh sẽ hiển thị trực tiếp trên màn hình này.</p>
 </body>
 </html>`;
 
@@ -70,14 +64,25 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
   const [showKeyPanel, setShowKeyPanel] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey());
   const [hasGeminiKey, setHasGeminiKey] = useState(() => Boolean(getGeminiApiKey()));
+  const [previewOnly, setPreviewOnly] = useState(false);
   const iframeRef = useRef(null);
+  const customInputRef = useRef(null);
 
   const handleSaveKey = () => {
     const cleaned = geminiKeyInput.trim();
     saveGeminiApiKey(cleaned);
     setHasGeminiKey(Boolean(cleaned));
     setShowKeyPanel(false);
-    setGenStatus(cleaned ? '🟢 Đã kết nối Gemini API Key thành công!' : 'Đã xóa Gemini API Key.');
+    if (cleaned) {
+      if (customPrompt.trim()) {
+        runCustomWebGeneration(customPrompt);
+      } else {
+        setGenStatus('🟢 Đã gắn Gemini 2.5 Flash! Hãy gõ ý tưởng trang web và bấm Tạo & Chạy Ngay.');
+        setTimeout(() => customInputRef.current?.focus(), 60);
+      }
+    } else {
+      setGenStatus('Đã xóa Gemini API Key.');
+    }
   };
 
   const handleClearKey = () => {
@@ -281,6 +286,7 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
             <div className="vp-prompt-bar vp-prompt-bar--custom">
               <span className="vp-prompt-prefix">✨ Tạo Web Riêng:</span>
               <input
+                ref={customInputRef}
                 type="text"
                 className="vp-prompt-input"
                 value={customPrompt}
@@ -353,27 +359,37 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
           </>
         )}
 
-        {/* ===== STUDIO BODY (SPLIT VIEW) ===== */}
-        <div className="vp-studio-body">
+        {/* ===== STUDIO BODY (SPLIT VIEW OR FULL PREVIEW) ===== */}
+        <div className={`vp-studio-body ${previewOnly ? 'is-preview-only' : ''}`}>
           {/* Left: Code Editor */}
-          <div className="vp-code-pane">
-            <div className="vp-pane-header">
-              <span className="vp-pane-title">MÃ NGUỒN (HTML • CSS • JS)</span>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>Có thể chỉnh sửa trực tiếp</span>
+          {!previewOnly && (
+            <div className="vp-code-pane">
+              <div className="vp-pane-header">
+                <span className="vp-pane-title">MÃ NGUỒN (HTML • CSS • JS)</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>Có thể chỉnh sửa trực tiếp</span>
+              </div>
+              <textarea
+                className="vp-editor-area"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                spellCheck="false"
+              />
             </div>
-            <textarea
-              className="vp-editor-area"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck="false"
-            />
-          </div>
+          )}
 
           {/* Right: Live Preview */}
           <div className="vp-preview-pane">
             <div className="vp-pane-header">
               <span className="vp-pane-title">KẾT QUẢ CHẠY THỰC TẾ (LIVE PREVIEW)</span>
               <div className="vp-preview-controls">
+                <button
+                  type="button"
+                  className={`vp-device-btn ${previewOnly ? 'is-active' : ''}`}
+                  onClick={() => setPreviewOnly((v) => !v)}
+                  title={previewOnly ? 'Hiện lại khung mã nguồn bên trái' : 'Mở rộng Live Preview 100% không bị chia khung'}
+                >
+                  {previewOnly ? '⟨/⟩ Hiện Code' : '⛶ Rộng 100%'}
+                </button>
                 <button
                   type="button"
                   className={`vp-device-btn ${device === 'desktop' ? 'is-active' : ''}`}
@@ -407,7 +423,18 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
               </div>
             </div>
 
-            <div className="vp-preview-frame-wrap">
+            <div className="vp-preview-frame-wrap" style={{ position: 'relative' }}>
+              {isGenerating && (
+                <div className="vp-preview-loading">
+                  <div className="vp-spinner" />
+                  <div className="vp-loading-title">
+                    {hasGeminiKey
+                      ? '⚡ Gemini 2.5 Flash đang viết code & dựng giao diện...'
+                      : '⚡ Đang khởi tạo trang web từ Prompt...'}
+                  </div>
+                  <div className="vp-loading-sub">Kết quả hoàn chỉnh sẽ tự động chạy ngay trong Live Preview</div>
+                </div>
+              )}
               <iframe
                 ref={iframeRef}
                 srcDoc={code}
