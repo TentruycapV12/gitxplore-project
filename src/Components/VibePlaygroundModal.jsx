@@ -12,6 +12,36 @@ import {
 } from '../utils/vibeWebGenerator';
 import './VibePlaygroundModal.css';
 
+const SAVED_WEBS_STORAGE = 'gx_saved_vibe_webs';
+
+function readSavedWebs() {
+  try {
+    const raw = localStorage.getItem(SAVED_WEBS_STORAGE);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedWebs(list) {
+  try {
+    localStorage.setItem(SAVED_WEBS_STORAGE, JSON.stringify(list.slice(0, 25)));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+function extractWebTitle(html, fallbackPrompt) {
+  const m = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const rawTitle = m ? m[1].trim() : '';
+  if (rawTitle && !/gemini 2\.5 flash live builder/i.test(rawTitle)) {
+    return rawTitle.length > 42 ? `${rawTitle.slice(0, 42)}...` : rawTitle;
+  }
+  const cleanPrompt = String(fallbackPrompt || 'Trang web AI').trim();
+  return cleanPrompt.length > 42 ? `${cleanPrompt.slice(0, 42)}...` : cleanPrompt;
+}
+
 const QUICK_CUSTOM_PROMPTS = [
   { label: '🎮 Giới thiệu Game AAA', prompt: 'Tạo 1 trang web giới thiệu về các game AAA nổi bật hiện nay' },
   { label: '🏋️ Quản lý phòng Gym', prompt: 'Tạo hệ thống quản lý phòng Gym hội viên và gói tập' },
@@ -69,8 +99,28 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
   const [keySource, setKeySource] = useState(() => (getGeminiApiKey() ? 'local' : ''));
   const [savingSupa, setSavingSupa] = useState(false);
   const [previewOnly, setPreviewOnly] = useState(false);
+  const [savedWebs, setSavedWebs] = useState(() => readSavedWebs());
+  const [activeSavedId, setActiveSavedId] = useState(null);
   const iframeRef = useRef(null);
   const customInputRef = useRef(null);
+
+  const persistSavedWeb = (html, promptText, modelName) => {
+    const newItem = {
+      id: `${Date.now()}`,
+      title: extractWebTitle(html, promptText),
+      prompt: promptText || '',
+      html,
+      model: modelName || 'Gemini AI',
+      createdAt: new Date().toISOString(),
+    };
+    setSavedWebs((prev) => {
+      const next = [newItem, ...prev].slice(0, 25);
+      writeSavedWebs(next);
+      return next;
+    });
+    setActiveSavedId(newItem.id);
+    return newItem;
+  };
 
   useEffect(() => {
     if (getGeminiApiKey()) return;
@@ -156,6 +206,56 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     setGenStatus('');
   };
 
+  const switchToSavedMode = () => {
+    setStudioMode('saved');
+    setGenStatus('');
+    if (savedWebs.length > 0 && (!activeSavedId || !savedWebs.some((s) => s.id === activeSavedId))) {
+      const first = savedWebs[0];
+      setActiveSavedId(first.id);
+      setCode(first.html);
+      if (first.prompt) setCustomPrompt(first.prompt);
+    }
+  };
+
+  const selectSavedWeb = (item) => {
+    setStudioMode('saved');
+    setActiveSavedId(item.id);
+    setCode(item.html);
+    if (item.prompt) setCustomPrompt(item.prompt);
+    setGenStatus(`✓ Đang mở lại: "${item.title}"`);
+  };
+
+  const deleteSavedWeb = (e, id) => {
+    e.stopPropagation();
+    setSavedWebs((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      writeSavedWebs(next);
+      if (activeSavedId === id) {
+        if (next.length > 0) {
+          setActiveSavedId(next[0].id);
+          setCode(next[0].html);
+        } else {
+          setActiveSavedId(null);
+          setCode(CUSTOM_STARTER_HTML);
+        }
+      }
+      return next;
+    });
+  };
+
+  const clearAllSavedWebs = () => {
+    setSavedWebs([]);
+    setActiveSavedId(null);
+    writeSavedWebs([]);
+    setGenStatus('Đã xóa toàn bộ danh sách web đã lưu.');
+  };
+
+  const handleManualSave = () => {
+    if (!code || code === CUSTOM_STARTER_HTML) return;
+    const saved = persistSavedWeb(code, customPrompt || activeTemplate?.title || 'Bản lưu thủ công', 'Manual Edit');
+    setGenStatus(`💾 Đã lưu "${saved.title}" vào mục Đã Lưu!`);
+  };
+
   const selectTemplate = (tmpl) => {
     setStudioMode('templates');
     setActiveTemplate(tmpl);
@@ -203,13 +303,14 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
       const result = await generateWebFromPrompt(targetPrompt);
       if (result.html) {
         setCode(result.html);
+        persistSavedWeb(result.html, targetPrompt, result.modelUsed || 'Gemini 2.5 Flash');
         if (result.source === 'gemini-direct') {
           const where = result.keyOrigin === 'supabase' ? ' (Key từ Supabase)' : '';
-          setGenStatus(`✨ ${result.modelUsed || 'Gemini 2.5 Flash'}${where} đã tự tạo & chạy web thành công!`);
+          setGenStatus(`✨ ${result.modelUsed || 'Gemini 2.5 Flash'}${where} đã tạo xong & tự động lưu!`);
         } else if (result.source === 'supabase-edge') {
-          setGenStatus(`✨ Supabase AI (${result.modelUsed || 'Gemini 2.5 Flash'}) đã tạo xong!`);
+          setGenStatus(`✨ Supabase AI (${result.modelUsed || 'Gemini 2.5 Flash'}) đã tạo xong & tự động lưu!`);
         } else {
-          setGenStatus('✓ AI đã tự động tạo & chạy trang web thành công!');
+          setGenStatus('✓ AI đã tạo xong & tự động lưu vào mục Đã Lưu!');
         }
       } else {
         setGenStatus(`⚠ ${result.error || 'Chưa nhận được mã web từ AI.'}`);
@@ -269,6 +370,15 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
               <button
                 type="button"
                 role="tab"
+                aria-selected={studioMode === 'saved'}
+                className={`vp-mode-tab ${studioMode === 'saved' ? 'is-active' : ''}`}
+                onClick={switchToSavedMode}
+              >
+                💾 Đã Lưu ({savedWebs.length})
+              </button>
+              <button
+                type="button"
+                role="tab"
                 aria-selected={studioMode === 'templates'}
                 className={`vp-mode-tab ${studioMode === 'templates' ? 'is-active' : ''}`}
                 onClick={switchToTemplatesMode}
@@ -288,6 +398,14 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
               {hasGeminiKey
                 ? `🟢 Gemini Ready${keySource === 'supabase' ? ' (Supabase)' : ''}`
                 : '🔑 Gắn Gemini Key'}
+            </button>
+            <button
+              type="button"
+              className="vp-btn vp-btn--secondary"
+              onClick={handleManualSave}
+              title="Lưu phiên bản code hiện tại vào mục Đã Lưu"
+            >
+              💾 Lưu lại
             </button>
             <button type="button" className="vp-btn vp-btn--secondary" onClick={handleCopy}>
               {copied ? '✓ Đã sao chép' : '⧉ Sao chép code'}
@@ -390,6 +508,56 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                 </span>
               )}
             </div>
+          </div>
+        ) : studioMode === 'saved' ? (
+          <div className="vp-saved-bar">
+            <span className="vp-templates-label">💾 WEB ĐÃ LƯU:</span>
+            {savedWebs.length === 0 ? (
+              <span style={{ fontSize: '12.5px', color: '#94a3b8' }}>
+                Chưa có trang web nào được lưu. Khi AI tạo web xong, hệ thống sẽ tự động lưu lại tại đây để bạn bấm xem lại bất kỳ lúc nào!
+              </span>
+            ) : (
+              <>
+                <div className="vp-saved-list">
+                  {savedWebs.map((item) => {
+                    const timeStr = item.createdAt
+                      ? new Date(item.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                      : '';
+                    return (
+                      <div
+                        key={item.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => selectSavedWeb(item)}
+                        onKeyDown={(e) => e.key === 'Enter' && selectSavedWeb(item)}
+                        className={`vp-saved-chip ${activeSavedId === item.id ? 'is-active' : ''}`}
+                        title={item.prompt || item.title}
+                      >
+                        <span className="vp-saved-title">{item.title}</span>
+                        {timeStr && <span className="vp-saved-time">{timeStr}</span>}
+                        <button
+                          type="button"
+                          className="vp-saved-del"
+                          onClick={(e) => deleteSavedWeb(e, item.id)}
+                          title="Xóa bản lưu này"
+                          aria-label={`Xóa ${item.title}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="vp-saved-clear"
+                  onClick={clearAllSavedWebs}
+                  title="Xóa tất cả trang web đã lưu"
+                >
+                  🗑 Xóa hết
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <>
