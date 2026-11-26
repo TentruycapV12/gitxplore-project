@@ -7,6 +7,8 @@ import {
   getGeminiApiKey,
   saveGeminiApiKey,
   clearGeminiApiKey,
+  fetchSupabaseGeminiKey,
+  saveSupabaseGeminiKey,
 } from '../utils/vibeWebGenerator';
 import './VibePlaygroundModal.css';
 
@@ -64,14 +66,28 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
   const [showKeyPanel, setShowKeyPanel] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey());
   const [hasGeminiKey, setHasGeminiKey] = useState(() => Boolean(getGeminiApiKey()));
+  const [keySource, setKeySource] = useState(() => (getGeminiApiKey() ? 'local' : ''));
+  const [savingSupa, setSavingSupa] = useState(false);
   const [previewOnly, setPreviewOnly] = useState(false);
   const iframeRef = useRef(null);
   const customInputRef = useRef(null);
+
+  useEffect(() => {
+    if (getGeminiApiKey()) return;
+    fetchSupabaseGeminiKey().then((remoteKey) => {
+      if (remoteKey) {
+        setHasGeminiKey(true);
+        setKeySource('supabase');
+        setGeminiKeyInput(remoteKey);
+      }
+    });
+  }, []);
 
   const handleSaveKey = () => {
     const cleaned = geminiKeyInput.trim();
     saveGeminiApiKey(cleaned);
     setHasGeminiKey(Boolean(cleaned));
+    setKeySource(cleaned ? 'local' : '');
     setShowKeyPanel(false);
     if (cleaned) {
       if (customPrompt.trim()) {
@@ -85,10 +101,40 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     }
   };
 
+  const handleSaveKeyToSupabase = async () => {
+    const cleaned = geminiKeyInput.trim();
+    if (!cleaned) {
+      setGenStatus('⚠ Vui lòng dán Gemini API Key trước khi lưu lên Supabase.');
+      return;
+    }
+    setSavingSupa(true);
+    saveGeminiApiKey(cleaned);
+    const res = await saveSupabaseGeminiKey(cleaned);
+    setSavingSupa(false);
+
+    if (res.error) {
+      setHasGeminiKey(true);
+      setKeySource('local');
+      setGenStatus(`⚠ Lưu trình duyệt OK, nhưng Supabase lỗi: ${res.error}`);
+      return;
+    }
+
+    setHasGeminiKey(true);
+    setKeySource('supabase');
+    setShowKeyPanel(false);
+    if (customPrompt.trim()) {
+      runCustomWebGeneration(customPrompt);
+    } else {
+      setGenStatus('🟢 Đã lưu Gemini API Key lên Supabase (app_settings)! Toàn web đã sẵn sàng.');
+      setTimeout(() => customInputRef.current?.focus(), 60);
+    }
+  };
+
   const handleClearKey = () => {
     clearGeminiApiKey();
     setGeminiKeyInput('');
     setHasGeminiKey(false);
+    setKeySource('');
     setGenStatus('Đã xóa Gemini API Key khỏi trình duyệt.');
   };
 
@@ -151,22 +197,28 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     setStudioMode('custom');
     setCustomPrompt(targetPrompt);
     setIsGenerating(true);
-    setGenStatus('Đang khởi tạo mã nguồn trang web...');
+    setGenStatus('⚡ Đang gọi AI API để tự động thiết kế & viết mã nguồn...');
 
     try {
-      const { html, source, modelUsed, warning } = await generateWebFromPrompt(targetPrompt);
-      setCode(html);
-      if (warning) {
-        setGenStatus(`⚠ ${warning}`);
-      } else if (source === 'gemini-direct') {
-        setGenStatus(`✨ ${modelUsed || 'Gemini AI'} đã tự động tạo & chạy web hoàn chỉnh!`);
-      } else if (source === 'ai') {
-        setGenStatus('✓ AI đã tự động tạo & chạy trang web thành công!');
+      const result = await generateWebFromPrompt(targetPrompt);
+      if (result.html) {
+        setCode(result.html);
+        if (result.source === 'gemini-direct') {
+          const where = result.keyOrigin === 'supabase' ? ' (Key từ Supabase)' : '';
+          setGenStatus(`✨ ${result.modelUsed || 'Gemini 2.5 Flash'}${where} đã tự tạo & chạy web thành công!`);
+        } else if (result.source === 'supabase-edge') {
+          setGenStatus(`✨ Supabase AI (${result.modelUsed || 'Gemini 2.5 Flash'}) đã tạo xong!`);
+        } else {
+          setGenStatus('✓ AI đã tự động tạo & chạy trang web thành công!');
+        }
       } else {
-        setGenStatus('⚡ Đã tạo web mẫu thông minh (Gắn Gemini API Key để AI thiết kế 100% tự do!)');
+        setGenStatus(`⚠ ${result.error || 'Chưa nhận được mã web từ AI.'}`);
+        if (/chưa có gemini api key/i.test(result.error || '')) {
+          setShowKeyPanel(true);
+        }
       }
-    } catch {
-      setGenStatus('Không thể tạo trang web lúc này, vui lòng thử lại.');
+    } catch (err) {
+      setGenStatus(`⚠ ${err?.message || 'Lỗi kết nối AI API, vui lòng thử lại.'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -231,9 +283,11 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
               type="button"
               className={`vp-btn ${hasGeminiKey ? 'vp-btn--key-ready' : 'vp-btn--secondary'}`}
               onClick={() => setShowKeyPanel((v) => !v)}
-              title="Gắn Google Gemini API Key cá nhân để AI tạo mọi loại web không giới hạn"
+              title="Gắn Google Gemini API Key cá nhân hoặc lưu trên Supabase để AI tự tạo web"
             >
-              {hasGeminiKey ? '🟢 Gemini API Ready' : '🔑 Gắn Gemini Key'}
+              {hasGeminiKey
+                ? `🟢 Gemini Ready${keySource === 'supabase' ? ' (Supabase)' : ''}`
+                : '🔑 Gắn Gemini Key'}
             </button>
             <button type="button" className="vp-btn vp-btn--secondary" onClick={handleCopy}>
               {copied ? '✓ Đã sao chép' : '⧉ Sao chép code'}
@@ -247,21 +301,31 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
           </div>
         </div>
 
-        {/* ===== PANEL GẮN GEMINI API KEY TRỰC TIẾP (LƯU TRÌNH DUYỆT) ===== */}
+        {/* ===== PANEL GẮN GEMINI API KEY (TRÌNH DUYỆT HOẶC SUPABASE) ===== */}
         {showKeyPanel && (
           <div className="vp-key-panel">
             <div className="vp-key-row">
-              <span className="vp-key-label">🔑 Google Gemini API Key:</span>
+              <span className="vp-key-label">🔑 Gemini API Key:</span>
               <input
                 type="password"
                 className="vp-key-input"
                 value={geminiKeyInput}
                 onChange={(e) => setGeminiKeyInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
-                placeholder="Dán API Key bắt đầu bằng AIza... (Lưu an toàn trên trình duyệt của bạn)"
+                placeholder="Dán API Key AIza... để AI tự thiết kế trang web qua Gemini 2.5 Flash"
               />
               <button type="button" className="vp-btn vp-btn--primary" onClick={handleSaveKey}>
-                💾 Lưu Key
+                💾 Lưu Trình Duyệt
+              </button>
+              <button
+                type="button"
+                className="vp-btn vp-btn--secondary"
+                onClick={handleSaveKeyToSupabase}
+                disabled={savingSupa}
+                title="Lưu Key vào bảng app_settings trên Supabase để cả web dùng chung"
+                style={{ borderColor: 'rgba(56, 189, 248, 0.45)', color: '#7dd3fc' }}
+              >
+                {savingSupa ? '⏳ Đang lưu...' : '☁️ Lưu Lên Supabase'}
               </button>
               {hasGeminiKey && (
                 <button type="button" className="vp-btn vp-btn--secondary" onClick={handleClearKey}>
@@ -317,7 +381,14 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                   {item.label}
                 </button>
               ))}
-              {genStatus && <span className="vp-gen-status">{genStatus}</span>}
+              {genStatus && (
+                <span
+                  className="vp-gen-status"
+                  style={genStatus.startsWith('⚠') ? { color: '#fbbf24' } : undefined}
+                >
+                  {genStatus}
+                </span>
+              )}
             </div>
           </div>
         ) : (
