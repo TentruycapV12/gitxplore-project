@@ -1,16 +1,60 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.js';
 
 /**
- * Trích xuất mã HTML sạch từ phản hồi của AI (loại bỏ markdown code fence nếu có)
+ * Kiểm tra xem chuỗi HTML trích xuất từ AI có đầy đủ cấu trúc và không bị cắt cụt giữa chừng hay lỗi cú pháp JS không.
+ */
+function isValidCompleteHtml(html) {
+  if (!html || typeof html !== 'string' || html.length < 300) return false;
+
+  const lower = html.toLowerCase();
+  const hasHtmlClose = lower.includes('</html>');
+  const hasBodyOpen = /<body[\s>]/i.test(html);
+  const hasBodyClose = lower.includes('</body>');
+
+  if (!hasHtmlClose || !hasBodyOpen || !hasBodyClose) return false;
+
+  // Đảm bảo mọi thẻ <style> đều được đóng kín (tránh lỗi nuốt toàn bộ body thành trắng trang)
+  const styleOpens = (lower.match(/<style[\s>]/g) || []).length;
+  const styleCloses = (lower.match(/<\/style>/g) || []).length;
+  if (styleOpens !== styleCloses) return false;
+
+  // Đảm bảo mọi thẻ <script> đều được đóng kín
+  const scriptOpens = (lower.match(/<script[\s>]/g) || []).length;
+  const scriptCloses = (lower.match(/<\/script>/g) || []).length;
+  if (scriptOpens !== scriptCloses) return false;
+
+  // Kiểm tra nội dung bên trong <body> không được rỗng
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (!bodyMatch) return false;
+  const visibleMarkup = bodyMatch[1].replace(/<script[\s\S]*?<\/script>/gi, '').trim();
+  if (visibleMarkup.length < 120) return false;
+
+  // Kiểm tra cú pháp JavaScript bên trong các thẻ inline <script> thông thường
+  const inlineScriptRegex = /<script(?![^>]*\bsrc=)(?![^>]*type\s*=\s*["']module["'])[^>]*>([\s\S]*?)<\/script>/gi;
+  let scriptMatch;
+  while ((scriptMatch = inlineScriptRegex.exec(html)) !== null) {
+    const jsCode = scriptMatch[1].trim();
+    if (jsCode) {
+      try {
+        new Function(jsCode);
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Trích xuất mã HTML sạch từ phản hồi của AI
  */
 function extractHtmlFromReply(raw) {
   if (!raw || typeof raw !== 'string') return null;
 
-  // Tìm block ```html ... ``` hoặc ``` ... ```
   const fenceMatch = raw.match(/```(?:html)?\s*([\s\S]*?)```/i);
   let candidate = fenceMatch ? fenceMatch[1].trim() : raw.trim();
 
-  // Nếu có văn bản thừa trước <!DOCTYPE hoặc <html, cắt bỏ
   const doctypeIdx = candidate.search(/<!doctype\s+html/i);
   const htmlIdx = candidate.search(/<html[\s>]/i);
   const startIdx = doctypeIdx !== -1 ? doctypeIdx : htmlIdx;
@@ -24,13 +68,7 @@ function extractHtmlFromReply(raw) {
     candidate = candidate.slice(0, endHtmlIdx + 7);
   }
 
-  // Kiểm tra tính hợp lệ tối thiểu của trang web HTML
-  const hasHtmlStructure = /<(?:!doctype\s+html|html|body|style|div)/i.test(candidate);
-  if (!hasHtmlStructure || candidate.length < 180) {
-    return null;
-  }
-
-  return candidate;
+  return isValidCompleteHtml(candidate) ? candidate : null;
 }
 
 /**
@@ -48,14 +86,15 @@ export function isWebCreationPrompt(prompt) {
   const createKeywords = [
     'tạo', 'làm', 'xây dựng', 'thiết kế', 'viết', 'build', 'create', 'make',
     'trang web', 'website', 'web ', 'app', 'ứng dụng', 'quản lý', 'quản lí',
-    'bán hàng', 'shop', 'portfolio', 'cv', 'dashboard', 'game', 'blog', 'landing'
+    'bán hàng', 'shop', 'portfolio', 'cv', 'dashboard', 'game', 'blog', 'landing',
+    'gym', 'nhà hàng', 'khách sạn', 'phòng khám', 'cửa hàng', 'sinh viên', 'chi tiêu'
   ];
   return createKeywords.some((kw) => p.includes(kw));
 }
 
 /**
  * Sinh trang web hoàn chỉnh trực tiếp từ Prompt thông qua AI Backend,
- * có Smart Local Engine dự phòng để luôn tạo ra ứng dụng chạy thật 100%.
+ * kết hợp kiểm tra hợp lệ chặt chẽ & Bộ máy Tạo Web Chuyên Sâu dự phòng 100%.
  */
 export async function generateWebFromPrompt(userPrompt) {
   const cleanPrompt = (userPrompt || '').trim();
@@ -64,17 +103,18 @@ export async function generateWebFromPrompt(userPrompt) {
   }
 
   const generationPrompt = [
-    'Bạn là Kỹ sư Frontend xuất sắc. Hãy tạo một trang web HOÀN CHỈNH, đẹp mắt, hiện đại và có chức năng tương tác thực tế bằng JavaScript trong DUY NHẤT một file HTML (gồm HTML + CSS trong thẻ <style> + JS trong thẻ <script>).',
-    `Yêu cầu của người dùng: "${cleanPrompt}"`,
-    'Quy định bắt buộc:',
-    '1. Giao diện chuyên nghiệp, typography sắc nét (Google Fonts Plus Jakarta Sans hoặc Inter), bố cục responsive gọn gàng, có dữ liệu mẫu thực tế bằng tiếng Việt.',
-    '2. Phải có tính năng tương tác chạy thật (thêm/sửa/xóa/lọc/tìm kiếm/tính toán tùy theo chủ đề).',
-    '3. CHỈ trả về mã nguồn HTML thuần túy bắt đầu bằng <!DOCTYPE html> và kết thúc bằng </html>. Tuyệt đối không giải thích thêm.',
+    'Bạn là Kỹ sư Frontend Senior. Tạo MỘT trang web hoàn chỉnh, chi tiết, giàu tính năng trong duy nhất 1 file HTML.',
+    `Yêu cầu người dùng: "${cleanPrompt}"`,
+    'Quy tắc kỹ thuật BẮT BUỘC để không bị lỗi hiển thị:',
+    '1. Sử dụng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>) để tiết kiệm độ dài CSS và giao diện sắc nét, responsive Dark Mode sang trọng.',
+    '2. Phải có đầy đủ chức năng tương tác thực tế bằng JavaScript thuần (Tabs điều hướng, Thẻ thống kê KPI tự cập nhật, Thêm/Sửa/Xóa/Tìm kiếm/Lọc dữ liệu, Toast thông báo).',
+    '3. Viết code gọn gàng, sạch sẽ, KHÔNG dùng thư viện JS ngoài phức tạp, đảm bảo đóng đủ </style>, </script>, </body>, </html>.',
+    '4. CHỈ xuất ra mã HTML bắt đầu bằng <!DOCTYPE html> và kết thúc bằng </html>. Không viết lời giải thích.',
   ].join('\n');
 
   try {
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('AI request timeout')), 14000)
+      setTimeout(() => reject(new Error('AI request timeout')), 15000)
     );
 
     const invokePromise = supabase.functions.invoke('chat-ai', {
@@ -94,17 +134,17 @@ export async function generateWebFromPrompt(userPrompt) {
       }
     }
   } catch (err) {
-    console.warn('Chuyển sang Smart Local Generator cho Prompt Vibe:', err?.message || err);
+    console.warn('Chuyển sang Pro Web Generator:', err?.message || err);
   }
 
   return {
-    html: generateSmartFallbackWeb(cleanPrompt),
+    html: generateProDomainWeb(cleanPrompt),
     source: 'smart-engine',
   };
 }
 
 /**
- * Chỉnh sửa nhanh mã nguồn template hiện tại (đổi màu, hiệu ứng...)
+ * Chỉnh sửa nhanh mã nguồn template hiện tại
  */
 export function applyTemplateTweak(currentCode, prompt) {
   let updated = currentCode;
@@ -129,28 +169,6 @@ export function applyTemplateTweak(currentCode, prompt) {
   return updated;
 }
 
-/**
- * Trình sinh ứng dụng web thông minh theo chủ đề (hoạt động 100% offline/client)
- */
-export function generateSmartFallbackWeb(prompt) {
-  const p = prompt.toLowerCase();
-
-  if (p.includes('sinh viên') || p.includes('học sinh') || p.includes('student') || p.includes('lớp') || p.includes('điểm')) {
-    return buildStudentManagerApp(prompt);
-  }
-  if (p.includes('bán') || p.includes('shop') || p.includes('cửa hàng') || p.includes('store') || p.includes('giày') || p.includes('áo') || p.includes('sản phẩm') || p.includes('mua')) {
-    return buildEcommerceApp(prompt);
-  }
-  if (p.includes('chi tiêu') || p.includes('tài chính') || p.includes('tiền') || p.includes('ngân sách') || p.includes('budget')) {
-    return buildExpenseTrackerApp(prompt);
-  }
-  if (p.includes('portfolio') || p.includes('cv') || p.includes('hồ sơ') || p.includes('giới thiệu')) {
-    return buildPortfolioApp(prompt);
-  }
-
-  return buildCustomWorkspaceApp(prompt);
-}
-
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -159,541 +177,764 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function buildStudentManagerApp(prompt) {
+/**
+ * Bộ cấu hình thông minh cho từng lĩnh vực thực tế (Gym, Sinh viên, Shop, Tài chính, Nhà hàng, Khách sạn, Phòng khám, Nhân sự, Tùy biến)
+ */
+function resolveDomainBlueprint(prompt) {
+  const p = prompt.toLowerCase();
+
+  // 1. PHÒNG GYM / FITNESS / YOGA
+  if (p.includes('gym') || p.includes('fitness') || p.includes('yoga') || p.includes('thể hình') || p.includes('pt')) {
+    return {
+      icon: '🏋️',
+      title: 'GymMaster Pro — Quản Lý Phòng Tập & Hội Viên',
+      accent: '#f59e0b',
+      itemLabel: 'Hội Viên',
+      idPrefix: 'GYM',
+      fields: {
+        codeLabel: 'Mã HV',
+        nameLabel: 'Họ Tên Hội Viên',
+        catLabel: 'Gói Tập',
+        categories: ['Gói VIP + PT 1:1', 'Gói 12 Tháng', 'Gói 3 Tháng', 'Gói 1 Tháng', 'Gói Yoga & Pilates'],
+        metricLabel: 'Doanh Thu / Giá (VNĐ)',
+        metricType: 'currency',
+        statuses: ['Đang hoạt động', 'Sắp hết hạn', 'Đã hết hạn'],
+      },
+      extraTab: {
+        title: '📅 Lịch Lớp & PT',
+        cards: [
+          { name: 'HIIT Đốt Mỡ Toàn Thân', sub: 'HLV Minh Tuấn • 18:00 - 19:00', badge: '14/20 chỗ' },
+          { name: 'Yoga Phục Hồi Cột Sống', sub: 'HLV Lan Anh • 19:15 - 20:15', badge: '18/20 chỗ' },
+          { name: 'Powerlifting & Squat Nâng Cao', sub: 'HLV Quốc Bảo • 17:30 - 18:45', badge: '8/12 chỗ' },
+          { name: 'Boxing & Cardio Kickfit', sub: 'HLV Hoàng Hải • 20:00 - 21:00', badge: '11/15 chỗ' },
+        ],
+      },
+      initialItems: [
+        { code: 'GYM001', name: 'Nguyễn Hoàng Long', cat: 'Gói VIP + PT 1:1', metric: 6500000, status: 'Đang hoạt động', note: '0901234567 • Hết hạn 12/2026' },
+        { code: 'GYM002', name: 'Trần Minh Thư', cat: 'Gói Yoga & Pilates', metric: 1800000, status: 'Đang hoạt động', note: '0912345678 • Hết hạn 08/2026' },
+        { code: 'GYM003', name: 'Lê Quốc Khánh', cat: 'Gói 3 Tháng', metric: 1450000, status: 'Sắp hết hạn', note: '0987654321 • Còn 5 ngày' },
+        { code: 'GYM004', name: 'Phạm Gia Huy', cat: 'Gói 12 Tháng', metric: 4200000, status: 'Đang hoạt động', note: '0933445566 • Đã check-in hôm nay' },
+        { code: 'GYM005', name: 'Võ Ngọc Hân', cat: 'Gói 1 Tháng', metric: 550000, status: 'Đã hết hạn', note: '0977889900 • Cần gia hạn' },
+      ],
+    };
+  }
+
+  // 2. SINH VIÊN / HỌC SINH / ĐÀO TẠO
+  if (p.includes('sinh viên') || p.includes('học sinh') || p.includes('student') || p.includes('lớp') || p.includes('điểm') || p.includes('trường')) {
+    return {
+      icon: '🎓',
+      title: 'EduManage Pro — Hệ Thống Quản Lý Sinh Viên',
+      accent: '#38bdf8',
+      itemLabel: 'Sinh Viên',
+      idPrefix: 'SV',
+      fields: {
+        codeLabel: 'Mã SV',
+        nameLabel: 'Họ Và Tên',
+        catLabel: 'Ngành Học',
+        categories: ['Công nghệ thông tin', 'Kỹ thuật phần mềm', 'Trí tuệ nhân tạo', 'An toàn thông tin', 'Thiết kế đồ họa'],
+        metricLabel: 'Điểm GPA (0 - 4.0)',
+        metricType: 'gpa',
+        statuses: ['Đang học', 'Đã tốt nghiệp', 'Cảnh báo học vụ'],
+      },
+      extraTab: {
+        title: '📚 Lịch Thi & Tín Chỉ',
+        cards: [
+          { name: 'Lập Trình ReactJS & Vite', sub: 'Phòng A302 • Thứ 2 (07:30 - 10:30)', badge: '3 Tín chỉ' },
+          { name: 'Cấu Trúc Dữ Liệu & Giải Thuật', sub: 'Phòng B105 • Thứ 4 (13:00 - 16:00)', badge: '4 Tín chỉ' },
+          { name: 'Trí Tuệ Nhân Tạo Ứng Dụng', sub: 'Lab AI-01 • Thứ 6 (08:00 - 11:00)', badge: '3 Tín chỉ' },
+          { name: 'Cơ Sở Dữ Liệu Phân Tán', sub: 'Phòng C201 • Thứ 7 (09:00 - 11:30)', badge: '3 Tín chỉ' },
+        ],
+      },
+      initialItems: [
+        { code: 'SV001', name: 'Trần Minh Quân', cat: 'Công nghệ thông tin', metric: 3.75, status: 'Đang học', note: 'K2024 • Học bổng loại Giỏi' },
+        { code: 'SV002', name: 'Lê Ngọc Linh', cat: 'Trí tuệ nhân tạo', metric: 3.92, status: 'Đang học', note: 'K2024 • Thủ khoa khối ngành' },
+        { code: 'SV003', name: 'Phạm Hoàng Nam', cat: 'Kỹ thuật phần mềm', metric: 3.25, status: 'Đã tốt nghiệp', note: 'K2022 • Đã nhận bằng' },
+        { code: 'SV004', name: 'Nguyễn Thảo Vy', cat: 'An toàn thông tin', metric: 2.15, status: 'Cảnh báo học vụ', note: 'K2025 • Nợ 1 học phần' },
+        { code: 'SV005', name: 'Đặng Tuấn Kiệt', cat: 'Thiết kế đồ họa', metric: 3.55, status: 'Đang học', note: 'K2024 • Tích lũy 98 tín chỉ' },
+      ],
+    };
+  }
+
+  // 3. CỬA HÀNG / BÁN HÀNG / E-COMMERCE
+  if (p.includes('bán') || p.includes('shop') || p.includes('cửa hàng') || p.includes('store') || p.includes('giày') || p.includes('áo') || p.includes('sản phẩm') || p.includes('mua')) {
+    return {
+      icon: '🛍️',
+      title: 'VibeCommerce Pro — Quản Lý Cửa Hàng & Đơn Hàng',
+      accent: '#10b981',
+      itemLabel: 'Sản Phẩm',
+      idPrefix: 'SP',
+      isShop: true,
+      fields: {
+        codeLabel: 'Mã SKU',
+        nameLabel: 'Tên Sản Phẩm',
+        catLabel: 'Danh Mục',
+        categories: ['Giày Sneaker', 'Áo Khoác & Hoodie', 'Phụ Kiện Tech', 'Đồng Hồ & Kính', 'Balo & Túi Xách'],
+        metricLabel: 'Giá Bán (VNĐ)',
+        metricType: 'currency',
+        statuses: ['Còn hàng', 'Sắp hết', 'Ngừng bán'],
+      },
+      extraTab: {
+        title: '🧾 Đơn Hàng Gần Đây',
+        cards: [
+          { name: 'Đơn #DH8821 — Nguyễn An', sub: '2x Sneaker Air Pulse • Chuyển khoản VietQR', badge: 'Đã giao' },
+          { name: 'Đơn #DH8822 — Minh Tâm', sub: '1x Balo Tech Minimalist • COD', badge: 'Đang giao' },
+          { name: 'Đơn #DH8823 — Bảo Ngọc', sub: '1x Smartwatch Chronos • Ví điện tử', badge: 'Chờ đóng gói' },
+          { name: 'Đơn #DH8824 — Quốc Huy', sub: '3x Áo Hoodie Oversize • Đã thanh toán', badge: 'Hoàn tất' },
+        ],
+      },
+      initialItems: [
+        { code: 'SP001', name: 'Sneaker Air Pulse Carbon', cat: 'Giày Sneaker', metric: 1450000, status: 'Còn hàng', note: 'Tồn kho: 42 đôi • Bán chạy #1' },
+        { code: 'SP002', name: 'Áo Khoác Bomber Cyber', cat: 'Áo Khoác & Hoodie', metric: 690000, status: 'Còn hàng', note: 'Tồn kho: 28 chiếc' },
+        { code: 'SP003', name: 'Tai Nghe Studio ANC Pro', cat: 'Phụ Kiện Tech', metric: 2190000, status: 'Sắp hết', note: 'Tồn kho: 4 chiếc' },
+        { code: 'SP004', name: 'Balo Chống Nước Minimalist', cat: 'Balo & Túi Xách', metric: 790000, status: 'Còn hàng', note: 'Tồn kho: 19 chiếc' },
+        { code: 'SP005', name: 'Đồng Hồ Chronos Titanium', cat: 'Đồng Hồ & Kính', metric: 3250000, status: 'Còn hàng', note: 'Tồn kho: 11 chiếc' },
+      ],
+    };
+  }
+
+  // 4. NHÀ HÀNG / QUÁN CÀ PHÊ / TRÀ SỮA / POS
+  if (p.includes('nhà hàng') || p.includes('cà phê') || p.includes('cafe') || p.includes('trà sữa') || p.includes('quán ăn') || p.includes('pos') || p.includes('menu')) {
+    return {
+      icon: '☕',
+      title: 'F&B POS Pro — Quản Lý Quán & Thực Đơn',
+      accent: '#f59e0b',
+      itemLabel: 'Món Ăn / Đồ Uống',
+      idPrefix: 'MN',
+      isShop: true,
+      fields: {
+        codeLabel: 'Mã Món',
+        nameLabel: 'Tên Món',
+        catLabel: 'Nhóm Thực Đơn',
+        categories: ['Cà Phê Đặc Sản', 'Trà Trái Cây', 'Món Chính', 'Tráng Miệng', 'Combo Nhóm'],
+        metricLabel: 'Đơn Giá (VNĐ)',
+        metricType: 'currency',
+        statuses: ['Đang phục vụ', 'Món bán chạy', 'Tạm hết'],
+      },
+      extraTab: {
+        title: '🪑 Sơ Đồ Bàn Đang Phục Vụ',
+        cards: [
+          { name: 'Bàn 01 — Khu Sân Vườn', sub: '4 khách • Tổng bill: 385.000đ', badge: 'Đang dùng' },
+          { name: 'Bàn 02 — Tầng 2 Máy Lạnh', sub: '2 khách • Tổng bill: 165.000đ', badge: 'Đang dùng' },
+          { name: 'Bàn 03 — Quầy Bar', sub: 'Trống • Đã dọn dẹp sạch sẽ', badge: 'Sẵn sàng' },
+          { name: 'Bàn VIP 01 — Phòng Riêng', sub: '8 khách • Đặt trước 19:30', badge: 'Đã đặt' },
+        ],
+      },
+      initialItems: [
+        { code: 'MN001', name: 'Cold Brew Cam Sả Đặc Biệt', cat: 'Cà Phê Đặc Sản', metric: 55000, status: 'Món bán chạy', note: 'Đã bán 148 ly tuần này' },
+        { code: 'MN002', name: 'Trà Đào Cam Sả Thanh Mát', cat: 'Trà Trái Cây', metric: 49000, status: 'Đang phục vụ', note: 'Size L +30% topping' },
+        { code: 'MN003', name: 'Bít Tết Sốt Tiêu Đen Úc', cat: 'Món Chính', metric: 245000, status: 'Món bán chạy', note: 'Kèm khoai tây nghiền' },
+        { code: 'MN004', name: 'Bánh Tiramisu Cacao Ý', cat: 'Tráng Miệng', metric: 65000, status: 'Đang phục vụ', note: 'Làm mới mỗi sáng' },
+      ],
+    };
+  }
+
+  // 5. KHÁCH SẠN / PHÒNG TRỌ / HOMESTAY
+  if (p.includes('khách sạn') || p.includes('phòng trọ') || p.includes('homestay') || p.includes('hotel') || p.includes('thuê phòng')) {
+    return {
+      icon: '🏨',
+      title: 'StayManage Pro — Quản Lý Phòng & Đặt Chỗ',
+      accent: '#8b5cf6',
+      itemLabel: 'Phòng',
+      idPrefix: 'P',
+      fields: {
+        codeLabel: 'Số Phòng',
+        nameLabel: 'Tên Phòng / Khách Thuê',
+        catLabel: 'Hạng Phòng',
+        categories: ['Suite Hướng Biển', 'Deluxe Đôi', 'Standard Đơn', 'Studio Ban Công'],
+        metricLabel: 'Giá Thuê (VNĐ)',
+        metricType: 'currency',
+        statuses: ['Đang có khách', 'Phòng trống', 'Đang bảo trì'],
+      },
+      extraTab: {
+        title: '🛎️ Lịch Check-in / Check-out Hôm Nay',
+        cards: [
+          { name: 'Check-in 14:00 — Phòng 302', sub: 'Đoàn khách Gia đình Minh Khang (2 đêm)', badge: 'Đã cọc 50%' },
+          { name: 'Check-out 12:00 — Phòng 201', sub: 'Thanh toán phụ thu minibar: 120.000đ', badge: 'Chờ dọn' },
+          { name: 'Yêu cầu dọn phòng — Phòng 405', sub: 'Thay ga giường & bổ sung nước suối', badge: 'Đang xử lý' },
+        ],
+      },
+      initialItems: [
+        { code: 'P101', name: 'Suite Ocean — Khách Trần Anh', cat: 'Suite Hướng Biển', metric: 2400000, status: 'Đang có khách', note: 'Check-out ngày 28/11' },
+        { code: 'P102', name: 'Deluxe Garden View', cat: 'Deluxe Đôi', metric: 1350000, status: 'Phòng trống', note: 'Sẵn sàng đón khách ngay' },
+        { code: 'P201', name: 'Studio Sunset — Khách Lê My', cat: 'Studio Ban Công', metric: 1650000, status: 'Đang có khách', note: 'Đã thanh toán toàn bộ' },
+        { code: 'P205', name: 'Standard City Room', cat: 'Standard Đơn', metric: 850000, status: 'Đang bảo trì', note: 'Bảo dưỡng điều hòa' },
+      ],
+    };
+  }
+
+  // 6. TÀI CHÍNH / CHI TIÊU
+  if (p.includes('chi tiêu') || p.includes('tài chính') || p.includes('ngân sách') || p.includes('thu chi') || p.includes('tiền')) {
+    return {
+      icon: '💰',
+      title: 'FinTrack Pro — Quản Lý Tài Chính & Thu Chi',
+      accent: '#10b981',
+      itemLabel: 'Giao Dịch',
+      idPrefix: 'GD',
+      fields: {
+        codeLabel: 'Mã GD',
+        nameLabel: 'Nội Dung Giao Dịch',
+        catLabel: 'Hạng Mục',
+        categories: ['Thu nhập / Lương', 'Ăn uống & Sinh hoạt', 'Nhà cửa & Hóa đơn', 'Đầu tư & Tiết kiệm', 'Giải trí & Du lịch'],
+        metricLabel: 'Số Tiền (VNĐ)',
+        metricType: 'currency',
+        statuses: ['Thu nhập (+)', 'Chi tiêu (-)', 'Đầu tư'],
+      },
+      extraTab: {
+        title: '🎯 Mục Tiêu Tiết Kiệm',
+        cards: [
+          { name: 'Quỹ Dự Phòng Khẩn Cấp (6 Tháng)', sub: 'Đã đạt 45.000.000đ / 60.000.000đ', badge: '75%' },
+          { name: 'Nâng Cấp Thiết Bị Làm Việc', sub: 'Đã đạt 18.500.000đ / 25.000.000đ', badge: '74%' },
+          { name: 'Quỹ Du Lịch Cuối Năm', sub: 'Đã đạt 8.000.000đ / 12.000.000đ', badge: '66%' },
+        ],
+      },
+      initialItems: [
+        { code: 'GD001', name: 'Lương Tháng & Thưởng Dự Án', cat: 'Thu nhập / Lương', metric: 22500000, status: 'Thu nhập (+)', note: 'Tự động ghi nhận qua ngân hàng' },
+        { code: 'GD002', name: 'Thuê Căn Hộ & Điện Nước', cat: 'Nhà cửa & Hóa đơn', metric: 5800000, status: 'Chi tiêu (-)', note: 'Thanh toán định kỳ đầu tháng' },
+        { code: 'GD003', name: 'Chứng Chỉ Quỹ ETF Định Kỳ', cat: 'Đầu tư & Tiết kiệm', metric: 4000000, status: 'Đầu tư', note: 'Tích sản dài hạn' },
+        { code: 'GD004', name: 'Siêu Thị & Thực Phẩm Tuần', cat: 'Ăn uống & Sinh hoạt', metric: 1350000, status: 'Chi tiêu (-)', note: 'Đã kiểm soát trong ngân sách' },
+      ],
+    };
+  }
+
+  // 7. UNIVERSAL PRO ENGINE CHO MỌI CHỦ ĐỀ BẤT KỲ
+  const cleanTitle = prompt
+    .replace(/^(tạo|làm|xây dựng|thiết kế|viết)\s+(1|một)?\s*(trang\s*web|website|web|ứng\s*dụng|app)?\s*/i, '')
+    .trim() || prompt;
+
+  return {
+    icon: '🚀',
+    title: `${cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1)} — Pro Dashboard`,
+    accent: '#f59e0b',
+    itemLabel: 'Bản Ghi',
+    idPrefix: 'ID',
+    fields: {
+      codeLabel: 'Mã Số',
+      nameLabel: 'Tên / Tiêu Đề',
+      catLabel: 'Phân Loại',
+      categories: ['Nhóm Ưu Tiên Cao', 'Vận Hành Chính', 'Khách Hàng & Đối Tác', 'Kế Hoạch Mới'],
+      metricLabel: 'Giá Trị / Điểm',
+      metricType: 'currency',
+      statuses: ['Đang hoạt động', 'Chờ xử lý', 'Hoàn tất'],
+    },
+    extraTab: {
+      title: '📈 Báo Cáo & Quy Trình Nhanh',
+      cards: [
+        { name: 'Quy trình tự động hóa dữ liệu', sub: 'Đồng bộ thay đổi tức thì trên trình duyệt', badge: 'Đang bật' },
+        { name: 'Thống kê hiệu suất theo thời gian thực', sub: 'Cập nhật KPI tự động khi thêm/xóa dữ liệu', badge: '100% Live' },
+        { name: 'Xuất file báo cáo CSV Excel', sub: 'Hỗ trợ tải bảng dữ liệu về máy bất kỳ lúc nào', badge: 'Sẵn sàng' },
+      ],
+    },
+    initialItems: [
+      { code: 'ID001', name: `Hạng mục trọng tâm #1 (${cleanTitle})`, cat: 'Nhóm Ưu Tiên Cao', metric: 2500000, status: 'Đang hoạt động', note: 'Dữ liệu mẫu khởi tạo tự động' },
+      { code: 'ID002', name: `Kế hoạch triển khai #2`, cat: 'Vận Hành Chính', metric: 1850000, status: 'Hoàn tất', note: 'Đã nghiệm thu chất lượng' },
+      { code: 'ID003', name: `Hồ sơ mở rộng #3`, cat: 'Khách Hàng & Đối Tác', metric: 950000, status: 'Chờ xử lý', note: 'Sẵn sàng chỉnh sửa hoặc xóa' },
+    ],
+  };
+}
+
+/**
+ * Xây dựng Ứng dụng Web Multi-Tab Chuyên Nghiệp, Đầy Đủ Chức Năng (Dashboard + Biểu đồ + CRUD + Giỏ hàng/Lịch + Xuất CSV + LocalStorage)
+ */
+export function generateProDomainWeb(prompt) {
+  const bp = resolveDomainBlueprint(prompt);
+  const safePrompt = escapeHtml(prompt);
+  const safeTitle = escapeHtml(bp.title);
+  const storageKey = 'vibe_app_' + encodeURIComponent(bp.idPrefix + '_' + prompt.slice(0, 20));
+
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hệ Thống Quản Lý Sinh Viên</title>
+  <title>${safeTitle}</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --accent: ${bp.accent};
+      --bg: #08080f;
+      --surface: #11111b;
+      --surface-2: #181826;
+      --line: rgba(255, 255, 255, 0.09);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    body.light {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --line: rgba(15, 23, 42, 0.1);
+      --text: #0f172a;
+      --muted: #475569;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-    body { background: #09090f; color: #f1f5f9; min-height: 100vh; padding: 24px; }
-    .container { max-width: 1060px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .title-group h1 { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
-    .title-group p { color: #94a3b8; font-size: 13px; margin-top: 4px; }
-    .badge-prompt { background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
-    @media (max-width: 680px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-    .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; }
-    .stat-label { font-size: 11.5px; color: #94a3b8; font-weight: 600; }
-    .stat-value { font-size: 22px; font-weight: 800; color: #fff; margin-top: 4px; }
-    .stat-value.amber { color: #fbbf24; }
-    .stat-value.green { color: #34d399; }
-    .panel { background: #11111b; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
-    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .panel h3 { font-size: 14.5px; font-weight: 700; color: #f8fafc; margin: 0; }
-    .toast-msg { font-size: 12px; font-weight: 700; color: #34d399; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
-    .field label { display: block; font-size: 11.5px; color: #94a3b8; margin-bottom: 5px; font-weight: 600; }
-    .field input, .field select { width: 100%; height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.4); color: #fff; font-size: 13px; }
-    .field input:focus, .field select:focus { outline: none; border-color: #f59e0b; }
-    .btn { height: 38px; padding: 0 16px; border-radius: 9px; border: none; font-weight: 700; font-size: 13px; cursor: pointer; transition: .15s; user-select: none; }
-    .btn-primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1006; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; transition: background .2s, color .2s; }
+    button { user-select: none; font-family: inherit; }
+
+    /* App Layout */
+    .app-shell { max-width: 1180px; margin: 0 auto; padding: 20px; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 16px 20px; background: var(--surface); border: 1px solid var(--line);
+      border-radius: 16px; margin-bottom: 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+      font-size: 21px; background: rgba(245, 158, 11, 0.14); border: 1px solid var(--accent);
+    }
+    .brand h1 { font-size: 18px; font-weight: 800; line-height: 1.25; }
+    .brand p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .btn {
+      height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--surface-2); color: var(--text); font-size: 12.5px; font-weight: 700;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: .15s;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn-primary { background: var(--accent); color: #09090f; border-color: var(--accent); }
     .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
-    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-    .search-box { flex: 1; min-width: 220px; height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35); color: #fff; font-size: 13px; }
-    .filter-select { height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35); color: #fff; font-size: 13px; }
+
+    /* Navigation Tabs */
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 2px; }
+    .nav-tab {
+      padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+      color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: .15s;
+    }
+    .nav-tab.active { background: var(--accent); color: #09090f; border-color: var(--accent); }
+
+    /* KPI Stats */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    @media (max-width: 780px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+    }
+    .kpi-label { font-size: 11.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-val { font-size: 23px; font-weight: 800; margin-top: 6px; }
+    .kpi-sub { font-size: 11px; color: #34d399; margin-top: 4px; font-weight: 600; }
+
+    /* Panels */
+    .panel {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 18px;
+    }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .panel-title { font-size: 15px; font-weight: 800; }
+
+    /* Form Grid */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
+    .field label { display: block; font-size: 11.5px; color: var(--muted); font-weight: 700; margin-bottom: 5px; }
+    .field input, .field select {
+      width: 100%; height: 38px; padding: 0 12px; border-radius: 9px;
+      border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font-size: 13px;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+
+    /* Search & Filter Toolbar */
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .search-input {
+      flex: 1; min-width: 200px; height: 38px; padding: 0 14px; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font-size: 13px;
+    }
+    .select-input {
+      height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--surface-2); color: var(--text); font-size: 13px;
+    }
+
+    /* Data Table */
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; }
-    th { padding: 12px; color: #94a3b8; font-weight: 700; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { padding: 11px 12px; color: var(--muted); font-size: 11.5px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+    td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
     tr:hover td { background: rgba(255,255,255,0.02); }
-    .status { padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; display: inline-block; }
-    .status.active { background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
-    .status.graduated { background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
-    .status.warning { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
-    .action-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; padding: 5px 10px; border-radius: 7px; font-size: 12px; cursor: pointer; margin-right: 4px; }
-    .action-btn.del:hover { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; }
-    .action-btn.edit:hover { background: rgba(245, 158, 11, 0.2); border-color: #f59e0b; color: #fde68a; }
-    .empty { text-align: center; padding: 32px; color: #64748b; }
+    .pill { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; display: inline-block; white-space: nowrap; }
+    .pill-ok { background: rgba(16,185,129,0.16); color: #34d399; border: 1px solid rgba(16,185,129,0.35); }
+    .pill-warn { background: rgba(245,158,11,0.16); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); }
+    .pill-bad { background: rgba(239,68,68,0.16); color: #f87171; border: 1px solid rgba(239,68,68,0.35); }
+    .act-btn {
+      padding: 5px 9px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface-2);
+      color: var(--text); font-size: 11.5px; font-weight: 600; cursor: pointer; margin-right: 4px;
+    }
+    .act-btn:hover { border-color: var(--accent); }
+    .act-btn.del:hover { border-color: #ef4444; color: #f87171; }
+
+    /* Analytics Bar Chart */
+    .chart-list { display: flex; flex-direction: column; gap: 12px; }
+    .chart-row { display: flex; flex-direction: column; gap: 5px; }
+    .chart-meta { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; }
+    .chart-track { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+    .chart-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width .35s ease; }
+
+    /* Extra Cards Grid */
+    .extra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .extra-card {
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 18px; right: 18px; padding: 10px 16px; border-radius: 10px;
+      background: #10b981; color: #052e16; font-weight: 800; font-size: 12.5px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: .2s; z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateY(-4px); }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="title-group">
-        <h1>🎓 Hệ Thống Quản Lý Sinh Viên</h1>
-        <p>Tạo tự động từ yêu cầu: "${escapeHtml(prompt)}"</p>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">${bp.icon}</div>
+        <div>
+          <h1>${safeTitle}</h1>
+          <p>Prompt: "${safePrompt}"</p>
+        </div>
       </div>
-      <span class="badge-prompt">⚡ Live Interactive App</span>
-    </div>
+      <div class="top-actions">
+        <button type="button" class="btn" onclick="window.toggleTheme()">🌓 Sáng/Tối</button>
+        <button type="button" class="btn" onclick="window.exportCsv()">📥 Xuất CSV</button>
+        <button type="button" class="btn" onclick="window.resetData()">↺ Dữ Liệu Mẫu</button>
+      </div>
+    </header>
 
-    <div class="stats">
-      <div class="stat-card"><div class="stat-label">Tổng số sinh viên</div><div class="stat-value" id="st-total">0</div></div>
-      <div class="stat-card"><div class="stat-label">Đang theo học</div><div class="stat-value green" id="st-active">0</div></div>
-      <div class="stat-card"><div class="stat-label">GPA Trung bình</div><div class="stat-value amber" id="st-gpa">0.00</div></div>
-      <div class="stat-card"><div class="stat-label">Sinh viên Giỏi (GPA ≥ 3.2)</div><div class="stat-value" id="st-honor">0</div></div>
-    </div>
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button type="button" class="nav-tab active" data-tab="manage" onclick="window.switchTab('manage')">📋 Quản Lý ${escapeHtml(bp.itemLabel)}</button>
+      <button type="button" class="nav-tab" data-tab="analytics" onclick="window.switchTab('analytics')">📊 Thống Kê & Biểu Đồ</button>
+      <button type="button" class="nav-tab" data-tab="extra" onclick="window.switchTab('extra')">${escapeHtml(bp.extraTab.title)}</button>
+    </nav>
 
-    <div class="panel">
+    <!-- Live KPI Bar -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Tổng ${escapeHtml(bp.itemLabel)}</div>
+        <div class="kpi-val" id="kpi-total">0</div>
+        <div class="kpi-sub">Cập nhật thời gian thực</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Trạng Thái Tích Cực</div>
+        <div class="kpi-val" id="kpi-active" style="color:#34d399;">0</div>
+        <div class="kpi-sub">Đang vận hành tốt</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">${bp.fields.metricType === 'gpa' ? 'GPA Trung Bình' : 'Tổng Giá Trị'}</div>
+        <div class="kpi-val" id="kpi-metric" style="color:var(--accent);">0</div>
+        <div class="kpi-sub">Tự động tính toán</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Cần Chú Ý / Chờ</div>
+        <div class="kpi-val" id="kpi-warn" style="color:#f87171;">0</div>
+        <div class="kpi-sub">Theo dõi xử lý</div>
+      </div>
+    </section>
+
+    <!-- TAB 1: QUẢN LÝ CRUD -->
+    <main id="tab-manage">
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title" id="form-heading">➕ Thêm ${escapeHtml(bp.itemLabel)} Mới</h2>
+          <button type="button" id="cancel-edit-btn" class="btn hidden" onclick="window.cancelEdit()">Hủy sửa</button>
+        </div>
+        <form id="main-form" class="form-grid" onsubmit="return window.saveRecord(event)">
+          <div class="field">
+            <label>${escapeHtml(bp.fields.codeLabel)}</label>
+            <input id="f-code" placeholder="VD: ${bp.idPrefix}009" required />
+          </div>
+          <div class="field">
+            <label>${escapeHtml(bp.fields.nameLabel)}</label>
+            <input id="f-name" placeholder="Nhập tên chi tiết..." required />
+          </div>
+          <div class="field">
+            <label>${escapeHtml(bp.fields.catLabel)}</label>
+            <select id="f-cat">
+              ${bp.fields.categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>${escapeHtml(bp.fields.metricLabel)}</label>
+            <input id="f-metric" type="number" step="any" min="0" placeholder="${bp.fields.metricType === 'gpa' ? '3.5' : '500000'}" required />
+          </div>
+          <div class="field">
+            <label>Trạng Thái</label>
+            <select id="f-status">
+              ${bp.fields.statuses.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Ghi Chú</label>
+            <input id="f-note" placeholder="SĐT / ghi chú nhanh..." />
+          </div>
+          <button type="button" id="save-btn" class="btn btn-primary" onclick="window.saveRecord(event)">✓ Lưu ${escapeHtml(bp.itemLabel)}</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <input id="q-search" class="search-input" placeholder="🔍 Tìm kiếm theo mã, tên hoặc ghi chú..." oninput="window.renderAll()" />
+          <select id="q-cat" class="select-input" onchange="window.renderAll()">
+            <option value="all">Tất cả phân loại</option>
+            ${bp.fields.categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+          </select>
+          <select id="q-status" class="select-input" onchange="window.renderAll()">
+            <option value="all">Tất cả trạng thái</option>
+            ${bp.fields.statuses.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>${escapeHtml(bp.fields.codeLabel)}</th>
+                <th>${escapeHtml(bp.fields.nameLabel)}</th>
+                <th>${escapeHtml(bp.fields.catLabel)}</th>
+                <th>${escapeHtml(bp.fields.metricLabel)}</th>
+                <th>Trạng Thái</th>
+                <th>Ghi Chú</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 2: THỐNG KÊ & BIỂU ĐỒ -->
+    <section id="tab-analytics" class="panel hidden">
       <div class="panel-head">
-        <h3 id="form-title">➕ Thêm Sinh Viên Mới</h3>
-        <span class="toast-msg" id="toast-msg"></span>
+        <h2 class="panel-title">📊 Phân Bổ Theo ${escapeHtml(bp.fields.catLabel)}</h2>
       </div>
-      <form id="student-form" class="form-grid" onsubmit="return window.handleSaveStudent(event)">
-        <div class="field"><label>Mã SV</label><input id="sv-id" placeholder="VD: SV005" required /></div>
-        <div class="field"><label>Họ và Tên</label><input id="sv-name" placeholder="VD: Nguyễn Văn An" required /></div>
-        <div class="field"><label>Ngành học</label>
-          <select id="sv-major">
-            <option value="Công nghệ thông tin">Công nghệ thông tin</option>
-            <option value="Kỹ thuật phần mềm">Kỹ thuật phần mềm</option>
-            <option value="Trí tuệ nhân tạo">Trí tuệ nhân tạo</option>
-            <option value="An toàn thông tin">An toàn thông tin</option>
-            <option value="Thiết kế đồ họa">Thiết kế đồ họa</option>
-          </select>
-        </div>
-        <div class="field"><label>Điểm GPA (0 - 4.0)</label><input id="sv-gpa" type="number" step="any" min="0" max="4" placeholder="3.50" required /></div>
-        <div class="field"><label>Trạng thái</label>
-          <select id="sv-status">
-            <option value="Đang học">Đang học</option>
-            <option value="Đã tốt nghiệp">Đã tốt nghiệp</option>
-            <option value="Cảnh báo học vụ">Cảnh báo học vụ</option>
-          </select>
-        </div>
-        <button type="button" class="btn btn-primary" id="submit-btn" onclick="window.handleSaveStudent(event)">Lưu Sinh Viên</button>
-      </form>
-    </div>
+      <div class="chart-list" id="chart-container"></div>
+    </section>
 
-    <div class="panel">
-      <div class="toolbar">
-        <input id="search-input" class="search-box" placeholder="🔍 Tìm theo tên hoặc mã sinh viên..." />
-        <select id="major-filter" class="filter-select">
-          <option value="all">Tất cả ngành học</option>
-          <option value="Công nghệ thông tin">Công nghệ thông tin</option>
-          <option value="Kỹ thuật phần mềm">Kỹ thuật phần mềm</option>
-          <option value="Trí tuệ nhân tạo">Trí tuệ nhân tạo</option>
-          <option value="An toàn thông tin">An toàn thông tin</option>
-          <option value="Thiết kế đồ họa">Thiết kế đồ họa</option>
-        </select>
+    <!-- TAB 3: NGHIỆP VỤ MỞ RỘNG -->
+    <section id="tab-extra" class="panel hidden">
+      <div class="panel-head">
+        <h2 class="panel-title">${escapeHtml(bp.extraTab.title)}</h2>
       </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Mã SV</th>
-              <th>Họ và Tên</th>
-              <th>Ngành học</th>
-              <th>GPA</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="student-tbody"></tbody>
-        </table>
+      <div class="extra-grid">
+        ${bp.extraTab.cards.map((card) => `
+          <div class="extra-card">
+            <div>
+              <strong style="font-size:14px;">${escapeHtml(card.name)}</strong>
+              <p style="font-size:12px;color:var(--muted);margin-top:4px;">${escapeHtml(card.sub)}</p>
+            </div>
+            <span class="pill pill-ok">${escapeHtml(card.badge)}</span>
+          </div>
+        `).join('')}
       </div>
-    </div>
+    </section>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <script>
-    const INITIAL_STUDENTS = [
-      { id: 'SV001', name: 'Trần Minh Quân', major: 'Công nghệ thông tin', gpa: 3.72, status: 'Đang học' },
-      { id: 'SV002', name: 'Lê Ngọc Linh', major: 'Trí tuệ nhân tạo', gpa: 3.88, status: 'Đang học' },
-      { id: 'SV003', name: 'Phạm Hoàng Nam', major: 'Kỹ thuật phần mềm', gpa: 3.15, status: 'Đã tốt nghiệp' },
-      { id: 'SV004', name: 'Nguyễn Thảo Vy', major: 'An toàn thông tin', gpa: 2.35, status: 'Cảnh báo học vụ' }
-    ];
+    const STORAGE_KEY = ${JSON.stringify(storageKey)};
+    const METRIC_TYPE = ${JSON.stringify(bp.fields.metricType)};
+    const STATUSES = ${JSON.stringify(bp.fields.statuses)};
+    const CATEGORIES = ${JSON.stringify(bp.fields.categories)};
+    const DEFAULT_ITEMS = ${JSON.stringify(bp.initialItems)};
 
-    let students = [...INITIAL_STUDENTS];
-    let editingIdx = -1;
-
-    const tbody = document.getElementById('student-tbody');
-    const form = document.getElementById('student-form');
-    const searchInput = document.getElementById('search-input');
-    const majorFilter = document.getElementById('major-filter');
-
-    function getStatusClass(st) {
-      if (st === 'Đang học') return 'active';
-      if (st === 'Đã tốt nghiệp') return 'graduated';
-      return 'warning';
+    let items = [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      items = saved ? JSON.parse(saved) : [...DEFAULT_ITEMS];
+      if (!Array.isArray(items) || !items.length) items = [...DEFAULT_ITEMS];
+    } catch {
+      items = [...DEFAULT_ITEMS];
     }
 
-    function render() {
-      const q = searchInput.value.toLowerCase().trim();
-      const major = majorFilter.value;
-      const filtered = students.filter(s =>
-        (major === 'all' || s.major === major) &&
-        (s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+    let editIdx = -1;
+
+    function persist() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+    }
+
+    function notify(msg, isErr) {
+      const t = document.getElementById('toast');
+      t.style.background = isErr ? '#ef4444' : '#10b981';
+      t.style.color = isErr ? '#fff' : '#052e16';
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function formatMetric(val) {
+      const num = Number(val) || 0;
+      if (METRIC_TYPE === 'gpa') return num.toFixed(2);
+      return num.toLocaleString('vi-VN') + 'đ';
+    }
+
+    function getPillClass(st) {
+      if (st === STATUSES[0]) return 'pill-ok';
+      if (st === STATUSES[1]) return 'pill-warn';
+      return 'pill-bad';
+    }
+
+    window.switchTab = (tabId) => {
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      ['manage', 'analytics', 'extra'].forEach(id => {
+        document.getElementById('tab-' + id).classList.toggle('hidden', id !== tabId);
+      });
+    };
+
+    window.toggleTheme = () => {
+      document.body.classList.toggle('light');
+    };
+
+    window.renderAll = () => {
+      const q = document.getElementById('q-search').value.toLowerCase().trim();
+      const cat = document.getElementById('q-cat').value;
+      const st = document.getElementById('q-status').value;
+
+      const filtered = items.filter(it =>
+        (cat === 'all' || it.cat === cat) &&
+        (st === 'all' || it.status === st) &&
+        (it.code.toLowerCase().includes(q) || it.name.toLowerCase().includes(q) || (it.note || '').toLowerCase().includes(q))
       );
 
-      document.getElementById('st-total').textContent = students.length;
-      document.getElementById('st-active').textContent = students.filter(s => s.status === 'Đang học').length;
-      const avg = students.length ? (students.reduce((acc, s) => acc + Number(s.gpa), 0) / students.length).toFixed(2) : '0.00';
-      document.getElementById('st-gpa').textContent = avg;
-      document.getElementById('st-honor').textContent = students.filter(s => Number(s.gpa) >= 3.2).length;
+      // Update KPIs
+      document.getElementById('kpi-total').textContent = items.length;
+      document.getElementById('kpi-active').textContent = items.filter(i => i.status === STATUSES[0]).length;
+      document.getElementById('kpi-warn').textContent = items.filter(i => i.status !== STATUSES[0]).length;
 
-      if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty">Không tìm thấy sinh viên phù hợp.</td></tr>';
-        return;
+      if (METRIC_TYPE === 'gpa') {
+        const avg = items.length ? items.reduce((s, i) => s + Number(i.metric || 0), 0) / items.length : 0;
+        document.getElementById('kpi-metric').textContent = avg.toFixed(2);
+      } else {
+        const total = items.reduce((s, i) => s + Number(i.metric || 0), 0);
+        document.getElementById('kpi-metric').textContent = total.toLocaleString('vi-VN') + 'đ';
       }
 
-      tbody.innerHTML = filtered.map((sv) => {
-        const realIdx = students.indexOf(sv);
-        return '<tr>' +
-          '<td><strong>' + sv.id + '</strong></td>' +
-          '<td>' + sv.name + '</td>' +
-          '<td>' + sv.major + '</td>' +
-          '<td><strong>' + Number(sv.gpa).toFixed(2) + '</strong></td>' +
-          '<td><span class="status ' + getStatusClass(sv.status) + '">' + sv.status + '</span></td>' +
-          '<td>' +
-            '<button class="action-btn edit" onclick="editStudent(' + realIdx + ')">Sửa</button>' +
-            '<button class="action-btn del" onclick="deleteStudent(' + realIdx + ')">Xóa</button>' +
-          '</td>' +
-        '</tr>';
+      // Render Table
+      const tbody = document.getElementById('table-body');
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--muted);">Không tìm thấy dữ liệu phù hợp.</td></tr>';
+      } else {
+        tbody.innerHTML = filtered.map(it => {
+          const idx = items.indexOf(it);
+          return '<tr>' +
+            '<td><strong>' + it.code + '</strong></td>' +
+            '<td><strong>' + it.name + '</strong></td>' +
+            '<td>' + it.cat + '</td>' +
+            '<td style="font-weight:700;color:var(--accent);">' + formatMetric(it.metric) + '</td>' +
+            '<td><span class="pill ' + getPillClass(it.status) + '">' + it.status + '</span></td>' +
+            '<td style="color:var(--muted);font-size:12px;">' + (it.note || '—') + '</td>' +
+            '<td>' +
+              '<button type="button" class="act-btn" onclick="window.startEdit(' + idx + ')">Sửa</button>' +
+              '<button type="button" class="act-btn del" onclick="window.removeRow(' + idx + ')">Xóa</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      // Render Analytics Bars
+      const totalCount = items.length || 1;
+      document.getElementById('chart-container').innerHTML = CATEGORIES.map(c => {
+        const count = items.filter(i => i.cat === c).length;
+        const pct = Math.round((count / totalCount) * 100);
+        return '<div class="chart-row">' +
+          '<div class="chart-meta"><span>' + c + '</span><span>' + count + ' mục (' + pct + '%)</span></div>' +
+          '<div class="chart-track"><div class="chart-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>';
       }).join('');
-    }
-
-    window.editStudent = (idx) => {
-      const s = students[idx];
-      document.getElementById('sv-id').value = s.id;
-      document.getElementById('sv-name').value = s.name;
-      document.getElementById('sv-major').value = s.major;
-      document.getElementById('sv-gpa').value = s.gpa;
-      document.getElementById('sv-status').value = s.status;
-      editingIdx = idx;
-      document.getElementById('form-title').textContent = '✏️ Cập Nhật Sinh Viên (' + s.id + ')';
-      document.getElementById('submit-btn').textContent = 'Cập Nhật';
     };
 
-    window.deleteStudent = (idx) => {
-      students.splice(idx, 1);
-      render();
-    };
-
-    function showToast(msg, isError) {
-      const el = document.getElementById('toast-msg');
-      if (!el) return;
-      el.style.color = isError ? '#f87171' : '#34d399';
-      el.textContent = msg;
-      setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2600);
-    }
-
-    window.handleSaveStudent = (e) => {
+    window.saveRecord = (e) => {
       if (e && e.preventDefault) e.preventDefault();
-      const idVal = document.getElementById('sv-id').value.trim().toUpperCase();
-      const nameVal = document.getElementById('sv-name').value.trim();
-      const gpaRaw = document.getElementById('sv-gpa').value;
+      const code = document.getElementById('f-code').value.trim().toUpperCase();
+      const name = document.getElementById('f-name').value.trim();
+      const metricRaw = document.getElementById('f-metric').value;
 
-      if (!idVal || !nameVal || gpaRaw === '') {
-        showToast('⚠ Vui lòng nhập đầy đủ Mã SV, Họ tên và Điểm GPA!', true);
+      if (!code || !name || metricRaw === '') {
+        notify('⚠ Vui lòng nhập đầy đủ Mã, Tên và Giá trị!', true);
         return false;
       }
 
-      const gpaNum = Math.min(4, Math.max(0, parseFloat(gpaRaw) || 0));
-      const item = {
-        id: idVal,
-        name: nameVal,
-        major: document.getElementById('sv-major').value,
-        gpa: gpaNum,
-        status: document.getElementById('sv-status').value
+      let metricVal = parseFloat(metricRaw) || 0;
+      if (METRIC_TYPE === 'gpa') metricVal = Math.min(4, Math.max(0, metricVal));
+
+      const rec = {
+        code,
+        name,
+        cat: document.getElementById('f-cat').value,
+        metric: metricVal,
+        status: document.getElementById('f-status').value,
+        note: document.getElementById('f-note').value.trim() || 'Cập nhật vừa xong'
       };
 
-      if (editingIdx >= 0) {
-        students[editingIdx] = item;
-        editingIdx = -1;
-        document.getElementById('form-title').textContent = '➕ Thêm Sinh Viên Mới';
-        document.getElementById('submit-btn').textContent = 'Lưu Sinh Viên';
-        showToast('✓ Đã cập nhật sinh viên ' + item.name + '!', false);
+      if (editIdx >= 0) {
+        items[editIdx] = rec;
+        notify('✓ Đã cập nhật ' + rec.name);
+        window.cancelEdit();
       } else {
-        students.unshift(item);
-        showToast('✓ Đã thêm sinh viên ' + item.name + ' (' + item.id + ')!', false);
+        items.unshift(rec);
+        notify('✓ Đã thêm mới ' + rec.name);
+        document.getElementById('main-form').reset();
       }
-      form.reset();
-      render();
+
+      persist();
+      window.renderAll();
       return false;
     };
 
-    searchInput.addEventListener('input', render);
-    majorFilter.addEventListener('change', render);
-    render();
-  </script>
-</body>
-</html>`;
-}
-
-function buildEcommerceApp(prompt) {
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vibe Store — Cửa Hàng Trực Tuyến</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: #0a0a10; color: #f8fafc; min-height: 100vh; padding: 24px; }
-    .wrap { max-width: 1040px; margin: 0 auto; }
-    .nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 24px; }
-    .brand { font-size: 20px; font-weight: 800; color: #fbbf24; }
-    .cart-pill { background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1006; border: none; padding: 9px 18px; border-radius: 999px; font-weight: 800; cursor: pointer; font-size: 13px; }
-    .hero { margin-bottom: 24px; }
-    .hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
-    .hero p { color: #94a3b8; font-size: 13.5px; }
-    .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .search { flex: 1; min-width: 200px; height: 40px; padding: 0 14px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-    .card { background: #12121c; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; transition: .2s; }
-    .card:hover { border-color: rgba(245, 158, 11, 0.5); transform: translateY(-2px); }
-    .emoji { font-size: 42px; text-align: center; padding: 18px 0; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 12px; }
-    .pname { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .pcat { font-size: 11.5px; color: #94a3b8; margin-bottom: 12px; }
-    .pfoot { display: flex; justify-content: space-between; align-items: center; }
-    .price { font-size: 15px; font-weight: 800; color: #fbbf24; }
-    .add-btn { background: rgba(245, 158, 11, 0.16); border: 1px solid rgba(245, 158, 11, 0.4); color: #fde68a; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; }
-    .add-btn:hover { background: #f59e0b; color: #1a1006; }
-    .cart-panel { margin-top: 24px; background: #141422; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 16px; padding: 18px; }
-    .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13.5px; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="nav">
-      <div class="brand">🛍️ VIBE STORE</div>
-      <button class="cart-pill" onclick="toggleCart()">🛒 Giỏ hàng (<span id="cart-count">0</span>)</button>
-    </div>
-    <div class="hero">
-      <h1>Cửa Hàng Trực Tuyến Hiện Đại</h1>
-      <p>Khởi tạo theo yêu cầu: "${escapeHtml(prompt)}"</p>
-    </div>
-    <div class="controls">
-      <input id="q" class="search" placeholder="🔍 Tìm kiếm sản phẩm..." oninput="renderProducts()" />
-    </div>
-    <div class="grid" id="product-grid"></div>
-    <div class="cart-panel" id="cart-box" style="display:none;">
-      <h3 style="margin-bottom:10px;">🧾 Giỏ Hàng Của Bạn</h3>
-      <div id="cart-items"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-weight:800;">
-        <span>Tổng thanh toán:</span>
-        <span id="cart-total" style="color:#fbbf24;font-size:18px;">0đ</span>
-      </div>
-    </div>
-  </div>
-  <script>
-    const PRODUCTS = [
-      { id: 1, icon: '👟', name: 'Sneaker Air Pulse', cat: 'Giày thể thao', price: 1450000 },
-      { id: 2, icon: '🎧', name: 'Tai Nghe Studio ANC', cat: 'Phụ kiện âm thanh', price: 2190000 },
-      { id: 3, icon: '⌚', name: 'Smartwatch Chronos', cat: 'Đồng hồ thông minh', price: 3250000 },
-      { id: 4, icon: '🎒', name: 'Balo Tech Minimalist', cat: 'Phụ kiện công nghệ', price: 790000 }
-    ];
-    let cart = [];
-    function fmt(n) { return n.toLocaleString('vi-VN') + 'đ'; }
-    function renderProducts() {
-      const q = document.getElementById('q').value.toLowerCase();
-      const list = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q));
-      document.getElementById('product-grid').innerHTML = list.map(p =>
-        '<div class="card"><div><div class="emoji">' + p.icon + '</div><div class="pname">' + p.name + '</div><div class="pcat">' + p.cat + '</div></div>' +
-        '<div class="pfoot"><span class="price">' + fmt(p.price) + '</span><button class="add-btn" onclick="addToCart(' + p.id + ')">+ Thêm</button></div></div>'
-      ).join('');
-    }
-    window.addToCart = (id) => {
-      const prod = PRODUCTS.find(p => p.id === id);
-      const ex = cart.find(c => c.id === id);
-      if (ex) ex.qty++; else cart.push({ ...prod, qty: 1 });
-      renderCart();
-      document.getElementById('cart-box').style.display = 'block';
+    window.startEdit = (idx) => {
+      const it = items[idx];
+      editIdx = idx;
+      document.getElementById('f-code').value = it.code;
+      document.getElementById('f-name').value = it.name;
+      document.getElementById('f-cat').value = it.cat;
+      document.getElementById('f-metric').value = it.metric;
+      document.getElementById('f-status').value = it.status;
+      document.getElementById('f-note').value = it.note || '';
+      document.getElementById('form-heading').textContent = '✏️ Đang Sửa: ' + it.code;
+      document.getElementById('save-btn').textContent = '✓ Cập Nhật';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    window.removeItem = (id) => { cart = cart.filter(c => c.id !== id); renderCart(); };
-    window.toggleCart = () => {
-      const el = document.getElementById('cart-box');
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+
+    window.cancelEdit = () => {
+      editIdx = -1;
+      document.getElementById('main-form').reset();
+      document.getElementById('form-heading').textContent = '➕ Thêm ${escapeHtml(bp.itemLabel)} Mới';
+      document.getElementById('save-btn').textContent = '✓ Lưu ${escapeHtml(bp.itemLabel)}';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
     };
-    function renderCart() {
-      document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + i.qty, 0);
-      document.getElementById('cart-total').textContent = fmt(cart.reduce((s, i) => s + i.price * i.qty, 0));
-      document.getElementById('cart-items').innerHTML = cart.length ? cart.map(i =>
-        '<div class="cart-row"><span>' + i.icon + ' ' + i.name + ' × ' + i.qty + '</span><span>' + fmt(i.price * i.qty) + ' <button onclick="removeItem(' + i.id + ')" style="margin-left:8px;background:none;border:none;color:#ef4444;cursor:pointer;">✕</button></span></div>'
-      ).join('') : '<p style="color:#64748b;font-size:13px;">Chưa có sản phẩm nào trong giỏ.</p>';
-    }
-    renderProducts();
-  </script>
-</body>
-</html>`;
-}
 
-function buildExpenseTrackerApp(prompt) {
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quản Lý Chi Tiêu Cá Nhân</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: #09090f; color: #f8fafc; min-height: 100vh; padding: 24px; }
-    .box { max-width: 820px; margin: 0 auto; }
-    h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
-    .sub { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
-    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-    .c { background: #12121c; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; }
-    .c small { color: #94a3b8; font-size: 12px; }
-    .c div { font-size: 20px; font-weight: 800; margin-top: 6px; }
-    .form { display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 10px; background: #12121c; padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
-    input, select { height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.4); color: #fff; }
-    button { height: 40px; padding: 0 16px; border-radius: 8px; border: none; background: #f59e0b; color: #1a1006; font-weight: 800; cursor: pointer; }
-    .list { background: #12121c; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); padding: 12px 16px; }
-    .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13.5px; }
-    @media (max-width: 640px) { .cards, .form { grid-template-columns: 1fr; } }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h1>💰 Quản Lý Thu Chi Thông Minh</h1>
-    <p class="sub">Yêu cầu: "${escapeHtml(prompt)}"</p>
-    <div class="cards">
-      <div class="c"><small>Số dư hiện tại</small><div id="bal" style="color:#fbbf24;">0đ</div></div>
-      <div class="c"><small>Tổng thu nhập</small><div id="inc" style="color:#34d399;">0đ</div></div>
-      <div class="c"><small>Tổng chi tiêu</small><div id="exp" style="color:#f87171;">0đ</div></div>
-    </div>
-    <form class="form" id="tx-form">
-      <input id="tx-desc" placeholder="Mô tả giao dịch (VD: Ăn trưa)" required />
-      <input id="tx-amt" type="number" placeholder="Số tiền (VNĐ)" required />
-      <select id="tx-type"><option value="exp">Chi tiêu</option><option value="inc">Thu nhập</option></select>
-      <button type="submit">+ Ghi</button>
-    </form>
-    <div class="list" id="tx-list"></div>
-  </div>
-  <script>
-    let txs = [
-      { desc: 'Lương tháng', amt: 15000000, type: 'inc' },
-      { desc: 'Tiền nhà & Điện nước', amt: 4500000, type: 'exp' },
-      { desc: 'Cà phê làm việc', amt: 55000, type: 'exp' }
-    ];
-    const fmt = (n) => n.toLocaleString('vi-VN') + 'đ';
-    function render() {
-      const inc = txs.filter(t => t.type === 'inc').reduce((s, t) => s + t.amt, 0);
-      const exp = txs.filter(t => t.type === 'exp').reduce((s, t) => s + t.amt, 0);
-      document.getElementById('inc').textContent = fmt(inc);
-      document.getElementById('exp').textContent = fmt(exp);
-      document.getElementById('bal').textContent = fmt(inc - exp);
-      document.getElementById('tx-list').innerHTML = txs.map((t, i) =>
-        '<div class="item"><span>' + t.desc + '</span><span style="font-weight:700;color:' + (t.type === 'inc' ? '#34d399' : '#f87171') + '">' + (t.type === 'inc' ? '+' : '-') + fmt(t.amt) + ' <button onclick="delTx(' + i + ')" style="margin-left:8px;height:24px;padding:0 8px;background:rgba(255,255,255,0.08);color:#ccc;">✕</button></span></div>'
-      ).join('');
-    }
-    window.delTx = (i) => { txs.splice(i, 1); render(); };
-    document.getElementById('tx-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      txs.unshift({ desc: document.getElementById('tx-desc').value, amt: Number(document.getElementById('tx-amt').value), type: document.getElementById('tx-type').value });
-      e.target.reset();
-      render();
-    });
-    render();
-  </script>
-</body>
-</html>`;
-}
+    window.removeRow = (idx) => {
+      const removed = items.splice(idx, 1)[0];
+      if (editIdx === idx) window.cancelEdit();
+      persist();
+      window.renderAll();
+      notify('🗑 Đã xóa ' + (removed?.name || 'dữ liệu'));
+    };
 
-function buildPortfolioApp(prompt) {
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Developer Portfolio</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: radial-gradient(circle at top right, #1e1b4b, #09090f 60%); color: #f8fafc; min-height: 100vh; padding: 36px 24px; }
-    .container { max-width: 900px; margin: 0 auto; }
-    .pill { display: inline-block; padding: 5px 12px; border-radius: 999px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; font-size: 12px; font-weight: 700; margin-bottom: 14px; }
-    h1 { font-size: 38px; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
-    .lead { color: #cbd5e1; font-size: 15px; max-width: 620px; line-height: 1.6; margin-bottom: 28px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 28px; }
-    .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; }
-    .card h3 { font-size: 16px; font-weight: 700; color: #fbbf24; margin-bottom: 8px; }
-    .card p { font-size: 13px; color: #94a3b8; line-height: 1.5; }
-    .btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1006; border: none; padding: 12px 22px; border-radius: 10px; font-weight: 800; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <span class="pill">👋 Xin chào! Tôi là Lập Trình Viên Full-Stack</span>
-    <h1>Xây dựng sản phẩm số mượt mà & sáng tạo</h1>
-    <p class="lead">Trang hồ sơ cá nhân được khởi tạo tự động theo yêu cầu: "${escapeHtml(prompt)}".</p>
-    <div class="grid">
-      <div class="card"><h3>⚛️ Frontend Architecture</h3><p>React 19, TypeScript, Tailwind CSS, tối ưu hiệu năng 60fps.</p></div>
-      <div class="card"><h3>⚙️ Backend & Cloud</h3><p>Node.js, Supabase, PostgreSQL và triển khai CI/CD tự động.</p></div>
-      <div class="card"><h3>🤖 AI & Vibe Coding</h3><p>Tích hợp LLM, Agent Workflows và tự động hóa quy trình.</p></div>
-    </div>
-    <button class="btn" onclick="alert('Cảm ơn bạn đã liên hệ! Email: hello@developer.dev')">📩 Liên Hệ Hợp Tác</button>
-  </div>
-</body>
-</html>`;
-}
+    window.resetData = () => {
+      items = [...DEFAULT_ITEMS];
+      window.cancelEdit();
+      persist();
+      window.renderAll();
+      notify('↺ Đã khôi phục dữ liệu mẫu');
+    };
 
-function buildCustomWorkspaceApp(prompt) {
-  const cleanTitle = escapeHtml(
-    prompt
-      .replace(/^(tạo|làm|xây dựng|thiết kế|viết)\s+(1|một)?\s*(trang\s*web|website|web|ứng\s*dụng|app)?\s*/i, '')
-      .trim() || prompt
-  );
+    window.exportCsv = () => {
+      const header = ['Ma', 'Ten', 'PhanLoai', 'GiaTri', 'TrangThai', 'GhiChu'].join(',');
+      const rows = items.map(i => [i.code, i.name, i.cat, i.metric, i.status, i.note].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','));
+      const blob = new Blob(['\\uFEFF' + [header, ...rows].join('\\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '${bp.idPrefix}_data_export.csv';
+      a.click();
+      notify('📥 Đã xuất file CSV thành công!');
+    };
 
-  return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${cleanTitle}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: #09090f; color: #f8fafc; min-height: 100vh; padding: 28px; transition: background .25s, color .25s; }
-    body.light { background: #f8fafc; color: #0f172a; }
-    .container { max-width: 920px; margin: 0 auto; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(148,163,184,0.2); }
-    .badge { padding: 4px 10px; border-radius: 999px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #f59e0b; font-size: 11.5px; font-weight: 700; }
-    .theme-btn { background: rgba(148,163,184,0.14); border: 1px solid rgba(148,163,184,0.25); color: inherit; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: 12.5px; }
-    h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; text-transform: capitalize; }
-    .desc { color: #94a3b8; font-size: 13.5px; margin-bottom: 22px; }
-    .panel { background: rgba(148,163,184,0.06); border: 1px solid rgba(148,163,184,0.16); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
-    .input-row { display: flex; gap: 10px; }
-    input { flex: 1; height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.25); background: rgba(0,0,0,0.25); color: inherit; font-size: 13.5px; }
-    body.light input { background: #fff; }
-    .add-btn { height: 42px; padding: 0 20px; border-radius: 10px; border: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1006; font-weight: 800; cursor: pointer; }
-    .items { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-    .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; background: rgba(148,163,184,0.08); border: 1px solid rgba(148,163,184,0.12); }
-    .del { background: rgba(239,68,68,0.18); color: #f87171; border: none; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-weight: 700; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="topbar">
-      <span class="badge">✨ Khởi tạo tự động từ Vibe Prompt</span>
-      <button class="theme-btn" onclick="document.body.classList.toggle('light')">🌓 Đổi giao diện Sáng/Tối</button>
-    </div>
-    <h1>${cleanTitle}</h1>
-    <p class="desc">Ứng dụng tương tác được xây dựng trực tiếp từ mô tả: "${escapeHtml(prompt)}"</p>
-    <div class="panel">
-      <form class="input-row" id="item-form">
-        <input id="item-input" placeholder="Nhập dữ liệu hoặc mục mới để thêm vào danh sách..." required />
-        <button type="submit" class="add-btn">+ Thêm mới</button>
-      </form>
-      <div class="items" id="item-list"></div>
-    </div>
-  </div>
-  <script>
-    let items = [
-      { title: 'Mục dữ liệu mẫu số 1 — Đã sẵn sàng hoạt động', time: 'Vừa xong' },
-      { title: 'Mục dữ liệu mẫu số 2 — Hỗ trợ thêm và xóa trực tiếp', time: 'Hôm nay' }
-    ];
-    function render() {
-      document.getElementById('item-list').innerHTML = items.map((it, idx) =>
-        '<div class="row"><div><strong>' + it.title + '</strong><div style="font-size:11.5px;opacity:0.65;margin-top:2px;">' + it.time + '</div></div>' +
-        '<button class="del" onclick="removeItem(' + idx + ')">Xóa</button></div>'
-      ).join('');
-    }
-    window.removeItem = (i) => { items.splice(i, 1); render(); };
-    document.getElementById('item-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const val = document.getElementById('item-input').value.trim();
-      if (!val) return;
-      items.unshift({ title: val, time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) });
-      document.getElementById('item-input').value = '';
-      render();
-    });
-    render();
+    window.renderAll();
   </script>
 </body>
 </html>`;

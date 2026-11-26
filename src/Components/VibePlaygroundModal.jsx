@@ -8,10 +8,11 @@ import {
 import './VibePlaygroundModal.css';
 
 const QUICK_CUSTOM_PROMPTS = [
+  { label: '🏋️ Quản lý phòng Gym', prompt: 'Tạo hệ thống quản lý phòng Gym hội viên và gói tập' },
   { label: '🎓 Quản lý sinh viên', prompt: 'Tạo 1 trang web quản lí sinh viên đầy đủ chức năng thêm, sửa, xóa và tìm kiếm' },
   { label: '🛍️ Shop bán hàng', prompt: 'Tạo trang web cửa hàng bán giày sneaker hiện đại có giỏ hàng' },
+  { label: '☕ Quản lý Quán Cà Phê', prompt: 'Tạo trang web quản lý quán cà phê và thực đơn POS' },
   { label: '💰 Quản lý chi tiêu', prompt: 'Tạo ứng dụng web quản lý thu chi và ngân sách cá nhân' },
-  { label: '💼 Portfolio cá nhân', prompt: 'Tạo trang web Portfolio giới thiệu bản thân cho lập trình viên' },
 ];
 
 const CUSTOM_STARTER_HTML = `<!DOCTYPE html>
@@ -109,6 +110,12 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
     a.download = studioMode === 'custom' ? 'custom_vibe_app.html' : `${activeTemplate.id}_vibe_app.html`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleOpenNewTab = () => {
+    const blob = new Blob([code], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const runCustomWebGeneration = async (promptToRun) => {
@@ -321,6 +328,15 @@ export default function VibePlaygroundModal({ initialTemplateId, onClose }) {
                   onClick={() => setDevice('mobile')}
                 >
                   📱 Điện thoại
+                </button>
+                <button
+                  type="button"
+                  className="vp-device-btn"
+                  onClick={handleOpenNewTab}
+                  title="Mở trang web đang chạy trong tab toàn màn hình mới"
+                  style={{ color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.35)' }}
+                >
+                  ↗ Mở Tab Mới
                 </button>
               </div>
             </div>
