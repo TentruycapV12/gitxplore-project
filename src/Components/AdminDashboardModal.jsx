@@ -17,6 +17,7 @@ const TABS = [
   { id: 'content', label: '🗂️ Content', roles: ['admin', 'editor'] },
   { id: 'tickets', label: '🎫 Tickets', roles: ['admin', 'support'] },
   { id: 'announce', label: '📢 Announcements', roles: ['admin'] },
+  { id: 'ai', label: '🤖 AI Config', roles: ['admin'] },
   { id: 'logs', label: '🕒 Audit Logs', roles: ['admin', 'editor'] },
 ];
 
@@ -715,6 +716,125 @@ function LogsTab({ ctx }) {
 }
 
 /* =====================================================================
+   AI CONFIG (GEMINI API KEY TRÊN SUPABASE app_settings)
+   ===================================================================== */
+function AIConfigTab({ ctx }) {
+  const [apiKey, setApiKey] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value, updated_at')
+      .eq('key', 'gemini_api_key')
+      .maybeSingle();
+    setLoading(false);
+    if (error && isMissing(error)) {
+      ctx.notify('err', 'Chưa có bảng app_settings trên Supabase. Hãy chạy file supabase_ai_setup.sql!');
+      return;
+    }
+    if (data?.value) {
+      setApiKey(data.value);
+      setUpdatedAt(data.updated_at);
+    }
+  }, [ctx]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const cleaned = apiKey.trim();
+    if (!cleaned) {
+      ctx.notify('err', 'Vui lòng nhập Google Gemini API Key (AIza...)');
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert([{ key: 'gemini_api_key', value: cleaned, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    setSaving(false);
+
+    if (error) {
+      ctx.notify('err', isMissing(error) ? 'Chưa có bảng app_settings — chạy supabase_ai_setup.sql trong Supabase SQL Editor.' : error.message);
+      return;
+    }
+    await ctx.log('update_gemini_api_key', 'app_settings');
+    ctx.notify('ok', 'Đã lưu Gemini API Key lên Supabase thành công! Toàn bộ Sandbox đã kích hoạt AI.');
+    load();
+  };
+
+  const handleTest = async () => {
+    const cleaned = apiKey.trim();
+    if (!cleaned) {
+      ctx.notify('err', 'Nhập API Key trước khi kiểm tra.');
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(cleaned)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: 'Say OK in 1 word.' }] }],
+            generationConfig: { maxOutputTokens: 16, thinkingConfig: { thinkingBudget: 0 } },
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        ctx.notify('err', data?.error?.message || `HTTP ${res.status}`);
+      } else {
+        ctx.notify('ok', 'Kết nối Gemini 2.5 Flash thành công 100%!');
+      }
+    } catch (err) {
+      ctx.notify('err', err?.message || 'Lỗi kết nối Gemini API');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', overflow: 'auto' }}>
+      <div style={S.card}>
+        <h3 style={{ margin: '0 0 6px', color: '#fef08a', fontSize: '15px' }}>🤖 Cấu Hình Gemini 2.5 Flash API Trên Supabase</h3>
+        <p style={{ ...S.muted, margin: '0 0 12px', lineHeight: 1.5 }}>
+          Lưu Google Gemini API Key vào bảng <code style={{ color: '#fbbf24' }}>public.app_settings</code> trên Supabase để toàn bộ hệ thống Live Sandbox tự động dùng Gemini 2.5 Flash thiết kế trang web theo prompt.
+        </p>
+
+        {loading ? (
+          <div style={S.muted}>Đang tải cấu hình từ Supabase...</div>
+        ) : (
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Dán Google Gemini API Key (AIza...) vào đây"
+              style={{ ...S.input, width: '100%' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button type="submit" disabled={saving} style={btn('#f59e0b', '#000')}>
+                {saving ? '⏳ Đang lưu...' : '☁️ Lưu Key Lên Supabase'}
+              </button>
+              <button type="button" disabled={testing} onClick={handleTest} style={btn('#065f46', '#6ee7b7', '1px solid #10b981')}>
+                {testing ? '⏳ Đang kiểm tra...' : '⚡ Test Kết Nối Gemini 2.5 Flash'}
+              </button>
+              <span style={S.muted}>Cập nhật lần cuối: {fmtDate(updatedAt)}</span>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =====================================================================
    MODAL
    ===================================================================== */
 export default function AdminDashboardModal({ onClose, role = 'admin', onChanged }) {
@@ -780,6 +900,7 @@ export default function AdminDashboardModal({ onClose, role = 'admin', onChanged
           {activeTab === 'content' && <ContentTab ctx={ctx} />}
           {activeTab === 'tickets' && <TicketsTab ctx={ctx} />}
           {activeTab === 'announce' && <AnnouncementsTab ctx={ctx} />}
+          {activeTab === 'ai' && <AIConfigTab ctx={ctx} />}
           {activeTab === 'logs' && <LogsTab ctx={ctx} />}
         </div>
       </div>
