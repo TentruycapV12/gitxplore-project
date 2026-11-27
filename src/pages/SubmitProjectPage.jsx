@@ -32,6 +32,9 @@ import {
 } from '@mui/material';
 import TopNav from '../Components/TopNav.jsx';
 import Footer from '../Components/Footer.jsx';
+import MuiAppBarDemo from '../Components/MuiAppBarDemo.jsx';
+import BEMCardDemo from '../Components/BEMCardDemo.jsx';
+import ApiDataViewer from '../Components/ApiDataViewer.jsx';
 import './SubmitProject.scss';
 
 // =============================================================================
@@ -592,6 +595,14 @@ export default function SubmitProjectPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Component BEMCardDemo từ src/Components/BEMCardDemo.jsx */}
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', mb: 1, display: 'block' }}>
+                    Component độc lập từ <code>src/Components/BEMCardDemo.jsx</code>:
+                  </Typography>
+                  <BEMCardDemo title="BEM Modular Card" desc="Component tách rời chuẩn BEM SCSS" isFeatured={true} />
+                </Box>
               </Box>
 
               {/* CỘT 2: MUI APPBAR & TOOLBAR THEO ĐÚNG SLIDE 11 LAB */}
@@ -600,8 +611,11 @@ export default function SubmitProjectPage() {
                   <span>🧱</span> Slide 11 LAB: Layout với MUI AppBar & Toolbar
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#94a3b8', fontSize: '12.5px', mb: 2.5 }}>
-                  Yêu cầu bài Lab: Kết hợp Header (AppBar + Toolbar) và Footer (Paper/Box) vào một Layout chuẩn Material Design.
+                  Thành phần chuẩn từ <code>src/Components/MuiAppBarDemo.jsx</code>: AppBar, Toolbar, Typography, Chip, Button hiệu ứng sóng và Box.
                 </Typography>
+
+                {/* Render Component MuiAppBarDemo */}
+                <MuiAppBarDemo onAction={(action) => alert(`Bấm nút trên MUI AppBar: ${action}`)} />
 
                 {/* KHUNG MÔ PHỎNG LAYOUT MUI */}
                 <Paper
@@ -655,6 +669,11 @@ export default function SubmitProjectPage() {
               </Box>
 
             </Box>
+          </Box>
+
+          {/* Component ApiDataViewer từ src/Components/ApiDataViewer.jsx */}
+          <Box sx={{ mt: 4 }}>
+            <ApiDataViewer />
           </Box>
 
           <footer className="submit-project__footer-note">
